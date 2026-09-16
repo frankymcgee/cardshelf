@@ -1,0 +1,84 @@
+name: cardshelf
+x-app: &app
+  image: cardshelf:${APP_VERSION:-0.1.1}
+  build:
+    context: .
+    target: runtime
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=64m
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  environment: &app-environment
+    DATABASE_URL: postgresql://cardshelf:${POSTGRES_PASSWORD:?Run scripts/configure.sh first}@db:5432/cardshelf
+    APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+    BOOTSTRAP_TOKEN: ${BOOTSTRAP_TOKEN:?Run scripts/configure.sh first}
+    TRUST_PROXY: ${TRUST_PROXY:-false}
+    CATALOGUE_REQUEST_INTERVAL_MS: ${CATALOGUE_REQUEST_INTERVAL_MS:-300}
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: '3'
+services:
+  db:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cardshelf
+      POSTGRES_DB: cardshelf
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run scripts/configure.sh first}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U cardshelf -d cardshelf']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+  migrate:
+    <<: *app
+    command: [node, scripts/migrate.mjs]
+    restart: 'no'
+    depends_on:
+      db:
+        condition: service_healthy
+  app:
+    <<: *app
+    restart: unless-stopped
+    ports:
+      - '${APP_BIND:-127.0.0.1}:${APP_PORT:-3000}:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, node, scripts/healthcheck.mjs, app]
+      interval: 30s
+      timeout: 8s
+      start_period: 30s
+      retries: 3
+  worker:
+    <<: *app
+    command: [node, worker/index.mjs]
+    restart: unless-stopped
+    stop_grace_period: 60s
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, node, scripts/healthcheck.mjs, worker]
+      interval: 30s
+      timeout: 8s
+      start_period: 45s
+      retries: 3
+volumes:
+  postgres_data:

@@ -1,0 +1,16 @@
+# Stable line endings for Linux containers and Windows development checkouts.
+* text=auto
+*.sh text eol=lf
+*.mjs text eol=lf
+*.ts text eol=lf
+*.vue text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.sql text eol=lf
+*.svg text eol=lf
+Dockerfile text eol=lf
+Caddyfile text eol=lf
+*.png binary

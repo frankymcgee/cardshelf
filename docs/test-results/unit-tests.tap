@@ -1,0 +1,340 @@
+TAP version 13
+# Subtest: binder capacity is rows × columns × pages
+ok 1 - binder capacity is rows × columns × pages
+  ---
+  duration_ms: 0.779645
+  type: 'test'
+  ...
+# Subtest: placing a card fills one pocket
+ok 2 - placing a card fills one pocket
+  ---
+  duration_ms: 0.612363
+  type: 'test'
+  ...
+# Subtest: placement replaces only its target
+ok 3 - placement replaces only its target
+  ---
+  duration_ms: 0.19908
+  type: 'test'
+  ...
+# Subtest: moving to an empty pocket leaves the source empty
+ok 4 - moving to an empty pocket leaves the source empty
+  ---
+  duration_ms: 0.169806
+  type: 'test'
+  ...
+# Subtest: dropping onto an occupied pocket swaps rather than discards
+ok 5 - dropping onto an occupied pocket swaps rather than discards
+  ---
+  duration_ms: 0.167002
+  type: 'test'
+  ...
+# Subtest: moving to the same position is harmless
+ok 6 - moving to the same position is harmless
+  ---
+  duration_ms: 0.101112
+  type: 'test'
+  ...
+# Subtest: moving from an empty source is a conflict
+ok 7 - moving from an empty source is a conflict
+  ---
+  duration_ms: 0.416377
+  type: 'test'
+  ...
+# Subtest: clearing removes only the target
+ok 8 - clearing removes only the target
+  ---
+  duration_ms: 0.272731
+  type: 'test'
+  ...
+# Subtest: operations do not mutate their input or physical ownership
+ok 9 - operations do not mutate their input or physical ownership
+  ---
+  duration_ms: 0.296216
+  type: 'test'
+  ...
+# Subtest: empty and out-of-range positions are validated
+ok 10 - empty and out-of-range positions are validated
+  ---
+  duration_ms: 0.552743
+  type: 'test'
+  ...
+# Subtest: shrinking cannot silently remove occupied slots
+ok 11 - shrinking cannot silently remove occupied slots
+  ---
+  duration_ms: 0.209185
+  type: 'test'
+  ...
+# Subtest: repeated planned printings remain separate positions
+ok 12 - repeated planned printings remain separate positions
+  ---
+  duration_ms: 0.11298
+  type: 'test'
+  ...
+# Subtest: secure cookies follow the configured origin, not user-controlled headers
+ok 13 - secure cookies follow the configured origin, not user-controlled headers
+  ---
+  duration_ms: 0.686043
+  type: 'test'
+  ...
+# Subtest: origins cannot contain credentials or application paths
+ok 14 - origins cannot contain credentials or application paths
+  ---
+  duration_ms: 0.273011
+  type: 'test'
+  ...
+# Subtest: provider request interval is bounded
+ok 15 - provider request interval is bounded
+  ---
+  duration_ms: 0.136917
+  type: 'test'
+  ...
+# Subtest: CSV round-trip handles quotes, commas and embedded newlines
+ok 16 - CSV round-trip handles quotes, commas and embedded newlines
+  ---
+  duration_ms: 2.314968
+  type: 'test'
+  ...
+# Subtest: accepts CRLF and a UTF-8 BOM
+ok 17 - accepts CRLF and a UTF-8 BOM
+  ---
+  duration_ms: 0.203818
+  type: 'test'
+  ...
+# Subtest: CSV parser rejects unterminated or misplaced quotes
+ok 18 - CSV parser rejects unterminated or misplaced quotes
+  ---
+  duration_ms: 0.301314
+  type: 'test'
+  ...
+# Subtest: CSV exports neutralise spreadsheet formulas
+ok 19 - CSV exports neutralise spreadsheet formulas
+  ---
+  duration_ms: 0.140661
+  type: 'test'
+  ...
+# Subtest: CardShelf JSON uses an explicit versioned schema
+ok 20 - CardShelf JSON uses an explicit versioned schema
+  ---
+  duration_ms: 0.467434
+  type: 'test'
+  ...
+# Subtest: malformed JSON reports a readable error
+ok 21 - malformed JSON reports a readable error
+  ---
+  duration_ms: 0.140261
+  type: 'test'
+  ...
+# Subtest: duplicate printing-condition rows are reported, not added twice
+ok 22 - duplicate printing-condition rows are reported, not added twice
+  ---
+  duration_ms: 0.260312
+  type: 'test'
+  ...
+# Subtest: invalid quantities do not become zero
+ok 23 - invalid quantities do not become zero
+  ---
+  duration_ms: 0.144217
+  type: 'test'
+  ...
+# Subtest: CSV requires all documented columns
+ok 24 - CSV requires all documented columns
+  ---
+  duration_ms: 0.289066
+  type: 'test'
+  ...
+# Subtest: CSV quantities cannot be empty, exponents or signed values
+ok 25 - CSV quantities cannot be empty, exponents or signed values
+  ---
+  duration_ms: 0.533384
+  type: 'test'
+  ...
+# Subtest: columns with missing cells are reported as row errors
+ok 26 - columns with missing cells are reported as row errors
+  ---
+  duration_ms: 0.234664
+  type: 'test'
+  ...
+# Subtest: oversized imports are rejected before parsing
+ok 27 - oversized imports are rejected before parsing
+  ---
+  duration_ms: 1.545078
+  type: 'test'
+  ...
+# Subtest: more than 5000 ownership rows are rejected
+ok 28 - more than 5000 ownership rows are rejected
+  ---
+  duration_ms: 4.34707
+  type: 'test'
+  ...
+# Subtest: JSON exports preserve formula-like notes without CSV escaping
+ok 29 - JSON exports preserve formula-like notes without CSV escaping
+  ---
+  duration_ms: 0.495997
+  type: 'test'
+  ...
+# Subtest: scrypt passwords verify without storing plaintext
+ok 30 - scrypt passwords verify without storing plaintext
+  ---
+  duration_ms: 324.527992
+  type: 'test'
+  ...
+# Subtest: identical passwords receive different salts
+ok 31 - identical passwords receive different salts
+  ---
+  duration_ms: 165.559547
+  type: 'test'
+  ...
+# Subtest: malformed password records fail closed
+ok 32 - malformed password records fail closed
+  ---
+  duration_ms: 0.274033
+  type: 'test'
+  ...
+# Subtest: tokens have 256 bits of random output
+ok 33 - tokens have 256 bits of random output
+  ---
+  duration_ms: 0.742689
+  type: 'test'
+  ...
+# Subtest: secret comparisons handle different lengths
+ok 34 - secret comparisons handle different lengths
+  ---
+  duration_ms: 0.23263
+  type: 'test'
+  ...
+# Subtest: writes require the exact configured origin and application header
+ok 35 - writes require the exact configured origin and application header
+  ---
+  duration_ms: 0.293071
+  type: 'test'
+  ...
+# Subtest: accepts an explicitly versioned ownership row
+ok 36 - accepts an explicitly versioned ownership row
+  ---
+  duration_ms: 1.419599
+  type: 'test'
+  ...
+# Subtest: rejects negative quantity
+ok 37 - rejects negative quantity
+  ---
+  duration_ms: 0.495957
+  type: 'test'
+  ...
+# Subtest: rejects fractional quantity
+ok 38 - rejects fractional quantity
+  ---
+  duration_ms: 0.137737
+  type: 'test'
+  ...
+# Subtest: rejects too high quantity
+ok 39 - rejects too high quantity
+  ---
+  duration_ms: 0.095103
+  type: 'test'
+  ...
+# Subtest: rejects numeric string quantity
+ok 40 - rejects numeric string quantity
+  ---
+  duration_ms: 0.080412
+  type: 'test'
+  ...
+# Subtest: rejects NaN quantity
+ok 41 - rejects NaN quantity
+  ---
+  duration_ms: 0.069965
+  type: 'test'
+  ...
+# Subtest: rejects unknown conditions
+ok 42 - rejects unknown conditions
+  ---
+  duration_ms: 0.237167
+  type: 'test'
+  ...
+# Subtest: rejects a missing revision
+ok 43 - rejects a missing revision
+  ---
+  duration_ms: 0.169455
+  type: 'test'
+  ...
+# Subtest: rejects non-boolean wishlist
+ok 44 - rejects non-boolean wishlist
+  ---
+  duration_ms: 0.290869
+  type: 'test'
+  ...
+# Subtest: rejects NUL in notes
+ok 45 - rejects NUL in notes
+  ---
+  duration_ms: 0.363127
+  type: 'test'
+  ...
+# Subtest: discards client-supplied user IDs
+ok 46 - discards client-supplied user IDs
+  ---
+  duration_ms: 0.174213
+  type: 'test'
+  ...
+# Subtest: normalises email without accepting header injection
+ok 47 - normalises email without accepting header injection
+  ---
+  duration_ms: 0.181283
+  type: 'test'
+  ...
+# Subtest: password preserves leading and trailing spaces
+ok 48 - password preserves leading and trailing spaces
+  ---
+  duration_ms: 0.082674
+  type: 'test'
+  ...
+# Subtest: provider identifiers cannot introduce paths or URLs
+ok 49 - provider identifiers cannot introduce paths or URLs
+  ---
+  duration_ms: 0.191909
+  type: 'test'
+  ...
+# Subtest: card IDs have an explicit supported language
+ok 50 - card IDs have an explicit supported language
+  ---
+  duration_ms: 0.137036
+  type: 'test'
+  ...
+# Subtest: binder limits constrain total storage
+ok 51 - binder limits constrain total storage
+  ---
+  duration_ms: 0.234403
+  type: 'test'
+  ...
+# Subtest: imports only explicit true provider flags
+ok 52 - imports only explicit true provider flags
+  ---
+  duration_ms: 1.031534
+  type: 'test'
+  ...
+# Subtest: edition flags do not invent finish combinations
+ok 53 - edition flags do not invent finish combinations
+  ---
+  duration_ms: 0.193922
+  type: 'test'
+  ...
+# Subtest: absent data has an explicit unspecified printing
+ok 54 - absent data has an explicit unspecified printing
+  ---
+  duration_ms: 0.705263
+  type: 'test'
+  ...
+# Subtest: canonical artwork links are constrained to the provider host
+ok 55 - canonical artwork links are constrained to the provider host
+  ---
+  duration_ms: 0.23204
+  type: 'test'
+  ...
+1..55
+# tests 55
+# suites 0
+# pass 55
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 599.089491
