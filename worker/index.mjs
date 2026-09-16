@@ -5,6 +5,8 @@ import { randomToken } from '../lib/security.mjs';
 import { fetchProvider,sleep } from '../lib/provider.mjs';
 import { providerPrintings,safeImageUrl } from '../lib/variants.mjs';
 import { ensure } from '../lib/errors.mjs';
+import { storePricing,schedulePriceRefresh,pricingConfiguration } from '../lib/prices.mjs';
+import { runPriceJob,refreshFx } from '../lib/price-worker.mjs';
 import * as v from '../lib/validate.mjs';
 const HEARTBEAT='/tmp/cardshelf-worker-heartbeat',sql=db();
 let stopping=false;
@@ -52,6 +54,7 @@ async function importCard(raw,lang,setId,requestedId) {
       VALUES(${id},${p.key},${p.label},'tcgdex',false,${tx.json(p.metadata)})
       ON CONFLICT(card_id,key) DO UPDATE SET metadata=excluded.metadata WHERE printings.source='tcgdex'`;
   });
+  if(pricingConfiguration().enabled) await storePricing(id,raw.pricing);
 }
 async function run(job) {
   const lang=v.language(job.payload.language),setId=v.providerId(job.payload.set_id);
@@ -91,9 +94,11 @@ try {
     try {
       await heartbeat();
       if(cleanups++%200===0) {
+        if(pricingConfiguration().enabled) await refreshFx();
         await sql`DELETE FROM sessions WHERE expires_at<now()`;
         await sql`DELETE FROM auth_attempts WHERE reset_at<now()`;
       }
+      await schedulePriceRefresh();
       const job=await claim();
       if(job) {
         // Keep leases and health current during provider backoff, not only between cards.
@@ -102,7 +107,7 @@ try {
             .catch(error=>console.error('Lease heartbeat:',error.message));
         },15000);
         leaseTimer.unref();
-        try {await run(job);} catch(error) {
+        try {if(job.kind==='refresh-prices') await runPriceJob(job,progress,()=>stopping);else await run(job);} catch(error) {
           console.error('Import failed:',error.message);
           await sql`UPDATE jobs SET status='failed',message=${String(error.message).slice(0,500)},lease_token=NULL,finished_at=now()
             WHERE id=${job.id} AND lease_token=${job.lease_token}`;

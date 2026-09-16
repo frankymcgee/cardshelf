@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0
+
+- Add cached printing prices, separate Cardmarket references, AUD conversion, recorded history and coverage-aware collection/planned-binder estimates.
+- Refresh tracked cards through the existing worker; retain source timestamps and failure states.
+- Generate new binders from imported sets/series with owned-only options, preview, natural ordering and automatic volume splits.
+- Add request idempotency, stale-preview checks and partial-import acknowledgement.
+- Add a migration, regression/integration tests and an upgrade helper with an automatic local safety backup.
+- Card scanning and physical-copy allocation remain out of scope.
+
+
 ## 0.1.1 — 2026-09-16
 
 Prepare the standalone source for a private `frankymcgee/cardshelf` repository

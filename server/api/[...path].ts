@@ -8,6 +8,8 @@ import * as catalogue from '../../lib/catalogue.mjs'
 import * as collection from '../../lib/collection.mjs'
 import * as binders from '../../lib/binders.mjs'
 import * as jobs from '../../lib/jobs.mjs'
+import * as prices from '../../lib/prices.mjs'
+import * as generation from '../../lib/binder-generation.mjs'
 import { parseImport, exportCSV } from '../../lib/portability.mjs'
 import { remoteSets } from '../../lib/provider.mjs'
 import { db } from '../../lib/db.mjs'
@@ -49,6 +51,22 @@ export default defineEventHandler(async event => {
     if (route === 'password' && method === 'POST') {
       await auth.rateLimit('password:' + user.id, 10)
       const next = await auth.changePassword(user.id, await readJSON(event)); cookie(event, next); return { ok: true }
+    }
+    if (route === 'prices/summary' && method === 'GET') return await prices.priceSummary(user.id, query.binder_id ? v.uuid(query.binder_id) : null)
+    if (route === 'prices/refresh' && method === 'POST') {
+      await auth.rateLimit('prices:' + user.id, 20)
+      const input = v.object(await readJSON(event))
+      ensure(input.card_id || user.role === 'admin', 403, 'Only an administrator can queue a collection-wide refresh.')
+      return await prices.queuePriceRefresh(user.id, input.card_id ? v.cardId(input.card_id) : null)
+    }
+    if (parts[0] === 'cards' && parts[2] === 'prices' && parts.length === 3 && method === 'GET') return await prices.getCardPrices(user.id, parts[1])
+    if (route === 'binders/generate/preview' && method === 'POST') {
+      await auth.rateLimit('binder-preview:' + user.id, 60)
+      return await generation.previewGeneration(user.id, await readJSON(event))
+    }
+    if (route === 'binders/generate' && method === 'POST') {
+      await auth.rateLimit('binder-generate:' + user.id, 20)
+      return await generation.createGeneratedBinders(user.id, await readJSON(event))
     }
     if (route === 'dashboard' && method === 'GET') return await catalogue.dashboard(user.id)
     if (route === 'catalogue' && method === 'GET') return await catalogue.catalogueCards(user.id, query)
