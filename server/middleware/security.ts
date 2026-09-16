@@ -1,7 +1,11 @@
 import { defineEventHandler, setHeader, getHeader, createError } from 'h3'
+import { publicPage } from '../../shared/platform.mjs'
 import { configuration } from '../../lib/config.mjs'
 import { isAllowedMutation } from '../../lib/security.mjs'
 export default defineEventHandler(event => {
+  const isPublicWebsite = publicPage(event.path.split('?')[0])
+  setHeader(event, 'X-Robots-Tag', isPublicWebsite ? 'index, follow' : 'noindex, nofollow')
+  if (!isPublicWebsite && !event.path.startsWith('/_nuxt/')) setHeader(event, 'Cache-Control', 'no-store')
   setHeader(event, 'X-Content-Type-Options', 'nosniff')
   setHeader(event, 'X-Frame-Options', 'DENY')
   setHeader(event, 'Referrer-Policy', 'no-referrer')

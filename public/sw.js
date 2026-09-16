@@ -1,6 +1,6 @@
 /* Installable shell only. Do not cache authenticated responses, API data,
    collection exports or card images. Offline editing is NOT implemented. */
-const CACHE='cardshelf-static-v0.1.1';
+const CACHE='cardshelf-static-v0.4.0';
 self.addEventListener('install',event=> {
   event.waitUntil(caches.open(CACHE).then(cache=>cache.add('/offline.html')));
 });

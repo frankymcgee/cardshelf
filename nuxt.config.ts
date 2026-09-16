@@ -1,8 +1,20 @@
 export default defineNuxtConfig({
   compatibilityDate: '2026-09-16',
-  ssr: false,
+  ssr: true,
+  runtimeConfig: { public: { siteUrl: 'https://tcg.webwire.cloud' } },
+  // Searchable public pages, with the existing collector application kept client-rendered.
+  routeRules: {
+    '/app': { ssr: false }, '/app/**': { ssr: false },
+    '/login': { ssr: false }, '/cards': { ssr: false }, '/cards/**': { ssr: false },
+    '/binders': { ssr: false }, '/binders/**': { ssr: false },
+    '/settings': { ssr: false }, '/account': { ssr: false },
+    '/admin/**': { ssr: false }, '/print/**': { ssr: false }, '/shared/**': { ssr: false }
+  },
+  // Keep shared-module paths absolute in Vite's intermediate SSR output. Nitro
+  // then bundles them correctly even when Nuxt builds inside node_modules/.cache.
+  vite: { $server: { build: { rolldownOptions: { makeAbsoluteExternalsRelative: false } } } },
   devtools: { enabled: false },
-  css: ['~/assets/css/main.css', '~/assets/css/features.css', '~/assets/css/appearance.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/features.css', '~/assets/css/appearance.css', '~/assets/css/marketing.css'],
   nitro: { preset: 'node-server', externals: { external: ['postgres', 'sharp'] } },
   typescript: { strict: true, tsConfig: { compilerOptions: { allowJs: true, checkJs: false } } },
   app: { head: {
