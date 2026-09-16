@@ -1,2 +1,4 @@
-<script setup lang="ts">const { notices, dismiss } = useNotice()</script>
+<script setup lang="ts">
+const { notices, dismiss } = useNotice();
+</script>
 <template><div class="toasts" aria-live="polite" aria-atomic="false"><div v-for="notice in notices" :key="notice.id" class="toast" :class="notice.kind"><AppIcon :name="notice.kind === 'error' ? 'info' : 'check'" /><span>{{ notice.message }}</span><button class="icon-button" aria-label="Dismiss notification" @click="dismiss(notice.id)"><AppIcon name="close" :size="16" /></button></div></div></template>
