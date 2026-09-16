@@ -1,5 +1,5 @@
 {
-  "name": "cardshelf", "version": "0.2.0", "private": true, "type": "module",
+  "name": "cardshelf", "version": "0.3.0", "private": true, "type": "module",
   "description": "A standalone, self-hosted card collection and binder planner.",
   "engines": { "node": ">=24 <25" },
   "scripts": {
@@ -9,7 +9,7 @@
     "test:integration": "node --test --test-concurrency=1 tests/integration/*.test.mjs",
     "migrate": "node scripts/migrate.mjs", "worker": "node worker/index.mjs"
   },
-  "dependencies": { "postgres": "3.4.7" },
+  "dependencies": { "postgres": "3.4.7", "sharp": "0.35.4" },
   "devDependencies": {
     "nuxt": "4.5.2", "vue": "3.5.41", "vue-router": "4.6.3",
     "typescript": "5.9.3", "vue-tsc": "3.1.1", "@types/node": "24.10.1"

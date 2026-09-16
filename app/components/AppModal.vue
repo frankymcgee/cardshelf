@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = withDefaults(defineProps<{ open: boolean; title: string; wide?: boolean }>(), { wide: false })
+const props = withDefaults(defineProps<{ open: boolean; title: string; wide?: boolean; dismissible?: boolean }>(), { wide: false, dismissible: true })
 const emit = defineEmits(['close'])
 const dialog = ref<HTMLDialogElement>()
 function syncBody() { document.body.classList.toggle('has-modal', !!document.querySelector('dialog[open]')) }
@@ -9,7 +9,7 @@ watch(() => props.open, async value => {
   if (!value && dialog.value?.open) dialog.value.close()
   syncBody()
 }, { immediate: true })
-function close() { dialog.value?.close(); syncBody(); emit('close') }
+function close() { if (!props.dismissible) return; dialog.value?.close(); syncBody(); emit('close') }
 onBeforeUnmount(() => { dialog.value?.close(); syncBody() })
 </script>
-<template><Teleport to="body"><dialog ref="dialog" class="modal" :class="{ wide }" :aria-label="title" @cancel.prevent="close" @click="($event.target === dialog) && close()"><header class="modal-header"><h2>{{ title }}</h2><button class="icon-button" aria-label="Close dialog" autofocus @click="close"><AppIcon name="close" /></button></header><div class="modal-body"><slot /></div></dialog></Teleport></template>
+<template><Teleport to="body"><dialog ref="dialog" class="modal" :class="{ wide }" :aria-label="title" @cancel.prevent="close" @click="($event.target === dialog) && close()"><header class="modal-header"><h2>{{ title }}</h2><button class="icon-button" aria-label="Close dialog" :disabled="!dismissible" autofocus @click="close"><AppIcon name="close" /></button></header><div class="modal-body"><slot /></div></dialog></Teleport></template>

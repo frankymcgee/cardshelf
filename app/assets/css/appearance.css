@@ -1,0 +1,49 @@
+/* Decorative presentation only; card images and catalogue records are untouched. */
+.card-artwork{display:block;position:relative;isolation:isolate;width:100%;aspect-ratio:63/88;min-width:0;border-radius:6px;overflow:hidden}
+.card-artwork>img{display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.artwork-fallback{width:100%;height:100%;min-height:90px;display:flex;flex-direction:column;gap:8px;justify-content:center;align-items:center;background:#e9edf3;color:#535e70;padding:8px;font-size:11px}
+.artwork-fallback small{font-size:9px}
+.variant-badges{display:inline-flex;gap:4px;flex-wrap:wrap;align-items:center;min-width:0}
+.variant-badge{display:inline-block;width:auto!important;font-size:9px!important;line-height:1.4;padding:2px 5px;border-radius:4px;background:#e5e8ef;color:#354052;border:1px solid #bec5d2;font-weight:700;letter-spacing:.01em;max-width:100%;overflow-wrap:anywhere}
+.variant-badge.finish-holo{background:#e1effc;color:#21426e;border-color:#81b1df}
+.variant-badge.finish-reverse{background:#d3f3ed;color:#12584b;border-color:#69b6a7}
+.variant-badge.class-ex,.variant-badge.class-classic-ex{background:#fee5dc;color:#822f19;border-color:#d7886b}
+.variant-badge.class-gx{background:#ecdef9;color:#5b247e;border-color:#b78bd3}
+.variant-badge.class-v,.variant-badge.class-vmax,.variant-badge.class-vstar,.variant-badge.class-break{background:#f7ecc8;color:#655013;border-color:#c3ac66}
+.artwork-labels{position:absolute;top:5px;left:5px;right:22px;z-index:2;pointer-events:none}
+.artwork-labels .variant-badge{font-size:clamp(7px,.7vw,9px)!important;padding:2px 4px;box-shadow:0 1px 3px #0003}
+.foil-layer{position:absolute;inset:0;pointer-events:none;z-index:1;border-radius:inherit;background-size:220% 220%;background-position:35% 50%;opacity:.28;mix-blend-mode:screen}
+.visual-holo .foil-layer{clip-path:inset(16% 9% 42% 9% round 2%);background-image:repeating-linear-gradient(118deg,#77baff33 0%,#fff9 9%,#eb92ff55 17%,#6cffe155 24%,#fff1 33%)}
+.visual-reverse .foil-layer{clip-path:polygon(evenodd,0 0,100% 0,100% 100%,0 100%,0 0,9% 16%,9% 58%,91% 58%,91% 16%,9% 16%);background-image:repeating-linear-gradient(135deg,#fff9 0 2px,#9cffdf44 2px 9px,#84bcff44 9px 17px),linear-gradient(35deg,#80d7ff,#ecb0ff,#92ffd1);opacity:.34}
+.effects-on.visual-class-ex,.effects-on.visual-class-classic-ex{box-shadow:inset 0 0 0 2px #e79f68}
+.effects-on.visual-class-gx{box-shadow:inset 0 0 0 2px #b590e7}
+.effects-on.visual-class-v,.effects-on.visual-class-vmax,.effects-on.visual-class-vstar{box-shadow:inset 0 0 0 2px #dac487}
+.effects-on[class*="visual-class-"] .foil-layer{clip-path:none;opacity:.18}
+@keyframes cardshelf-foil{0%{background-position:0% 25%}100%{background-position:100% 75%}}
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){
+  .pocket:hover .effects-animated .foil-layer,.pocket:focus-visible .effects-animated .foil-layer,.effects-animated:hover .foil-layer{animation:cardshelf-foil 3s ease-in-out alternate infinite}
+}
+@media(prefers-reduced-motion:reduce){.foil-layer{animation:none!important;transition:none!important}}
+@media(forced-colors:active){.foil-layer{display:none}.variant-badge{border:1px solid CanvasText}}
+.pocket>.card-artwork{height:100%;flex:1}.card-picture>.card-artwork{height:100%}.card-meta>.available-variants{display:flex!important;gap:3px;flex-wrap:wrap;margin:3px 0}
+.available-variants>small{width:100%;font-weight:400}.card-meta>.variant-badges{display:flex!important}
+.picker-card>.card-artwork{max-width:100%;margin-bottom:8px}.printing-choice>.card-artwork{width:54px;flex:0 0 54px}.printing-choice{gap:12px}
+.detail-art>.card-artwork{align-self:start}.printing-visual-selector{display:block;margin-bottom:12px}.printing-visual-selector select{width:100%}
+.binder-stage.themed-stage{position:relative;isolation:isolate;overflow:hidden}
+.binder-wallpaper-layer{position:absolute;inset:0;border-radius:inherit;pointer-events:none;overflow:hidden;z-index:0}
+.binder-wallpaper-image,.binder-wallpaper-dimmer{position:absolute;inset:0}.binder-wallpaper-image{inset:-12px}.binder-wallpaper-dimmer{background:#000}
+.themed-stage>.binder-page{position:relative;z-index:1;background:rgba(var(--pocket-rgb),.28);border:1px solid #ffffff38}
+.themed-stage .pocket{background:rgba(var(--pocket-rgb),var(--pocket-alpha));color:var(--pocket-text);border-color:rgba(var(--pocket-rgb),.8)}
+.themed-stage .binder-page-heading{background:var(--pocket-mat);color:var(--pocket-text);border-radius:5px;padding:5px 7px}
+.themed-stage .binder-page-heading span,.themed-stage .binder-page-heading small{color:var(--pocket-text)}
+.themed-stage .pocket-number{color:var(--pocket-text)}
+.appearance-editor{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+.appearance-fields{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:15px;min-width:0}
+.appearance-fields input[type=range]{width:100%;min-height:28px;padding:0;accent-color:#5546d8}
+.appearance-fields input[type=file]{width:100%;max-width:100%;white-space:normal}
+.appearance-fields input[type=color]{height:42px;min-width:50px}.appearance-preview{position:sticky;top:0;min-width:0}
+.preview-pockets{grid-template-columns:repeat(3,minmax(0,1fr))}.appearance-preview .binder-stage{padding:12px}.appearance-preview .binder-page{padding:8px}.appearance-preview .pocket{padding:2px}
+.print-sheet.has-background{position:relative;isolation:isolate;overflow:hidden}.print-sheet.has-background>.placeholder-card{position:relative;z-index:1;background:#ffffffed}
+.print-sheet.has-background>.binder-wallpaper-layer{z-index:0}.print-sheet.has-background{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+@media(max-width:700px){.appearance-editor{grid-template-columns:1fr}.appearance-preview{position:relative;order:-1}.appearance-preview .binder-stage{max-width:370px}.detail-art>.card-artwork{max-height:165px}.printing-visual-selector{grid-column:1/-1}.variant-badge{font-size:8px!important}}
+@media print{.foil-layer{display:none!important;animation:none!important}.card-artwork{box-shadow:none!important}.variant-badge{background:white!important;color:black!important;box-shadow:none!important}}

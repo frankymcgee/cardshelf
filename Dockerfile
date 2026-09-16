@@ -2,9 +2,9 @@
 FROM node:24-bookworm-slim AS build
 WORKDIR /app
 COPY package*.json ./
-# A lockfile could not be resolved in the authoring environment. On the first
-# connected build npm generates one. Retain it; subsequent builds use npm ci.
-RUN if [ -f package-lock.json ]; then npm ci --ignore-scripts; else npm install --ignore-scripts; fi
+# Reconcile an older server-retained lockfile with this release manifest inside
+# the build image only, then install from that lock. The host source is untouched.
+RUN npm install --package-lock-only --ignore-scripts --no-audit --no-fund && npm ci --ignore-scripts
 COPY . .
 RUN npm run postinstall && npm test && npm run typecheck && npm run build
 
@@ -18,6 +18,7 @@ COPY --from=build --chown=node:node /app/.output ./.output
 COPY --from=runtime-dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/package.json /app/package-lock.json ./
 COPY --chown=node:node lib ./lib
+COPY --chown=node:node shared ./shared
 COPY --chown=node:node migrations ./migrations
 COPY --chown=node:node scripts ./scripts
 COPY --chown=node:node worker ./worker

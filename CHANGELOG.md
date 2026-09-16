@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 — appearance update candidate
+
+- Add conservative finish effects and separate ex/EX/GX/V/VMAX/VSTAR/BREAK badges.
+- Display exact printing previews; do not apply a guessed finish to multi-printing designs.
+- Add per-binder colours, uploaded wallpapers, opacity/fit/dim/blur controls and an appearance preview.
+- Save wallpaper and settings atomically, with owner checks and stale-revision protection.
+- Re-encode JPEG/PNG/WebP uploads with size/pixel limits; store one bounded image per binder in PostgreSQL.
+- Apply themes to shared binders with revocable image access and optional printer-friendly backgrounds.
+- Preserve reduced-motion preferences, existing pockets, collection quantities and market pricing.
+- Add migration 003, appearance/image tests and API integration coverage. Full CI validation remains required.
+- Add sharp 0.35.4; reconcile retained lockfiles within the Docker build, without changing the host source.
+
 ## 0.2.0
 
 - Add cached printing prices, separate Cardmarket references, AUD conversion, recorded history and coverage-aware collection/planned-binder estimates.

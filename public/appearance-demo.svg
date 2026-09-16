@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 630 880" role="img" aria-label="Generic geometric demonstration card">
+<defs><linearGradient id="a" x2="1" y2="1"><stop stop-color="#243550"/><stop offset="1" stop-color="#607591"/></linearGradient></defs>
+<rect x="9" y="9" width="612" height="862" rx="24" fill="#f5e9c5" stroke="#c4aa6e" stroke-width="18"/>
+<rect x="54" y="138" width="522" height="360" rx="12" fill="url(#a)"/>
+<circle cx="315" cy="290" r="84" fill="#d7e3ea" opacity=".8"/><path d="m190 410 130-180 125 180z" fill="#bbc8d5"/>
+<path d="M58 580h310M58 624h490M58 668h490M58 770h180" stroke="#b8ab86" stroke-width="18" stroke-linecap="round"/>
+<text x="58" y="90" fill="#3e4550" font-size="36" font-family="sans-serif">STYLE PREVIEW</text>
+<text x="440" y="823" fill="#6c634c" font-size="25" font-family="sans-serif">DEMO</text>
+</svg>
