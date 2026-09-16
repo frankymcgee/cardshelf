@@ -1,6 +1,6 @@
 name: cardshelf
 x-app: &app
-  image: cardshelf:${APP_VERSION:-0.3.0}
+  image: cardshelf:${APP_VERSION:-0.4.0}
   build:
     context: .
     target: runtime
@@ -13,6 +13,7 @@ x-app: &app
   environment: &app-environment
     DATABASE_URL: postgresql://cardshelf:${POSTGRES_PASSWORD:?Run scripts/configure.sh first}@db:5432/cardshelf
     APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+    NUXT_PUBLIC_SITE_URL: ${APP_ORIGIN:-http://localhost:3000}
     BOOTSTRAP_TOKEN: ${BOOTSTRAP_TOKEN:?Run scripts/configure.sh first}
     TRUST_PROXY: ${TRUST_PROXY:-false}
     CATALOGUE_REQUEST_INTERVAL_MS: ${CATALOGUE_REQUEST_INTERVAL_MS:-300}

@@ -10,7 +10,7 @@ export function useAuth() {
     await api('/api/logout', { method: 'POST', body: {} })
     state.value = { loaded: true, user: null, setup_required: false }
     clearNuxtData()
-    await navigateTo('/login')
+    await navigateTo('/')
   }
   return { state, refresh, logout }
 }
