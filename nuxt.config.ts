@@ -10,6 +10,9 @@ export default defineNuxtConfig({
     '/settings': { ssr: false }, '/account': { ssr: false },
     '/admin/**': { ssr: false }, '/print/**': { ssr: false }, '/shared/**': { ssr: false }
   },
+  // Keep shared-module paths absolute in Vite's intermediate SSR output. Nitro
+  // then bundles them correctly even when Nuxt builds inside node_modules/.cache.
+  vite: { $server: { build: { rolldownOptions: { makeAbsoluteExternalsRelative: false } } } },
   devtools: { enabled: false },
   css: ['~/assets/css/main.css', '~/assets/css/features.css', '~/assets/css/appearance.css', '~/assets/css/marketing.css'],
   nitro: { preset: 'node-server', externals: { external: ['postgres', 'sharp'] } },
