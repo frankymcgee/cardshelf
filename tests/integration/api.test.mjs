@@ -3,6 +3,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import postgres from 'postgres';
+import { randomUUID } from 'node:crypto';
+import { storePricing, priceFailure } from '../../lib/prices.mjs';
+import { closeDatabase } from '../../lib/db.mjs';
 const url=process.env.TEST_BASE_URL;
 if(process.env.ALLOW_TEST_DATABASE!=='yes' || !url || !new URL(process.env.DATABASE_URL||'http://invalid').pathname.endsWith('_test'))
   throw new Error('Integration tests require ALLOW_TEST_DATABASE=yes, TEST_BASE_URL, and DATABASE_URL ending in _test.');
@@ -106,6 +109,77 @@ await test('isolated end-to-end API and database checks',async t=> {
       assert.equal((await request('binders/'+binderId,{method:'DELETE',cookie:adminCookie,body:{confirm_title:'Test Binder',revision:6}})).status,200);
       assert.equal((await request('dashboard',{cookie:adminCookie})).data.counts.copies,before);
     });
+    await t.test('price persistence maps finishes and separates Cardmarket references',async()=>{
+      const updated=new Date().toISOString();
+      await storePricing('en:demo-1',{tcgplayer:{unit:'USD',updated,normal:{marketPrice:10}},cardmarket:{unit:'EUR',updated,trend:20}});
+      await sql`INSERT INTO price_fx_rates(currency,aud_rate,rate_date) VALUES('USD',1.5,current_date),('EUR',1.7,current_date)
+        ON CONFLICT(currency) DO UPDATE SET aud_rate=excluded.aud_rate,rate_date=current_date,fetched_at=now()`;
+      const prices=await request('cards/en%3Ademo-1/prices',{cookie:adminCookie});
+      assert.equal(prices.status,200);assert.equal(prices.data.printings[0].price.aud,15);
+      assert.equal(prices.data.references[0].amount,20);assert.equal(prices.data.history.length,2);
+      await storePricing('en:demo-1',{tcgplayer:{unit:'USD',updated,normal:{marketPrice:10}},cardmarket:{unit:'EUR',updated,trend:20}});
+      assert.equal((await request('cards/en%3Ademo-1/prices',{cookie:adminCookie})).data.history.length,2);
+      const qty=(await request('dashboard',{cookie:adminCookie})).data.counts.copies;
+      assert.equal((await request('prices/summary',{cookie:adminCookie})).data.valuation.aud_total,qty*15);
+      assert.equal((await request('prices/summary',{cookie:userCookie})).data.valuation.aud_total,15);
+      const catalogue=await request('catalogue',{cookie:adminCookie});assert.equal(catalogue.status,200);
+      assert.equal(catalogue.data.items.find(c=>c.id==='en:demo-1').price_from.aud,15);
+    });
+    await t.test('provider failures preserve old prices but exclude them from totals',async()=>{
+      await priceFailure('en:demo-1',new Error('Synthetic provider outage'));
+      const prices=(await request('cards/en%3Ademo-1/prices',{cookie:adminCookie})).data;
+      assert.equal(prices.printings[0].price.amount,10);assert.match(prices.last_error,/Synthetic provider outage/);
+      const summary=(await request('prices/summary',{cookie:adminCookie})).data;
+      assert.equal(summary.valuation.aud_total,null);assert.ok(summary.valuation.stale_quantity>0);
+    });
+    await t.test('a successful absent-price response does not keep a withdrawn quote current',async()=>{
+      await storePricing('en:demo-1',null);
+      const prices=(await request('cards/en%3Ademo-1/prices',{cookie:adminCookie})).data;
+      assert.equal(prices.printings[0].price,null);assert.equal(prices.last_error,'');assert.equal(prices.history.length,2);
+      await storePricing('en:demo-1',{tcgplayer:{unit:'USD',updated:new Date().toISOString(),normal:{marketPrice:10}}});
+    });
+    await t.test('price refresh endpoints require authentication and limit repeated requests',async()=>{
+      assert.equal((await request('prices/summary')).status,401);
+      assert.equal((await request('prices/refresh',{method:'POST',cookie:userCookie,body:{}})).status,403);
+      assert.equal((await request('prices/refresh',{method:'POST',cookie:userCookie,body:{card_id:'en:demo-1'}})).data.recent,true);
+      assert.equal((await request('prices/refresh',{method:'POST',cookie:adminCookie,body:{card_id:'en:missing'}})).status,404);
+      const first=await request('prices/refresh',{method:'POST',cookie:adminCookie,body:{}});
+      const second=await request('prices/refresh',{method:'POST',cookie:adminCookie,body:{}});
+      assert.equal(first.status,200);assert.equal(second.data.id,first.data.id);assert.equal(second.data.already_queued,true);
+    });
+    await t.test('series generation previews are read-only and create retry-safe layouts',async()=>{
+      const options={title:'Generated series',set_ids:['en:demo'],columns:3,rows:3,color:'#5546d8',owned_only:false,selection:'designs',new_page_per_set:true};
+      const before=(await request('dashboard',{cookie:adminCookie})).data.counts;
+      const preview=await request('binders/generate/preview',{method:'POST',cookie:adminCookie,body:options});
+      assert.equal(preview.status,200);assert.equal(preview.data.slot_count,2);assert.equal(preview.data.volume_count,1);
+      assert.equal((await request('dashboard',{cookie:adminCookie})).data.counts.binders,before.binders);
+      const body={...options,request_id:randomUUID(),preview_token:preview.data.token,acknowledge_partial:false};
+      const create=await request('binders/generate',{method:'POST',cookie:adminCookie,body});assert.equal(create.status,200);
+      const again=await request('binders/generate',{method:'POST',cookie:adminCookie,body});assert.equal(again.status,200);assert.equal(again.data.replayed,true);
+      assert.equal(create.data.binders[0].id,again.data.binders[0].id);
+      assert.equal((await request('binders/generate',{method:'POST',cookie:adminCookie,body:{...body,title:'Different layout'}})).status,409);
+      const id=create.data.binders[0].id,binder=(await request('binders/'+id,{cookie:adminCookie})).data;
+      assert.equal(binder.slots.length,2);assert.equal(binder.slots[0].printing_id,p1.id);assert.equal(binder.slots[1].printing_id,p2.id);
+      assert.equal((await request('dashboard',{cookie:adminCookie})).data.counts.copies,before.copies);
+      assert.equal((await request('binders/'+id,{cookie:userCookie})).status,404);
+      assert.equal((await request('prices/summary?binder_id='+id,{cookie:userCookie})).status,404);
+      const values=await request('prices/summary?binder_id='+id,{cookie:adminCookie});assert.equal(values.status,200);
+      assert.equal(values.data.valuation.quantity,2);assert.equal(values.data.valuation.aud_total,15);
+      assert.equal(values.data.valuation.unpriced_quantity,1);
+    });
+    await t.test('generation rejects stale previews and flags partial imports',async()=>{
+      const options={title:'Partial example',set_ids:['en:demo'],columns:3,rows:3,color:'#5546d8',owned_only:true};
+      const first=(await request('binders/generate/preview',{method:'POST',cookie:adminCookie,body:options})).data;
+      assert.equal(first.slot_count,1);
+      await sql`UPDATE card_sets SET card_count=3 WHERE id='en:demo'`;
+      assert.equal((await request('binders/generate',{method:'POST',cookie:adminCookie,body:{...options,request_id:randomUUID(),preview_token:first.token}})).status,409);
+      const preview=(await request('binders/generate/preview',{method:'POST',cookie:adminCookie,body:options})).data;
+      assert.equal(preview.partial,true);
+      const body={...options,request_id:randomUUID(),preview_token:preview.token};
+      assert.equal((await request('binders/generate',{method:'POST',cookie:adminCookie,body})).status,400);
+      assert.equal((await request('binders/generate',{method:'POST',cookie:adminCookie,body:{...body,acknowledge_partial:true}})).status,200);
+      await sql`UPDATE card_sets SET card_count=2 WHERE id='en:demo'`;
+    });
     await t.test('password changes revoke other sessions',async()=>{
       const extra=await request('login',{method:'POST',body:credentials});assert.equal(extra.status,200);
       const changed=await request('password',{method:'POST',cookie:adminCookie,body:{current_password:credentials.password,password:'Replacement password 123'}});
@@ -118,5 +192,5 @@ await test('isolated end-to-end API and database checks',async t=> {
       assert.equal((await request('logout',{method:'POST',cookie:adminCookie,body:{}})).status,200);
       assert.equal((await request('session',{cookie:adminCookie})).data.user,null);
     });
-  } finally {await sql.end();}
+  } finally {await closeDatabase();await sql.end();}
 });

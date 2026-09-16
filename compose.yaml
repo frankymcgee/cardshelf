@@ -1,6 +1,6 @@
 name: cardshelf
 x-app: &app
-  image: cardshelf:${APP_VERSION:-0.1.1}
+  image: cardshelf:${APP_VERSION:-0.2.0}
   build:
     context: .
     target: runtime
@@ -16,6 +16,8 @@ x-app: &app
     BOOTSTRAP_TOKEN: ${BOOTSTRAP_TOKEN:?Run scripts/configure.sh first}
     TRUST_PROXY: ${TRUST_PROXY:-false}
     CATALOGUE_REQUEST_INTERVAL_MS: ${CATALOGUE_REQUEST_INTERVAL_MS:-300}
+    PRICE_TRACKING_ENABLED: ${PRICE_TRACKING_ENABLED:-true}
+    PRICE_REFRESH_HOURS: ${PRICE_REFRESH_HOURS:-6}
   logging:
     driver: json-file
     options:

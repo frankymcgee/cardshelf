@@ -2,7 +2,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-09-16',
   ssr: false,
   devtools: { enabled: false },
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/features.css'],
   nitro: { preset: 'node-server', externals: { external: ['postgres'] } },
   typescript: { strict: true, tsConfig: { compilerOptions: { allowJs: true, checkJs: false } } },
   app: { head: {
