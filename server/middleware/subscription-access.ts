@@ -8,7 +8,9 @@ import { platformResult } from '../utils/platform-api'
 export default defineEventHandler(event => platformResult(async () => {
   if (!squareConfiguration().enforce) return
   let path: string
-  try { path = decodeURIComponent(event.path.split('?')[0]).replace(/\/+/g, '/').replace(/\/+$/, '') }
+  // An indexed split result is optional under noUncheckedIndexedAccess.
+  const [pathname = ''] = event.path.split('?', 1)
+  try { path = decodeURIComponent(pathname).replace(/\/+/g, '/').replace(/\/+$/, '') }
   catch { ensure(false, 400, 'Invalid request path.'); return }
   ensure(!/[%\\\x00-\x1f]/.test(path), 400, 'Invalid request path.')
   if (!path.startsWith('/api/')) return
