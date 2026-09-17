@@ -25,7 +25,7 @@ export function safeReturnTo(value) {
     const url = new URL(value, 'https://cardshelf.invalid');
     if (url.origin !== 'https://cardshelf.invalid') return '/app';
     const path = decodeURIComponent(url.pathname);
-    if (/[%\\\r\n\u0000]/.test(path) || !/^\/(?:app|cards|binders|marketplace|settings|account|membership|referrals|admin\/(?:platform|memberships)|print)(?:\/|$)/.test(path)) return '/app';
+    if (/[%\\\r\n\u0000]/.test(path) || !/^\/(?:app|cards|binders|marketplace|settings|account|membership|referrals|admin\/(?:platform|memberships|integrations)|print)(?:\/|$)/.test(path)) return '/app';
     return url.pathname + url.search + url.hash;
   } catch { return '/app'; }
 }
