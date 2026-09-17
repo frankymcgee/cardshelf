@@ -54,7 +54,7 @@ async function request(path,{method='GET',body,user=2,headers={},origin=base,url
 await test('Square subscriptions, complimentary tiers and referral ledger contracts',async t=>{
  try{
   const hash=await hashPassword(password);
-  for(let i=0;i<3;i++)await sql`INSERT INTO app_users(id,email,name,password_hash,role) VALUES(${ids[i]},${'sub-'+ids[i]+'@example.test'},${'Fixture '+i},${hash},${i===0?'admin':'collector'})`;
+  for(let i=0;i<3;i++)await sql`INSERT INTO app_users(id,email,name,password_hash,role) VALUES(${ids[i]},${'sub-'+ids[i]+'@example.test'},${'Fixture '+i},${hash},${i===0?'admin':'user'})`;
   await sql`INSERT INTO app_users(id,email,name,password_hash) VALUES(${buyer},${'sub-'+buyer+'@example.test'},'Subscription fixture buyer',${hash})`;
   // This fourth fixture represents a subscription-ready account, never an existing tester.
   await sql`DELETE FROM account_access_grants WHERE user_id=${buyer}`;
@@ -68,7 +68,7 @@ await test('Square subscriptions, complimentary tiers and referral ledger contra
   });
   await t.test('administrators can assign a hidden complimentary tier without granting an admin role',async()=>{
     const r=await request('/api/admin/billing/tiers/'+buyer,{user:0,method:'POST',body:{tier:'complimentary',reason:'Manual full access for fixture',revision:0,expires_at:null,confirm_billing_unchanged:true}});
-    assert.equal(r.status,200);assert.equal(r.data.access.reason,'complimentary');assert.equal((await sql`SELECT role FROM app_users WHERE id=${buyer}`)[0].role,'collector');
+    assert.equal(r.status,200);assert.equal(r.data.access.reason,'complimentary');assert.equal((await sql`SELECT role FROM app_users WHERE id=${buyer}`)[0].role,'user');
     assert.equal((await request('/api/admin/billing/tiers/'+buyer,{user:0,method:'POST',body:{tier:'inherit',reason:'Stale revision',revision:0,confirm_billing_unchanged:true}})).status,409);
     await setTier(admin,buyer,{tier:'inherit',reason:'Return fixture to subscription eligibility',revision:1,confirm_billing_unchanged:true});
   });
