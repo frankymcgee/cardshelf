@@ -3,7 +3,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID,createHmac} from 'node:crypto';
 import '../helpers/block-payment-network.mjs';
-import {startSubscription} from '../../lib/square-subscriptions.mjs';
 import {stripeFixture} from '../helpers/stripe-fixtures.mjs';
 import {db,closeDatabase} from '../../lib/db.mjs';
 import {hashPassword,randomToken,digest} from '../../lib/security.mjs';
@@ -46,7 +45,7 @@ async function request(path,{user=0,method='GET',body,headers={}}={}){
  const r=await fetch(url+path,{method,headers:{Origin:origin,'X-Requested-With':'cardshelf',...(user===null?{}:{Cookie:'cardshelf_session='+tokens[user]}),...(body===undefined?{}:{'Content-Type':'application/json'}),...headers},body:body===undefined?undefined:JSON.stringify(body)});
  const text=await r.text();let data;try{data=JSON.parse(text)}catch{data=text}return {status:r.status,data,headers:r.headers};
 }
-await test('Stripe gateway, preserved Square access and provider-aware referral contracts',async t=>{
+await test('Stripe gateway, historical billing safeguards and referral contracts',async t=>{
  try{
   const hash=await hashPassword(password);
   for(const [i,id]of ids.entries()){await sql`INSERT INTO app_users(id,email,name,password_hash,role) VALUES(${id},${'stripe-'+id+'@example.test'},${'Stripe fixture '+i},${hash},${i===0?'admin':'user'})`;await sql`INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(${digest(tokens[i])},${id},now()+interval '1 hour')`;}
@@ -87,7 +86,7 @@ await test('Stripe gateway, preserved Square access and provider-aware referral 
   await t.test('an existing Square request blocks Stripe checkout before any provider call',async()=>{
    await sql`INSERT INTO subscription_offers(id,environment,plan_code,cadence,variation_id,amount_minor,tax_bps,terms,terms_hash,published) VALUES(${squareOfferId},'production','plus','MONTHLY',${'fixture-'+squareOfferId},1000,0,'Cross-provider duplicate protection fixture terms only.','fixture-hash',true)`;
    const id=randomUUID();await sql`INSERT INTO square_subscriptions(id,user_id,environment,offer_id,request_id,offer_snapshot,start_date) VALUES(${id},${member},'production',${squareOfferId},${randomUUID()},'{}'::jsonb,'2026-01-01')`;
-   const before=calls.length;await assert.rejects(()=>startStripeCheckout(member,body,api),e=>e.status===409&&/Square/.test(e.message));assert.equal(calls.length,before);
+   const before=calls.length;await assert.rejects(()=>startStripeCheckout(member,body,api),e=>e.status===409&&/historical billing/.test(e.message));assert.equal(calls.length,before);
    await sql`DELETE FROM square_subscriptions WHERE id=${id}`;
   });
   await t.test('checkout retries return the original session, never a second subscription',async()=>{
@@ -96,9 +95,9 @@ await test('Stripe gateway, preserved Square access and provider-aware referral 
    await assert.rejects(()=>startStripeCheckout(member,{...body,request_id:randomUUID()},api),e=>e.status===409);
    await assert.rejects(()=>startStripeCheckout(member,{...body,terms_hash:'changed'},api),e=>e.status===409);
   });
-  await t.test('an unresolved Stripe checkout blocks new Square subscriptions',async()=>{
-   Object.assign(process.env,{SQUARE_ENVIRONMENT:'production',SQUARE_BILLING_ENABLED:'true',SQUARE_ACCESS_TOKEN:'fixture-only',SQUARE_LOCATION_ID:'fixture-location',SQUARE_MERCHANT_ID:'fixture-merchant',SQUARE_WEBHOOK_SIGNATURE_KEY:'fixture-signature',SQUARE_WEBHOOK_URL:'https://cardshelf.example.test/api/billing/square/webhook'});
-   let contacted=false;await assert.rejects(()=>startSubscription(member,{offer_id:squareOfferId,revision:1,terms_hash:'fixture-hash',request_id:randomUUID(),consent:true},async()=>{contacted=true;throw new Error('Provider must not be contacted.')}),e=>e.status===409&&/Stripe/.test(e.message));assert.equal(contacted,false);
+  await t.test('the retired subscription endpoint cannot start another provider subscription',async()=>{
+    const r=await request('/api/billing/subscribe',{user:1,method:'POST',body:{}});
+    assert.equal(r.status,410);assert.match(r.headers.get('content-type'),/json/);
   });
   await t.test('completed checkout and an unpaid invoice do not grant paid access or commission',async()=>{
    f.invoice.status='open';f.invoice.amount_paid=0;f.invoice.amount_remaining=1000;f.invoice.payments.data[0].status='open';await syncStripeSubscription(rowId,null,api);

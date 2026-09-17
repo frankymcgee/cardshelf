@@ -1,3 +1,14 @@
+## 0.10.0 — Stripe-only subscriptions and administrator activation
+
+- Retire the Square connector, customer controls, endpoints and background processing.
+  Historical migrations, verified paid periods and accounting records remain read-only.
+- Add password-confirmed Test/Live subscription controls with separate membership
+  enforcement, environment/Live acknowledgements, readiness checks and optimistic locking.
+- Preserve existing tester, administrator and Complimentary access. Pausing new
+  subscriptions does not cancel renewals, invalidate issued checkout links or stop reconciliation.
+- Publish only enabled Live Stripe offers on the public plans page; keep sandbox offers private.
+- Add activation/access/retirement regressions and retain all Stripe payment/referral tests.
+
 # Changelog
 
 ## 0.3.0 — appearance update candidate

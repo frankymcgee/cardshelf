@@ -22,4 +22,4 @@ chmod 600 "$temp"
 mv "$temp" .env
 echo 'Created a private integration encryption key. Keep a secure off-server copy of .env.'
 echo 'Recreate the application with your existing Compose configuration to load it.'
-echo 'Never replace this key while encrypted Square credentials are in use.'
+echo 'Never replace this key while encrypted integration credentials are in use.'

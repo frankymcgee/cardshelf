@@ -1,0 +1,31 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {initialBillingPolicy,effectiveBillingPolicy,billingControlInput,checkBillingTransition,recentlySeenWebhook,LIVE_CONFIRMATION} from '../lib/billing-control-logic.mjs';
+const input={revision:0,environment:'sandbox',enabled:true,enforce:false,password:'fixture administrator password',reason:'Enable subscription testing',confirm_recurring:true};
+const previous=initialBillingPolicy({});
+test('fresh install starts in sandbox with checkout and enforcement disabled',()=>{assert.equal(previous.environment,'sandbox');assert.equal(previous.enabled,false);assert.equal(previous.enforce,false);assert.equal(previous.revision,0)});
+test('existing explicit Stripe settings are upgrade defaults until the first UI save',()=>{const p=initialBillingPolicy({STRIPE_ENVIRONMENT:'production',STRIPE_BILLING_ENABLED:'true',MEMBERSHIP_ENFORCEMENT_ENABLED:'true'});assert.equal(p.enabled,true);assert.equal(p.enforce,true)});
+test('saved UI policy overrides old environment flags across processes',()=>{const p=effectiveBillingPolicy({environment:'sandbox',subscriptions_enabled:true,enforcement_enabled:false,revision:3},{STRIPE_ENVIRONMENT:'production',STRIPE_BILLING_ENABLED:'false',MEMBERSHIP_ENFORCEMENT_ENABLED:'true'});assert.equal(p.enabled,true);assert.equal(p.enforce,false);assert.equal(p.environment,'sandbox');assert.equal(p.source,'administrator')});
+test('an emergency stop pauses only new checkouts',()=>{const p=effectiveBillingPolicy({environment:'production',subscriptions_enabled:true,enforcement_enabled:true,revision:4},{STRIPE_CHECKOUT_KILL_SWITCH:'true'});assert.equal(p.enabled,false);assert.equal(p.requested_enabled,true);assert.equal(p.enforce,true);assert.equal(p.emergency_stop,true)});
+test('server defaults cannot enforce sandbox payments as live memberships',()=>assert.throws(()=>initialBillingPolicy({MEMBERSHIP_ENFORCEMENT_ENABLED:'true'})));
+test('valid sandbox activation does not require a live confirmation',()=>assert.doesNotThrow(()=>checkBillingTransition(previous,billingControlInput(input))));
+for(const extra of ['role','secret_key','SQUARE_BILLING_ENABLED','user_id','force'])test(`activation rejects unsupported ${extra}`,()=>assert.throws(()=>billingControlInput({...input,[extra]:true})));
+for(const [key,value]of [['enabled','true'],['enforce',1],['revision',-1],['revision','0'],['environment','live'],['password',''],['reason','x']])test(`activation rejects malformed ${key}=${value}`,()=>assert.throws(()=>billingControlInput({...input,[key]:value})));
+test('enabling requires explicit recurring billing acknowledgement',()=>assert.throws(()=>checkBillingTransition(previous,billingControlInput({...input,confirm_recurring:false}))));
+test('Live requires a separate environment acknowledgement',()=>assert.throws(()=>checkBillingTransition(previous,billingControlInput({...input,environment:'production',live_confirmation:LIVE_CONFIRMATION}))));
+test('Live activation requires the exact typed confirmation',()=>assert.throws(()=>checkBillingTransition(previous,billingControlInput({...input,environment:'production',confirm_mode_change:true,live_confirmation:'yes'}))));
+test('confirmed Live activation preserves a separate unenforced evaluation mode',()=>assert.doesNotThrow(()=>checkBillingTransition(previous,billingControlInput({...input,environment:'production',confirm_mode_change:true,live_confirmation:LIVE_CONFIRMATION}))));
+test('enforcement change requires separate access acknowledgement',()=>assert.throws(()=>checkBillingTransition(previous,billingControlInput({...input,environment:'production',enforce:true,confirm_mode_change:true,live_confirmation:LIVE_CONFIRMATION}))));
+test('sandbox cannot enable enforcement even with all acknowledgements',()=>assert.throws(()=>checkBillingTransition(previous,billingControlInput({...input,enforce:true,confirm_access:true,live_confirmation:LIVE_CONFIRMATION}))));
+test('pausing new subscriptions need not disable paid-tier enforcement',()=>assert.doesNotThrow(()=>checkBillingTransition({...previous,environment:'production',enforce:true},billingControlInput({...input,environment:'production',enabled:false,enforce:true,confirm_recurring:false,live_confirmation:LIVE_CONFIRMATION}))));
+test('turning enforcement off requires acknowledgement',()=>assert.throws(()=>checkBillingTransition({...previous,enforce:true,environment:'production'},billingControlInput({...input,enabled:false,environment:'production'}))));
+test('a complete pause needs no provider-readiness claims',()=>assert.doesNotThrow(()=>checkBillingTransition(previous,billingControlInput({...input,enabled:false,confirm_recurring:false}))));
+const now=Date.parse('2026-09-17T00:00:00Z');
+for(const stamp of [null,undefined,'bad','2026-09-01','2099-01-01'])test(`unusable webhook observation ${stamp} cannot qualify for Live activation`,()=>assert.equal(recentlySeenWebhook(stamp,now),false));
+test('recent signed webhook observation qualifies',()=>assert.equal(recentlySeenWebhook('2026-09-16T23:00:00Z',now),true));
+test('readiness does not accept a future forged timestamp',()=>assert.equal(recentlySeenWebhook('2026-09-17T00:02:00Z',now),false));
+
+test('administrator password whitespace is preserved for reauthentication',()=>{
+ const input={revision:0,environment:'sandbox',enabled:false,enforce:false,password:'  valid password with spaces  ',reason:'Fixture controls'};
+ assert.equal(billingControlInput(input).password,input.password);
+});

@@ -21,7 +21,7 @@ onMounted(load)
 </script>
 <template><section v-if="data" class="panel settings-panel spaced stripe-membership">
 <div class="section-heading"><div><span class="eyebrow">SECURE SUBSCRIPTIONS</span><h2>Pay with Stripe</h2></div><span class="badge">{{data.environment==='production'?'LIVE':'TEST MODE'}}</span></div>
-<p class="muted">Subscribe on Stripe’s secure checkout and manage your payment method, invoices and cancellation through its customer portal. Choose one provider only; your Square subscription is not transferred automatically.</p>
+<p class="muted">Subscribe on Stripe’s secure checkout and manage your payment method, invoices and cancellation through its customer portal. Existing subscriptions and checkout links are managed below; a paused sign-up screen does not cancel recurring payments.</p>
 <p v-if="error" class="alert error" role="alert">{{error}}</p><p v-if="notice" class="alert info" role="status">{{notice}}</p>
 <p v-if="free" class="alert info">Your testing or complimentary access is protected. No payment is needed.</p>
 <p v-else-if="!data.enabled" class="muted">Stripe is not accepting new subscriptions. Existing subscriptions and billing management remain separate.</p>

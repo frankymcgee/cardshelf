@@ -6,6 +6,6 @@ export default defineEventHandler(event => platformResult(async () => {
   const user = await platformUser(event)
   const [legacy, state] = await Promise.all([accountMembership(user.id), membershipState(user.id)])
   return { ...legacy, ...state, message: state.grant ? 'Your non-expiring testing access is protected. No payment is required.'
-    : state.access.reason === 'complimentary' ? 'Complimentary access includes all current features. No subscription payment is required.'
-    : 'Your current membership access is shown below. Square billing and administrator assignments are managed separately.' }
+    : ['complimentary','administrator'].includes(state.access.reason) ? 'Complimentary access includes all current features. No subscription payment is required.'
+    : 'Your current membership access is shown below. Stripe billing and administrator assignments are managed separately.' }
 }))

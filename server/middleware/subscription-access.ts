@@ -1,12 +1,11 @@
 import { defineEventHandler, getCookie, getQuery } from 'h3'
-import { runtimePolicy } from '../../lib/square-connector-logic.mjs'
+import { billingPolicy } from '../../lib/billing-policy.mjs'
 import { membershipState } from '../../lib/membership.mjs'
 import { sessionUser } from '../../lib/auth.mjs'
 import { ensure } from '../../lib/errors.mjs'
 import { db } from '../../lib/db.mjs'
 import { platformResult } from '../utils/platform-api'
 export default defineEventHandler(event => platformResult(async () => {
-  if (!runtimePolicy().enforce) return
   let path: string
   // An indexed split result is optional under noUncheckedIndexedAccess.
   const [pathname = ''] = event.path.split('?', 1)
@@ -14,6 +13,7 @@ export default defineEventHandler(event => platformResult(async () => {
   catch { ensure(false, 400, 'Invalid request path.'); return }
   ensure(!/[%\\\x00-\x1f]/.test(path), 400, 'Invalid request path.')
   if (!path.startsWith('/api/')) return
+  if (!(await billingPolicy()).enforce) return
   if (/^\/api\/(?:billing|referrals|admin|account|shared)(?:\/|$)/.test(path)) return
   const user = await sessionUser(getCookie(event, 'cardshelf_session'))
   if (!user || user.role === 'admin') return // Original handlers enforce authentication/admin ownership.

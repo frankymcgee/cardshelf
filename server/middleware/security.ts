@@ -16,9 +16,8 @@ export default defineEventHandler(event => {
   if (event.path.startsWith('/api/')) {
     setHeader(event, 'Cache-Control', 'no-store')
     if (!['GET', 'HEAD', 'OPTIONS'].includes(event.method)) {
-      // Only these exact server-to-server endpoints authenticate signed raw provider bodies.
       // Every other mutation keeps the existing same-origin and application-header requirements.
-      const webhook = event.method === 'POST' && (path === '/api/billing/square/webhook' || path === '/api/billing/stripe/webhook/sandbox' || path === '/api/billing/stripe/webhook/production')
+      const webhook = /^\/api\/billing\/stripe\/webhook\/(sandbox|production)$/.test(path || '') && event.method === 'POST'
       if (!webhook && !isAllowedMutation({ origin: getHeader(event, 'origin'), expectedOrigin: configuration().origin,
         requestedWith: getHeader(event, 'x-requested-with'), fetchSite: getHeader(event, 'sec-fetch-site') })) {
         throw createError({ statusCode: 403, message: 'Request origin is not allowed. Check APP_ORIGIN on the server.' })
