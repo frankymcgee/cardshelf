@@ -14,6 +14,11 @@ export const FEATURE_LABELS = Object.freeze({
   marketplace_browse: 'Browse cards for sale and send private enquiries',
   marketplace_sell: 'List cards for sale and manage seller enquiries'
 });
+/**
+ * Describe a public plan's capabilities for JavaScript and typed Vue consumers.
+ * @param {string} code
+ * @returns {Array<{code: string, label: string}>}
+ */
 export function planFeatures(code) {
   return Object.hasOwn(PLAN_FEATURES, code) ? PLAN_FEATURES[code].map(code => ({ code, label: FEATURE_LABELS[code] })) : [];
 }
