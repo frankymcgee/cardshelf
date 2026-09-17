@@ -33,7 +33,7 @@ random_hex() { od -An -N32 -tx1 /dev/urandom | tr -d ' \n'; }
 DB_PASSWORD=$(random_hex)
 BOOTSTRAP=$(random_hex)
 cat > .env <<EOF
-APP_VERSION=0.5.0
+APP_VERSION=0.6.0
 APP_ORIGIN=$ORIGIN
 APP_DOMAIN=$DOMAIN
 APP_BIND=127.0.0.1

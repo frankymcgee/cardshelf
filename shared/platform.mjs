@@ -9,7 +9,9 @@ export const CURRENT_FEATURES = [
   { code: 'condition', label: 'Conditions, quantities and notes' },
   { code: 'sharing', label: 'Read-only binder sharing' },
   { code: 'printing', label: 'Printable binder checklists' },
-  { code: 'exports', label: 'Collection imports and exports' }
+  { code: 'exports', label: 'Collection imports and exports' },
+  { code: 'marketplace_browse', label: 'Marketplace browsing and private enquiries' },
+  { code: 'marketplace_sell', label: 'Card listings and seller management' }
 ];
 export const BILLING_ENABLED = false;
 export const ACCESS_ENFORCED = false;
@@ -21,9 +23,9 @@ export function safeReturnTo(value) {
   try {
     const url = new URL(value, 'https://cardshelf.invalid');
     if (url.origin !== 'https://cardshelf.invalid') return '/app';
-    // Return only to the actual collector workspace; never bounce to login/API/third parties.
+    // Return only to actual collector pages; never bounce to login/API/third parties.
     const path = decodeURIComponent(url.pathname);
-    if (/[%\\\r\n\u0000]/.test(path) || !/^\/(?:app|cards|binders|settings|account|admin\/platform|print)(?:\/|$)/.test(path)) return '/app';
+    if (/[%\\\r\n\u0000]/.test(path) || !/^\/(?:app|cards|binders|marketplace|settings|account|admin\/platform|print)(?:\/|$)/.test(path)) return '/app';
     return url.pathname + url.search + url.hash;
   } catch { return '/app'; }
 }
