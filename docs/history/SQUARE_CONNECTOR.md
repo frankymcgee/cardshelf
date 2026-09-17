@@ -1,3 +1,5 @@
+> HISTORICAL DOCUMENT: this integration was retired in 0.10.0. Do not use these instructions to configure the current release.
+
 # CardShelf 0.8.0 — administrator Square connector
 
 ## Release status and scope

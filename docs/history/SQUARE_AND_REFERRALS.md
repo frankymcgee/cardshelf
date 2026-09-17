@@ -1,3 +1,5 @@
+> HISTORICAL DOCUMENT: this integration was retired in 0.10.0. Do not use these instructions to configure the current release.
+
 # CardShelf 0.7.0 — Square memberships, complimentary access and referrals
 
 For administrator-managed OAuth setup in v0.8.0, use [Square connector setup](SQUARE_CONNECTOR.md).

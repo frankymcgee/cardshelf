@@ -48,7 +48,7 @@ await test('public site and subscription preparation',async t=>{
    assert.match(r.data,/<h2>Collector<\/h2>/);
    assert.match(r.data,/<h2>Collector Plus<\/h2>/);
    assert.match(r.data,/no payment required\./i);
-   assert.ok(r.data.includes('No checkout or subscription charges are enabled.'));
+   assert.ok(r.data.includes('New subscription checkout is paused. Existing renewals are not cancelled.'));
    assert.ok(r.data.includes('Already testing? Keep everything.'));
   });
   await t.test('public SSR never includes an authenticated account identity',async()=>{const r=await request('/',{cookie});assert.ok(!r.data.includes('platform-'+id));assert.ok(!r.data.includes('Platform tester'))});
