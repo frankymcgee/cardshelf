@@ -2,13 +2,14 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-09-16',
   ssr: true,
   runtimeConfig: { public: { siteUrl: 'https://tcg.webwire.cloud' } },
-  // Searchable public pages; collector and marketplace pages stay client-rendered.
+  // Searchable public pages; private collector/account pages stay client-rendered.
   routeRules: {
     '/app': { ssr: false }, '/app/**': { ssr: false },
     '/login': { ssr: false }, '/cards': { ssr: false }, '/cards/**': { ssr: false },
     '/binders': { ssr: false }, '/binders/**': { ssr: false },
     '/marketplace': { ssr: false }, '/marketplace/**': { ssr: false },
     '/settings': { ssr: false }, '/account': { ssr: false },
+    '/membership': { ssr: false }, '/referrals': { ssr: false },
     '/admin/**': { ssr: false }, '/print/**': { ssr: false }, '/shared/**': { ssr: false }
   },
   // Keep shared-module paths absolute until Nitro bundles the SSR output.
