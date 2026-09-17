@@ -1,6 +1,6 @@
 name: cardshelf
 x-app: &app
-  image: cardshelf:${APP_VERSION:-0.8.0}
+  image: cardshelf:${APP_VERSION:-0.9.0}
   build:
     context: .
     target: runtime
@@ -56,6 +56,8 @@ services:
     environment:
       <<: *app-environment
       CARDSHELF_INTEGRATION_KEY: ${CARDSHELF_INTEGRATION_KEY:-}
+      STRIPE_ENVIRONMENT: ${STRIPE_ENVIRONMENT:-sandbox}
+      STRIPE_BILLING_ENABLED: ${STRIPE_BILLING_ENABLED:-false}
       SQUARE_ENVIRONMENT: ${SQUARE_ENVIRONMENT:-sandbox}
       SQUARE_BILLING_ENABLED: ${SQUARE_BILLING_ENABLED:-false}
       MEMBERSHIP_ENFORCEMENT_ENABLED: ${MEMBERSHIP_ENFORCEMENT_ENABLED:-false}
