@@ -34,7 +34,8 @@ async function api(cfg,path,data=null,method='GET',idempotency=null){
    return structuredClone(f.sub);
  }
  if(path.startsWith('/v1/invoices?'))return {data:[{id:f.invoice.id}],has_more:false};
- if(path==='/v1/invoices/in_fixture')return structuredClone(f.invoice);
+ if(path==='/v1/invoices/in_fixture?expand%5B%5D=payments')return structuredClone(f.invoice);
+ if(path==='/v1/invoices/in_fixture'){const invoice=structuredClone(f.invoice);delete invoice.payments;return invoice;}
  if(path==='/v1/payment_intents/pi_fixture')return structuredClone(f.intent);
  if(path==='/v1/charges/ch_fixture')return structuredClone(f.charge);
  if(path.startsWith('/v1/refunds?charge='))return structuredClone(f.refunds);
@@ -104,6 +105,9 @@ await test('Stripe gateway, preserved Square access and provider-aware referral 
    assert.equal((await sql`SELECT paid_through FROM stripe_subscriptions WHERE id=${rowId}`)[0].paid_through,null);
    assert.equal((await sql`SELECT count(*)::integer AS n FROM referral_commissions WHERE provider='stripe'`)[0].n,0);
   });
+  await t.test('invoice retrieval explicitly requests expandable payment records',async()=>{
+   assert.ok(calls.some(c=>c.path==='/v1/invoices/in_fixture?expand%5B%5D=payments'));
+  });
   await t.test('paid Stripe invoice grants the real period and one provider-labelled reward',async()=>{
    f.invoice.status='paid';f.invoice.amount_paid=1000;f.invoice.amount_remaining=0;f.invoice.payments.data[0].status='paid';await syncStripeSubscription(rowId,null,api);await syncStripeSubscription(rowId,null,api);
    const [s]=await sql`SELECT paid_through FROM stripe_subscriptions WHERE id=${rowId}`;assert.equal(new Date(s.paid_through).getTime(),f.line.period.end*1000);
@@ -138,6 +142,21 @@ await test('Stripe gateway, preserved Square access and provider-aware referral 
    f.charge.amount_refunded=1000;f.refunds.data[0].amount=1000;await syncStripeSubscription(rowId,null,api);
    const cfg={environment:'production',enforce:true,enabled:false,configured:false,timezone:'Australia/Perth'};
    assert.equal((await membershipState(member,sql,cfg)).access.allowed,false);assert.equal((await membershipState(tester,sql,cfg)).access.allowed,true);
+  });
+  await t.test('Square sandbox payments cannot grant an enforced live tier alongside Stripe',async()=>{
+   const offerId=randomUUID(),subId=randomUUID();
+   try {
+    await sql`INSERT INTO subscription_offers(id,environment,plan_code,cadence,variation_id,amount_minor,terms,terms_hash)
+      VALUES(${offerId},'sandbox','plus','MONTHLY',${'sandbox-'+offerId},1000,'Sandbox payment must never unlock live paid access.','sandbox-only')`;
+    await sql`INSERT INTO square_subscriptions(id,user_id,environment,offer_id,request_id,offer_snapshot,start_date,paid_through)
+      VALUES(${subId},${member},'sandbox',${offerId},${randomUUID()},${sql.json({plan_code:'plus'})},'2026-01-01','2099-01-01')`;
+    const cfg={environment:'sandbox',enforce:true,enabled:false,configured:false,timezone:'Australia/Perth'};
+    assert.equal((await membershipState(member,sql,cfg)).access.allowed,false);
+    assert.equal((await membershipState(tester,sql,cfg)).access.allowed,true);
+   } finally {
+    await sql`DELETE FROM square_subscriptions WHERE id=${subId}`;
+    await sql`DELETE FROM subscription_offers WHERE id=${offerId}`;
+   }
   });
  }finally{
   await sql`DELETE FROM referral_payout_records WHERE commission_id IN (SELECT c.id FROM referral_commissions c JOIN referral_attributions a ON a.id=c.attribution_id WHERE a.referred_user_id=${member})`;
