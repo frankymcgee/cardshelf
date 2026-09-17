@@ -1,12 +1,15 @@
 // Public routes are explicit. All other UI routes continue to require sign-in.
 export const PUBLIC_PAGES = ['/', '/features', '/pricing', '/early-access', '/privacy'];
 export const CURRENT_FEATURES = [
+  { code: 'tracking_binders', label: 'Quick-add tracking binders' },
   { code: 'collection', label: 'Collection and variant tracking' },
   { code: 'binders', label: 'Custom binders and wallpapers' },
   { code: 'series', label: 'Set and series binder creation' },
   { code: 'prices', label: 'Market prices and AUD estimates' },
+  { code: 'condition', label: 'Conditions, quantities and notes' },
   { code: 'sharing', label: 'Read-only binder sharing' },
-  { code: 'exports', label: 'Collection exports and printing' }
+  { code: 'printing', label: 'Printable binder checklists' },
+  { code: 'exports', label: 'Collection imports and exports' }
 ];
 export const BILLING_ENABLED = false;
 export const ACCESS_ENFORCED = false;

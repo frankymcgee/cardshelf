@@ -39,14 +39,31 @@ await test('public site and subscription preparation',async t=>{
    });
   });
   await t.test('every public page is server-rendered without login',async()=>{
-   for(const [path,title] of [['/','One beautiful home.'],['/features','Everything in its place.'],['/pricing','No payment required.'],['/early-access','Let’s make an introduction.'],['/privacy','Accounts and collections']]){
+   for(const [path,title] of [['/','One beautiful home.'],['/features','Everything in its place.'],['/pricing','Your level of detail.'],['/early-access','Let’s make an introduction.'],['/privacy','Accounts and collections']]){
     const r=await request(path);assert.equal(r.status,200,path);assert.ok(r.data.includes(title),path+' server HTML');assert.match(r.headers.get('x-robots-tag'),/index, follow/);assert.ok(!r.data.includes('Platform tester'));assert.ok(!r.data.includes('untouched-session'));
    }
+  });
+  await t.test('public plan comparison preserves free testing access',async()=>{
+   const r=await request('/pricing');assert.equal(r.status,200);
+   assert.match(r.data,/<h2>Collector<\/h2>/);
+   assert.match(r.data,/<h2>Collector Plus<\/h2>/);
+   assert.match(r.data,/no payment required\./i);
+   assert.ok(r.data.includes('No checkout or subscription charges are enabled.'));
+   assert.ok(r.data.includes('Already testing? Keep everything.'));
   });
   await t.test('public SSR never includes an authenticated account identity',async()=>{const r=await request('/',{cookie});assert.ok(!r.data.includes('platform-'+id));assert.ok(!r.data.includes('Platform tester'))});
   await t.test('sitemap includes public pages only',async()=>{const r=await request('/sitemap.xml');assert.equal(r.status,200);assert.match(r.data,/<loc>https?:\/\//);for(const path of ['/binders','/account','/api/','/shared/'])assert.ok(!r.data.includes(path));assert.match((await request('/robots.txt')).data,/Disallow: \/api\//)});
   await t.test('private page shell and APIs remain non-indexable and protected',async()=>{assert.match((await request('/app')).headers.get('x-robots-tag'),/noindex/);assert.equal((await request('/api/account/membership')).status,401);assert.equal((await request('/api/admin/platform')).status,401);assert.equal((await request('/api/dashboard')).status,401)});
-  await t.test('newly created testers have non-expiring access with all current features',async()=>{const r=await request('/api/account/membership',{cookie});assert.equal(r.status,200);assert.equal(r.data.grant.kind,'beta_tester');assert.equal(r.data.access.expires_at,null);assert.equal(r.data.access.payment_required,false);assert.equal(r.data.access.features.length,6)});
+  await t.test('newly created testers have non-expiring access with all current features',async()=>{
+   const r=await request('/api/account/membership',{cookie});assert.equal(r.status,200);
+   assert.equal(r.data.grant.kind,'beta_tester');assert.equal(r.data.access.expires_at,null);
+   assert.equal(r.data.access.allowed,true);assert.equal(r.data.access.payment_required,false);
+   assert.equal(r.data.access.billing_enabled,false);assert.equal(r.data.access.enforcement_enabled,false);
+   // Check actual capability identities independently of the implementation,
+   // rather than the pre-tracking count of six or an imported expected array.
+   const expected=['tracking_binders','collection','binders','series','prices','condition','sharing','printing','exports'];
+   assert.deepEqual(r.data.access.features.map(feature=>feature.code).sort(),expected.sort());
+  });
   await t.test('membership status does not introduce a billing restriction',async()=>{await sql`UPDATE account_memberships SET subscription_status='past_due' WHERE user_id=${id}`;const r=await request('/api/account/membership',{cookie});assert.equal(r.data.access.allowed,true);assert.equal((await request('/api/dashboard',{cookie})).status,200)});
   await t.test('visitors can request access but do not get an account',async()=>{
    const email='request-'+id+'@example.test',body={name:'Future tester',email,message:'Please invite me.',consent:true,purpose:'early_access',role:'admin',plan:'plus'};
