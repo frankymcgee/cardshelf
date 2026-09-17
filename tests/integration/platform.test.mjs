@@ -45,11 +45,16 @@ await test('public site and subscription preparation',async t=>{
   });
   await t.test('public plan comparison preserves free testing access',async()=>{
    const r=await request('/pricing');assert.equal(r.status,200);
-   assert.match(r.data,/<h2>Collector<\/h2>/);
-   assert.match(r.data,/<h2>Collector Plus<\/h2>/);
+   // Scoped Vue styles add data-v-* attributes. Assert heading content, not compiler output.
+   assert.match(r.data,/<h2\b[^>]*>\s*Collector\s*<\/h2>/);
+   assert.match(r.data,/<h2\b[^>]*>\s*Collector Plus\s*<\/h2>/);
    assert.match(r.data,/no payment required\./i);
    assert.ok(r.data.includes('New subscription checkout is paused. Existing renewals are not cancelled.'));
    assert.ok(r.data.includes('Already testing? Keep everything.'));
+   // Verify the underlying default policy too: marketing copy alone is not a billing guard.
+   const offers=await request('/api/public/subscription-offers');
+   assert.equal(offers.status,200);assert.match(offers.headers.get('content-type'),/json/);
+   assert.equal(offers.data.enabled,false);assert.deepEqual(offers.data.offers,[]);
   });
   await t.test('public SSR never includes an authenticated account identity',async()=>{const r=await request('/',{cookie});assert.ok(!r.data.includes('platform-'+id));assert.ok(!r.data.includes('Platform tester'))});
   await t.test('sitemap includes public pages only',async()=>{const r=await request('/sitemap.xml');assert.equal(r.status,200);assert.match(r.data,/<loc>https?:\/\//);for(const path of ['/binders','/account','/api/','/shared/','/marketplace'])assert.ok(!r.data.includes(path));assert.match((await request('/robots.txt')).data,/Disallow: \/api\//)});
