@@ -2,15 +2,17 @@
 export const BINDER_TYPES = ['tracking', 'collection'];
 export const TRACKING_COLOUR = '#46556d';
 export const PLAN_FEATURES = Object.freeze({
-  collector: Object.freeze(['tracking_binders', 'series', 'sharing', 'printing']),
-  plus: Object.freeze(['tracking_binders', 'series', 'sharing', 'printing', 'collection', 'binders', 'prices', 'condition', 'exports'])
+  collector: Object.freeze(['tracking_binders', 'series', 'sharing', 'printing', 'marketplace_browse']),
+  plus: Object.freeze(['tracking_binders', 'series', 'sharing', 'printing', 'collection', 'binders', 'prices', 'condition', 'exports', 'marketplace_browse', 'marketplace_sell'])
 });
 export const FEATURE_LABELS = Object.freeze({
   tracking_binders: 'Quick-add tracking binders', series: 'Set and series binder generation',
   sharing: 'Read-only binder sharing', printing: 'Printable binder checklists',
   collection: 'Detailed collection and quantity management', binders: 'Custom layouts, colours and wallpapers',
   prices: 'Market prices, history and value estimates', condition: 'Condition records and notes',
-  exports: 'Collection imports and exports'
+  exports: 'Collection imports and exports',
+  marketplace_browse: 'Browse cards for sale and send private enquiries',
+  marketplace_sell: 'List cards for sale and manage seller enquiries'
 });
 export function planFeatures(code) {
   return Object.hasOwn(PLAN_FEATURES, code) ? PLAN_FEATURES[code].map(code => ({ code, label: FEATURE_LABELS[code] })) : [];
