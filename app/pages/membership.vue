@@ -17,10 +17,10 @@ async function retry(s:any){await run(async()=>{await api('/api/billing/subscrib
 async function cancel(s:any){if(!window.confirm('Cancel future Square renewals? Existing invoices are not refunded or voided by this action.'))return;await run(async()=>{await api(`/api/billing/${s.id}/cancel`,{method:'POST',body:{confirm:true}});notice.value='Cancellation checked with Square. Any paid access remains until its period ends.'})}
 watch(chosen,()=>{intent.value='';consent.value=false})
 onMounted(load)
-useSeoMeta({title:'Membership & Square billing · CardShelf'})
+useSeoMeta({title:'Membership & billing · CardShelf'})
 </script>
 <template><main class="membership-page">
-<header class="page-heading"><div><span class="eyebrow">YOUR MEMBERSHIP</span><h1>Choose your collecting experience.</h1><p>Membership billing stays with Square. Card-sale payments stay between collectors.</p></div><NuxtLink to="/account" class="button secondary">Your account</NuxtLink></header>
+<header class="page-heading"><div><span class="eyebrow">YOUR MEMBERSHIP</span><h1>Choose your collecting experience.</h1><p>Membership billing stays with Square or Stripe. Card-sale payments stay between collectors.</p></div><NuxtLink to="/account" class="button secondary">Your account</NuxtLink></header>
 <p v-if="error" class="alert error" role="alert">{{error}}</p><p v-if="notice" class="alert info" role="status">{{notice}}</p>
 <section v-if="state" class="panel settings-panel"><div class="section-heading"><h2>{{tierName(state.access.tier)}}</h2><span class="badge">{{state.environment==='sandbox'?'Sandbox · not live billing':'Production billing'}}</span></div>
 <p v-if="free" class="alert info">Your full testing or complimentary access is protected. You do not need to buy a subscription.</p>
@@ -28,6 +28,7 @@ useSeoMeta({title:'Membership & Square billing · CardShelf'})
 <p v-else>{{state.access.allowed?'Your membership features are available.':'Subscribe to unlock new collector actions. Your existing records remain readable and exportable.'}}</p>
 <div class="account-benefits"><p v-for="f in state.access.features" :key="f.code"><AppIcon name="check" :size="17"/>{{f.label}}</p></div>
 </section>
+<StripeMembership v-if="state" :free="Boolean(free)" @updated="load" />
 <section class="panel settings-panel spaced"><h2>Square subscriptions</h2><p class="muted">Square sends recurring invoices to your account email. Enter payment details only on Square’s hosted invoice page. CardShelf does not collect card numbers, charge for card sales, or send referral payouts.</p>
 <p v-if="state?.environment==='sandbox'" class="alert info">Sandbox uses synthetic customer details, not your real profile. Use the invoice link and Square test payment values only; do not enter a real card.</p>
 <p v-if="!catalogue.enabled" class="alert info">Subscription purchasing is not enabled on this server. Full testing access remains available. Existing Square subscriptions continue until cancelled.</p>

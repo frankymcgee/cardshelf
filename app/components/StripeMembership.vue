@@ -1,0 +1,33 @@
+<script setup lang="ts">
+const props=defineProps<{free:boolean}>(),emit=defineEmits<{updated:[]}>()
+const api=useApi(),route=useRoute(),data=ref<any>(null),error=ref(''),notice=ref(''),busy=ref(false),chosen=ref(''),consent=ref(false),intent=ref('')
+const referral=ref(typeof route.query.ref==='string'?route.query.ref:''),referralConsent=ref(false)
+const selected=computed(()=>data.value?.offers.find((o:any)=>o.id===chosen.value))
+const pending=computed(()=>data.value?.subscriptions.some((s:any)=>s.current||new Date(s.paid_through).getTime()>Date.now()))
+const money=(n:number)=>new Intl.NumberFormat('en-AU',{style:'currency',currency:'AUD'}).format(n/100)
+const date=(s:string)=>s?new Date(s).toLocaleString('en-AU'):'Awaiting verified payment'
+async function load(){try{data.value=await api('/api/billing/stripe/account')}catch(e){error.value=errorMessage(e)}}
+async function run(task:()=>Promise<any>){if(busy.value)return;busy.value=true;error.value='';notice.value='';try{const r=await task();await load();emit('updated');return r}catch(e){error.value=errorMessage(e)}finally{busy.value=false}}
+function navigate(url:string,host:string){const u=new URL(url);if(u.protocol!=='https:'||u.hostname!==host||u.username||u.password)throw new Error('Unexpected payment destination.');window.location.assign(u.href)}
+async function subscribe(s:any=null){const o=s?.offer_snapshot||selected.value;if(!o||props.free||(!s&&!consent.value))return;intent.value||=crypto.randomUUID();await run(async()=>{
+  if(!s&&referral.value.trim()){if(!referralConsent.value)throw new Error('Confirm the referral disclosure or clear its code.');await api('/api/referrals/claim',{method:'POST',body:{code:referral.value.trim(),consent:true}})}
+  const r=await api<any>('/api/billing/stripe/checkout',{method:'POST',body:{offer_id:o.id,revision:o.revision,terms_hash:o.terms_hash,request_id:s?.request_id||intent.value,consent:true}})
+  if(r.url)navigate(r.url,'checkout.stripe.com');else notice.value='Checkout is awaiting confirmation. Refresh or retry the original request; do not create another subscription.'
+})}
+async function portal(){await run(async()=>{const r=await api<any>('/api/billing/stripe/portal',{method:'POST',body:{}});navigate(r.url,'billing.stripe.com')})}
+async function cancel(s:any){if(!window.confirm(s.confirmed?'Cancel Stripe renewals at the end of this billing period? This is not a refund.':'Expire this unpaid checkout? A completed checkout must be managed as a subscription.'))return;await run(()=>api(`/api/billing/stripe/${s.id}/cancel`,{method:'POST',body:{confirm:true}}))}
+watch(chosen,()=>{intent.value='';consent.value=false})
+onMounted(load)
+</script>
+<template><section v-if="data" class="panel settings-panel spaced stripe-membership">
+<div class="section-heading"><div><span class="eyebrow">SECURE SUBSCRIPTIONS</span><h2>Pay with Stripe</h2></div><span class="badge">{{data.environment==='production'?'LIVE':'TEST MODE'}}</span></div>
+<p class="muted">Subscribe on Stripe’s secure checkout and manage your payment method, invoices and cancellation through its customer portal. Choose one provider only; your Square subscription is not transferred automatically.</p>
+<p v-if="error" class="alert error" role="alert">{{error}}</p><p v-if="notice" class="alert info" role="status">{{notice}}</p>
+<p v-if="free" class="alert info">Your testing or complimentary access is protected. No payment is needed.</p>
+<p v-else-if="!data.enabled" class="muted">Stripe is not accepting new subscriptions. Existing subscriptions and billing management remain separate.</p>
+<p v-else-if="pending" class="alert info">You already have a subscription or pending Stripe checkout. Manage it below instead of starting another.</p>
+<template v-else><p v-if="!data.offers.length" class="muted">No Stripe plans have been published yet.</p><div class="membership-offers"><label v-for="o in data.offers" :key="o.id" class="membership-offer" :class="{selected:chosen===o.id}"><input v-model="chosen" type="radio" :value="o.id" :disabled="busy"><span><strong>{{o.plan_code==='plus'?'Collector Plus':'Collector'}}</strong><b>{{money(o.total_minor)}} / {{o.cadence==='MONTHLY'?'month':'year'}}</b><small>Includes {{money(o.tax_minor)}} configured tax.</small></span></label></div>
+<form v-if="selected" class="membership-form" @submit.prevent="subscribe()"><pre class="membership-terms">{{selected.terms}}</pre><label>Referral code (optional)<input v-model="referral" maxlength="24" autocomplete="off"></label><label v-if="referral.trim()" class="membership-check"><input v-model="referralConsent" type="checkbox" required><span>I agree that the approved referrer may earn a commission on my subscription.</span></label><label class="membership-check"><input v-model="consent" type="checkbox" required><span>I accept the terms and recurring {{money(selected.total_minor)}} {{selected.cadence==='MONTHLY'?'monthly':'annual'}} charge until cancellation.</span></label><button class="button primary" :disabled="busy||!consent">{{data.environment==='sandbox'?'Open test checkout':'Continue to Stripe'}}</button></form></template>
+<article v-for="s in data.subscriptions" :key="s.id" class="membership-history"><div><strong>{{s.offer_snapshot.plan_code==='plus'?'Collector Plus':'Collector'}}</strong> <span class="badge">{{s.status}}</span><p>{{money(s.offer_snapshot.total_minor)}} / {{s.offer_snapshot.cadence==='MONTHLY'?'month':'year'}}</p><p class="small">Verified paid access: {{date(s.paid_through)}}<br><span v-if="s.cancel_at_period_end">Future renewal is cancelled.</span></p><p v-if="s.last_error" class="alert error">{{s.last_error}}</p></div><div class="button-row"><a v-if="s.checkout_url&&new Date(s.checkout_expires_at).getTime()>Date.now()" :href="s.checkout_url" class="button primary" rel="noreferrer">Resume Stripe checkout</a><button v-if="s.status==='pending'" class="button secondary" :disabled="busy" @click="subscribe(s)">Retry original checkout</button><button class="button secondary" :disabled="busy" @click="run(()=>api(`/api/billing/stripe/${s.id}/sync`,{method:'POST',body:{}}))">Refresh status</button><button v-if="s.confirmed" class="button secondary" :disabled="busy" @click="portal">Manage Stripe billing</button><button v-if="s.current&&!s.cancel_at_period_end" class="button secondary" :disabled="busy" @click="cancel(s)">{{s.confirmed?'Cancel renewals':'Cancel checkout'}}</button></div></article>
+<p v-if="data.environment==='sandbox'" class="small muted">Test mode: use Stripe test payment details only. Returning from checkout does not itself confirm payment.</p>
+</section></template>

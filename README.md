@@ -1,4 +1,4 @@
-# CardShelf · v0.8.0
+# CardShelf · v0.9.0
 
 Standalone card collection, binder planning and collector marketplace software.
 Nuxt/Vue, PostgreSQL and Docker; independent of Frappe and ERPNext.
@@ -81,3 +81,10 @@ Database backups include sensitive accounts, subscription/referral records and m
 collection CSV/JSON is not a full backup. Review provider/artwork permissions and operator
 policies before commercial publication. No BinderBuilder source or proprietary assets
 are bundled.
+
+## Stripe subscriptions (optional)
+
+Administrators can set up Stripe alongside Square under **Stripe integration**.
+Use Test mode first. Hosted Checkout and the customer portal keep card entry on Stripe.
+Tester grants, complimentary access and external marketplace payments are preserved.
+See [Stripe setup and acceptance checks](docs/STRIPE.md). Billing stays disabled on upgrade.
