@@ -12,7 +12,7 @@ export default defineEventHandler(event => {
   setHeader(event, 'Referrer-Policy', 'no-referrer')
   setHeader(event, 'Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
   if (process.env.NODE_ENV === 'production') setHeader(event, 'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://assets.tcgdex.net data:; connect-src 'self'; font-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://assets.tcgdex.net https://files.stripe.com https://stripe-camo.global.ssl.fastly.net data:; connect-src 'self'; font-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
   if (event.path.startsWith('/api/')) {
     setHeader(event, 'Cache-Control', 'no-store')
     if (!['GET', 'HEAD', 'OPTIONS'].includes(event.method)) {
