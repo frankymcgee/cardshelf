@@ -1,9 +1,15 @@
-# CardShelf · v0.7.0
+# CardShelf · v0.8.0
 
 Standalone card collection, binder planning and collector marketplace software.
 Nuxt/Vue, PostgreSQL and Docker; independent of Frappe and ERPNext.
 
 ## This release
+
+Administrator-facing **Square OAuth connection management** adds encrypted credential
+storage, guided application/webhook setup, connection testing, AUD location selection,
+compatible plan discovery and automatic token renewal. Connecting does not change billing
+activation or existing tester access. See [Square connector setup](docs/SQUARE_CONNECTOR.md).
+
 
 Optional **Square-hosted recurring subscription invoices**, administrator tier management,
 a hidden non-expiring **Complimentary** full-feature tier, and approved/opt-in referrals
@@ -29,7 +35,7 @@ not included. Tracking marks are independent checklists, not physical-copy alloc
 After the release is merged and full GitHub validation is green:
 
 ```sh
-git pull --ff-only origin main && sudo sh scripts/upgrade.sh
+git pull --ff-only origin main && sudo sh scripts/configure-integrations.sh && sudo sh scripts/upgrade.sh
 ```
 
 The helper builds first, takes its automatic local backup, migrates and restarts services.

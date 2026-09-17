@@ -1,5 +1,8 @@
 # CardShelf 0.7.0 — Square memberships, complimentary access and referrals
 
+For administrator-managed OAuth setup in v0.8.0, use [Square connector setup](SQUARE_CONNECTOR.md).
+The legacy environment-token method below remains supported until OAuth is connected.
+
 ## Scope and safe defaults
 
 Square is used ONLY for CardShelf platform subscriptions. Marketplace buyers and
