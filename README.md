@@ -1,4 +1,4 @@
-# CardShelf 0.10.0
+# CardShelf 0.11.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -72,3 +72,12 @@ integration-key tests plus Stripe payment tests remain, with new activation regr
   a paid subscription. Administrators separately create subscription-ready new accounts.
 - Migration 010 adds only subscription policy state. Applied migrations 001–009 and historic
   financial records are not rewritten. No new runtime dependency or service is introduced.
+
+## Stripe-managed product catalogue
+
+Version 0.11.0 adds **Platform administration → Stripe product catalogue**: opt in once,
+then manage product descriptions, uploaded images, unit labels, marketing features,
+monthly/yearly prices and tax in Stripe. Use **Sync now** or the optional 24-hour sync.
+Live product details can also populate the read-only platform plan records. Existing
+subscription snapshots and tester/Complimentary access are preserved; syncing does not
+enable billing. See [Stripe product setup, limits and acceptance](docs/STRIPE_PRODUCTS.md).
