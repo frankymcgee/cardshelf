@@ -1,6 +1,6 @@
 name: cardshelf
 x-app: &app
-  image: cardshelf:${APP_VERSION:-0.6.0}
+  image: cardshelf:${APP_VERSION:-0.7.0}
   build:
     context: .
     target: runtime
@@ -53,6 +53,17 @@ services:
         condition: service_healthy
   app:
     <<: *app
+    environment:
+      <<: *app-environment
+      SQUARE_ENVIRONMENT: ${SQUARE_ENVIRONMENT:-sandbox}
+      SQUARE_BILLING_ENABLED: ${SQUARE_BILLING_ENABLED:-false}
+      MEMBERSHIP_ENFORCEMENT_ENABLED: ${MEMBERSHIP_ENFORCEMENT_ENABLED:-false}
+      SQUARE_ACCESS_TOKEN: ${SQUARE_ACCESS_TOKEN:-}
+      SQUARE_LOCATION_ID: ${SQUARE_LOCATION_ID:-}
+      SQUARE_MERCHANT_ID: ${SQUARE_MERCHANT_ID:-}
+      SQUARE_WEBHOOK_SIGNATURE_KEY: ${SQUARE_WEBHOOK_SIGNATURE_KEY:-}
+      SQUARE_WEBHOOK_URL: ${SQUARE_WEBHOOK_URL:-}
+      SQUARE_TIMEZONE: ${SQUARE_TIMEZONE:-Australia/Perth}
     restart: unless-stopped
     ports:
       - '${APP_BIND:-127.0.0.1}:${APP_PORT:-3000}:3000'

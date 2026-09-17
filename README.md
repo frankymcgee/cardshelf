@@ -1,71 +1,53 @@
-# CardShelf · v0.2.0
+# CardShelf · v0.7.0
 
-A standalone, self-hosted Pokémon card collection and binder planner. No Frappe,
-ERPNext, Verto, Pilot, BinderBuilder account or BinderBuilder API dependency.
+Standalone card collection, binder planning and collector marketplace software.
+Nuxt/Vue, PostgreSQL and Docker; independent of Frappe and ERPNext.
 
-## What's new
+## This release
 
-- Automatically refreshed TCGplayer printing prices via TCGdex; separately labelled
-  Cardmarket card-level references, AUD conversion and recorded price history.
-- Coverage-aware collection and planned-binder estimates. Missing, uncertain or stale
-  prices are not silently treated as zero or included as current values.
-- Create new binders from imported sets or collection series. Choose owned-only or
-  full-catalogue layouts, one pocket per design or known printing, page boundaries,
-  natural collector-number sorting and automatic volume splitting.
-- Preview before creation, partial-import warnings and retry-safe generation. Existing
-  ownership and binder layouts are not changed.
+Optional **Square-hosted recurring subscription invoices**, administrator tier management,
+a hidden non-expiring **Complimentary** full-feature tier, and approved/opt-in referrals
+with administrator-defined rewards and a manual payout ledger. **Marketplace card-sale
+payments remain between collectors.** No marketplace checkout, escrow or payout processing.
 
-Card scanning, photographs, AI integrations, alerts and physical-copy allocation are
-not included. See [the feature and upgrade guide](docs/PRICING_AND_SERIES.md).
+Upgrade defaults keep billing and membership enforcement OFF. Existing testers retain
+full access and do not need a subscription. Actual Square Sandbox verification is required
+before production activation. This release does not onboard a stored card or automate
+referral transfers. See [Square, memberships and referrals](docs/SQUARE_AND_REFERRALS.md).
 
-## Existing features
+## Collector tools
 
-Private accounts and collections, English/Japanese catalogue imports, printing and
-condition quantities, wishlist/notes, drag/tap binder editing, revocable read-only
-sharing, printing placeholders, JSON/CSV ownership imports/exports and server backups.
-Binder placement is a plan, not a reservation of a physical copy. Catalogue variant
-flags are not a verified complete master checklist. Collection completion counts
-imported card designs, not every possible printing.
+Private accounts; English/Japanese catalogue imports; independent quick tracking binders;
+set/series generation; detailed inventory, printing/condition quantities and notes;
+custom binder layouts/wallpapers/variant effects; AUD market-price estimates; revocable
+sharing; printable checklists; collection imports/exports; and classified card listings
+with seller photos and private enquiries. Scanning, escrow and full offline editing are
+not included. Tracking marks are independent checklists, not physical-copy allocations.
 
-## Deploy independently
+## Existing installation upgrade
 
-Linux server with Docker Engine and Compose. Nuxt/Vue application, PostgreSQL 17,
-background worker, one-shot migrations and optional Caddy HTTPS proxy. The image is
-built from source; no pre-published CardShelf container image is required.
+After the release is merged and full GitHub validation is green:
 
-For a first installation, configure DNS and reachable ports 80/443, then:
+```sh
+git pull --ff-only origin main && sudo sh scripts/upgrade.sh
+```
+
+The helper builds first, takes its automatic local backup, migrates and restarts services.
+Keep your existing `.env`, database volume and accounts. Never run `docker compose down -v`
+for an upgrade. Square settings are optional and start disabled; no API keys are needed
+for the existing catalogue or pricing features.
+
+## First installation
+
+On a separate Linux server with Docker Engine/Compose, configured DNS and ports 80/443:
 
 ```sh
 sh scripts/configure.sh https://tcg.webwire.cloud
 docker compose -f compose.yaml -f compose.https.yaml up -d --build
 ```
 
-Save the first-use token privately, create your administrator account, then import
-sets through Data & settings. Do not commit .env, setup tokens or database dumps.
-Do not run configure.sh again on an existing installation.
-
-For an upgrade after the release is merged and GitHub validation passes:
-
-```sh
-git pull --ff-only
-sudo sh scripts/upgrade.sh
-```
-
-The helper builds first and takes a local safety backup automatically, then migrates
-and restarts app/worker without changing credentials, database volumes or the proxy.
-Never use `docker compose down -v` to upgrade.
-
-## Pricing and connectivity
-
-Price requests use api.tcgdex.net; AUD rates use api.frankfurter.dev with ECB filtering.
-No API keys are required by these integrations. Availability and coverage depend on
-the upstream sources. Images still load from assets.tcgdex.net. Normal collection and
-binder writes use your local database. Offline collection editing is not implemented.
-
-Tracked cards are owned, wishlisted or planned. Default refresh interval is six hours,
-subject to the queue and upstream freshness. This is not a second-by-second price feed.
-Currency-converted market estimates are not condition-specific appraisals or local
-Australian sale prices. Source dates, FX dates and exclusions are shown explicitly.
+Keep the generated setup token private, create the first administrator, then import sets.
+The source builds on your server; no pre-published container image is required.
 
 ## Validation
 
@@ -75,22 +57,21 @@ npm run typecheck
 npm run build
 ```
 
-GitHub Actions additionally runs migrations and the isolated API/PostgreSQL integration
-suite. Use its result for this release, not the successful 0.1.1 baseline. The authoring
-runtime can run dependency-free tests but cannot run the full Docker/PostgreSQL stack
-or resolve npm/provider hosts. Browser/device acceptance still needs deployment testing.
+GitHub additionally runs the production server, migrations and isolated PostgreSQL/API
+integration suite. Financial tests use mocked provider contracts and block external Square
+calls; they never move money. Successful CI is not verification of your live Square account,
+real-device behaviour, payment terms or a public commercial launch.
 
 ## Documentation
 
-[Current features and upgrade](docs/PRICING_AND_SERIES.md) ·
-[Deployment and recovery](docs/DEPLOYMENT.md) ·
-[Architecture](docs/ARCHITECTURE.md) · [Import format](docs/IMPORT_FORMAT.md) ·
-[Security](docs/SECURITY.md) · [Changelog](CHANGELOG.md)
+[Memberships/Square/referrals](docs/SQUARE_AND_REFERRALS.md) ·
+[Marketplace](docs/MARKETPLACE.md) · [Tracking binders](docs/TRACKING_BINDERS.md) ·
+[Appearance](docs/APPEARANCE.md) · [Public website](docs/PUBLIC_WEBSITE.md) ·
+[Prices and series](docs/PRICING_AND_SERIES.md) · [Deployment](docs/DEPLOYMENT.md) ·
+[Architecture](docs/ARCHITECTURE.md) · [Security](docs/SECURITY.md).
 
-The older baseline verification/parity reports are historical, not current CI results.
-JSON/CSV exports are not full server backups; database dumps include sensitive accounts,
-notes and layouts. Keep .env and full backups securely off-server.
-
-This is independently written software. No BinderBuilder source, proprietary database,
-branding or artwork is bundled. Review image/provider permissions before mirroring
-artwork or distributing a public commercial service.
+Older release notes and verification reports describe their release, not current CI.
+Database backups include sensitive accounts, subscription/referral records and messages;
+collection CSV/JSON is not a full backup. Review provider/artwork permissions and operator
+policies before commercial publication. No BinderBuilder source or proprietary assets
+are bundled.
