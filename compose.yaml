@@ -1,6 +1,6 @@
 name: cardshelf
 x-app: &app
-  image: cardshelf:${APP_VERSION:-0.11.0}
+  image: cardshelf:${APP_VERSION:-0.14.0}
   build:
     context: .
     target: runtime
@@ -55,6 +55,13 @@ services:
     <<: *app
     environment:
       <<: *app-environment
+      RECOVERY_EMAIL_ENABLED: ${RECOVERY_EMAIL_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURITY: ${SMTP_SECURITY:-starttls}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       CARDSHELF_INTEGRATION_KEY: ${CARDSHELF_INTEGRATION_KEY:-}
       STRIPE_ENVIRONMENT: ${STRIPE_ENVIRONMENT:-sandbox}
       STRIPE_BILLING_ENABLED: ${STRIPE_BILLING_ENABLED:-false}
