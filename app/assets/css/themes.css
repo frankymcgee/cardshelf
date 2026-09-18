@@ -1,0 +1,52 @@
+/* Application colours only. Never filter card artwork or override saved binder wallpapers. */
+:root{color-scheme:light;--surface-soft:#f0f1f6;--surface-raised:#fff;--success-soft:#e7f4ee;--warning-soft:#fff2d7;--danger-soft:#fbeaea}
+:root[data-theme="dark"]{color-scheme:dark;--ink:#edf2fa;--muted:#a9b4c7;--line:#334155;--paper:#172235;--bg:#101827;--primary:#b3a7ff;--primary-dark:#c6bcff;--green:#7cd8b3;--surface-soft:#243248;--surface-raised:#1d2a3f;--success-soft:#183d32;--warning-soft:#40321d;--danger-soft:#432a31}
+/* Without JavaScript, System still follows the device rather than flashing white. */
+@media(prefers-color-scheme:dark){:root:not([data-theme]){color-scheme:dark;--ink:#edf2fa;--muted:#a9b4c7;--line:#334155;--paper:#172235;--bg:#101827;--primary:#b3a7ff;--primary-dark:#c6bcff;--green:#7cd8b3;--surface-soft:#243248;--surface-raised:#1d2a3f;--success-soft:#183d32;--warning-soft:#40321d;--danger-soft:#432a31}}
+html[data-theme="dark"] body{background:var(--bg);color:var(--ink)}
+html[data-theme="dark"] :is(.sidebar,.mobile-header,.mobile-nav,.modal,.stat-card,.search-panel,.filter-panel,.binder-toolbar,.settings-panel,.login-form,.auth-form,.card-details,.import-preview,.job-card,.card-detail-side,.ownership-editor,.condition-row,.m-plan,.request-card){background:var(--paper);color:var(--ink);border-color:var(--line)}
+html[data-theme="dark"] :is(input,select,textarea){background:var(--paper);color:var(--ink);border-color:var(--line)}
+html[data-theme="dark"] :is(input,textarea)::placeholder{color:#93a1b8}
+html[data-theme="dark"] :is(label,.data-note,.eyebrow,.nav-caption,.nav-item,.app-footer,.server-label,.table-card-button small,.binder-toolbar,.binder-toolbar strong,.pocket-legend,.filter-row label,.filter-row select,.advanced-filters,.icon-button,.card-number,.card-set,.card-meta,.stat-label,.stat-foot,.auth-foot){color:var(--muted)}
+html[data-theme="dark"] :is(.button.secondary,.icon-button.bordered,.empty-state,.action-menu button:hover,.ownership-row,.catalogue-filters,.card-picture,.stat-icon){background:var(--surface-raised);color:var(--ink);border-color:var(--line)}
+html[data-theme="dark"] .button.primary{background:#6754d8;color:#fff}
+html[data-theme="dark"] .button.primary:hover{background:#7c69e8}
+html[data-theme="dark"] :is(.button.secondary:hover,.nav-item:hover,.icon-button:hover,.segmented-control,.tab-switch,.table-scroll th){background:var(--surface-soft);color:var(--ink)}
+html[data-theme="dark"] .nav-item.router-link-active{background:#302951;color:#d0c6ff}
+html[data-theme="dark"] .badge{background:var(--surface-soft);color:#d0d9e9}
+html[data-theme="dark"] :is(.badge.purple,.alert.info){background:#302951;color:#d0c6ff}
+html[data-theme="dark"] .badge.green{background:var(--success-soft);color:#9ae5c8}
+html[data-theme="dark"] :is(.badge.amber,.alert.warning){background:var(--warning-soft);color:#f0ce92}
+html[data-theme="dark"] :is(.badge.red,.alert.error){background:var(--danger-soft);color:#ffb0b0}
+html[data-theme="dark"] .danger-text{color:#ffb0b0!important}
+html[data-theme="dark"] :is(th,td,.profile,.server-label,.ownership-row,.action-menu button){border-color:var(--line)}
+html[data-theme="dark"] :is(th,.empty-icon,.avatar){background:var(--surface-soft);color:var(--muted)}
+html[data-theme="dark"] .avatar{border-color:var(--paper);outline-color:#625881}
+html[data-theme="dark"] .modal::backdrop{background:#030812ba}
+html[data-theme="dark"] :is(.cm-references,.collection-quick-summary){background:var(--paper);border-color:var(--line);color:var(--ink)}
+html[data-theme="dark"] :is(.cm-reference-quote,.cm-printing-price){background:var(--surface-raised);border-color:var(--line)}
+html[data-theme="dark"] :is(.cm-heading h4,.cm-reference-quote strong,.cm-reference-amount){color:var(--ink)}
+html[data-theme="dark"] .tracking-binder{--track-ink:#edf2fa;--track-green:#85d9b7}
+html[data-theme="dark"] .tracking-summary{background:#19382f;color:#edf2fa}
+html[data-theme="dark"] :is(.tracking-kicker,.tracking-summary p){color:#b4decc}
+html[data-theme="dark"] .tracking-progress{background:#243e37}
+html[data-theme="dark"] .tracking-page{background:#172235;border-color:#334155}
+html[data-theme="dark"] .tracking-card{background:#243248;color:#edf2fa}
+html[data-theme="dark"] :is(.tracking-instructions,.tracking-page-heading,.tracking-card-info small,.tracking-no-matches){color:#b1bfd2}
+html[data-theme="dark"] .tracking-status{background:#334155;color:#d6dfec}
+html[data-theme="dark"] .tracking-card.collected .tracking-status{background:#194332;color:#a5eacc}
+html[data-theme="dark"] .tracking-card.empty{background:transparent;color:#b1bfd2;border-color:#68778e}
+html[data-theme="dark"] .tracking-filters .active{background:#6455a1;color:#fff;border-color:#8f7cd3}
+/* Marketing remains readable in the same chosen theme. Decorative hero artwork is untouched. */
+html[data-theme="dark"] .marketing-site{--m-ink:#edf2fa;--m-muted:#adb7ca;--m-line:#334155;--m-paper:#172235;--m-purple:#b3a7ff;background:var(--bg);color:var(--ink)}
+html[data-theme="dark"] :is(.m-header,.m-nav-links.is-open,.m-footer,.m-feature-card,.m-feature,.m-faq,.m-plan,.m-plan-current,.m-plan-future,.m-story-card,.m-contact-card){background:var(--paper);color:var(--ink);border-color:var(--line)}
+html[data-theme="dark"] :is(.m-lead,.m-fine,.m-plan p,.m-footer p,.m-footer-bottom,.m-section-heading p,.m-feature-card p,.m-nav-links,.m-plan-label,.m-eyebrow){color:var(--muted)}
+html[data-theme="dark"] :is(.m-plan h2,.m-page-hero h1,.m-section-heading h2,.m-plan-footnote h2,.m-footer .m-logo){color:var(--ink)}
+html[data-theme="dark"] :is(.m-proof-band,.m-workflow,.m-feature-wide,.m-feature-large,.m-demo-float,.m-faq-section,.m-contact-panel){background:var(--paper);color:var(--ink);border-color:var(--line)}
+html[data-theme="dark"] .m-fine{color:var(--muted)!important}
+html[data-theme="dark"] :is(.m-announcement,.m-feature-icon,.m-finish-list>span){background:var(--surface-soft);color:var(--ink);border-color:var(--line)}
+html[data-theme="dark"] .m-button{background:#6754d8;color:#fff;border-color:#6754d8}
+html[data-theme="dark"] .billing-cadence{background:var(--surface-soft);border-color:var(--line)}
+html[data-theme="dark"] .billing-cadence button[aria-pressed="true"]{background:#625397;color:#fff}
+html[data-theme="dark"] .stripe-plan{background:var(--paper);color:var(--ink);border-color:var(--line)}
+@media print{html,html[data-theme="dark"],body{color-scheme:light!important;background:#fff!important;color:#000!important;--ink:#000;--muted:#444;--line:#bbb;--paper:#fff;--bg:#fff}.theme-picker{display:none!important}}

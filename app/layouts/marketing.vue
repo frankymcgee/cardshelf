@@ -17,6 +17,7 @@ function closeMenu() { menuOpen.value = false; menuButton.value?.focus() }
           <NuxtLink to="/features">The platform</NuxtLink><NuxtLink to="/pricing">Plans & access</NuxtLink><NuxtLink to="/#questions">Questions</NuxtLink>
           <NuxtLink :to="signedIn ? '/app' : '/login'" class="m-signin">{{ signedIn ? 'My collection' : 'Sign in' }}<AppIcon name="arrow" :size="16" /></NuxtLink>
           <NuxtLink to="/early-access" class="m-button m-button-small">Request early access</NuxtLink>
+          <ThemePicker />
         </nav>
       </div>
     </header>

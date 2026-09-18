@@ -17,6 +17,8 @@ await test('free-feed price references, alias matching and preserved valuation b
   const userId=randomUUID(),token=randomToken(),provider='ci-prices-'+randomUUID().replaceAll('-','');
   const setId='en:'+provider,cardId=setId+'-008',date=new Date().toISOString();
   const cookie='cardshelf_session='+token;
+  const savedRates=await sql`SELECT * FROM price_fx_rates`;
+  const rateDate=date.slice(0,10);
   async function prices(authenticated=true) {
     const response=await fetch(url+'/api/cards/'+encodeURIComponent(cardId)+'/prices',{
       redirect:'manual',headers:authenticated?{Cookie:cookie}:{}
@@ -25,6 +27,8 @@ await test('free-feed price references, alias matching and preserved valuation b
     return {status:response.status,data:await response.json()};
   }
   try {
+    for(const [currency,rate] of [['EUR',1.7],['USD',1.5]]) await sql`INSERT INTO price_fx_rates(currency,aud_rate,rate_date)
+      VALUES(${currency},${rate},${rateDate}) ON CONFLICT(currency) DO UPDATE SET aud_rate=excluded.aud_rate,rate_date=excluded.rate_date`;
     await sql`INSERT INTO app_users(id,email,name,password_hash) VALUES(${userId},${provider+'@example.test'},'Price reference tester',${await hashPassword('Synthetic pricing test password 123')})`;
     await sql`INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(${digest(token)},${userId},now()+interval '1 hour')`;
     await sql`INSERT INTO card_sets(id,provider_id,language,name) VALUES(${setId},${provider},'en','Synthetic price reference set')`;
@@ -39,13 +43,14 @@ await test('free-feed price references, alias matching and preserved valuation b
       assert.equal(response.data.fetched_at,null);
       assert.match(priceAvailabilityMessage(response.data),/not been checked yet/);
     });
-    await t.test('legacy trend-only cache is immediately visible without a refresh or changed totals',async()=>{
+    await t.test('legacy trend-only cache contributes a labelled approximation without a refresh',async()=>{
       const legacy=[{source:'Cardmarket',variant:'card-reference',currency:'EUR',metric:'trend',amount:5,source_updated_at:date}];
       await sql`INSERT INTO card_price_cache(card_id,reference_prices,fetched_at,attempted_at) VALUES(${cardId},${sql.json(legacy)},now(),now())`;
       const {data}=await prices();assert.equal(cardmarketHighlights(data.references)[0].amount,5);
       assert.ok(data.printings.every(p=>p.price===null));
       assert.match(priceAvailabilityMessage(data),/Cardmarket reference prices are available/);
-      const summary=await priceSummary(userId);assert.equal(summary.valuation.aud_total,null);assert.equal(summary.valuation.unpriced_quantity,2);
+      const summary=await priceSummary(userId);assert.equal(summary.valuation.aud_total,17);assert.equal(summary.valuation.approximate_quantity,2);
+      assert.equal(summary.valuation.matched_quantity,0);assert.equal(data.printings.find(p=>p.key==='holo').estimate.approximate,true);
     });
     await t.test('average-only values survive persistence and retain their history metric',async()=>{
       await storePricing(cardId,{cardmarket:{unit:'EUR',updated:date,avg30:4,'avg7-holo':7}});
@@ -66,11 +71,12 @@ await test('free-feed price references, alias matching and preserved valuation b
       assert.equal(data.printings.find(p=>p.key==='manual-special').price,null);
       assert.equal(cardmarketHighlights(data.references)[0].amount,100);
     });
-    await t.test('failed refresh retains references with warning flags, excluding matched values from totals',async()=>{
+    await t.test('failed refresh retains labelled Cardmarket approximations instead of counting failed exact quotes',async()=>{
       await priceFailure(cardId,new Error('Synthetic provider outage'));
       const {data}=await prices();assert.equal(data.last_error,'Synthetic provider outage');
       assert.equal(cardmarketHighlights(data.references)[0].fetch_error,true);
-      const summary=await priceSummary(userId);assert.equal(summary.valuation.aud_total,null);assert.equal(summary.valuation.stale_quantity,2);
+      const summary=await priceSummary(userId);assert.equal(summary.valuation.aud_total,340);assert.equal(summary.valuation.failed_reference_quantity,2);
+      assert.equal(summary.valuation.matched_quantity,0);assert.equal(summary.valuation.approximate_quantity,2);
     });
     await t.test('successful empty pricing clears old values without changing ownership',async()=>{
       await storePricing(cardId,{});
@@ -85,6 +91,10 @@ await test('free-feed price references, alias matching and preserved valuation b
       await sql`DELETE FROM printings WHERE card_id=${cardId}`;
       await sql`DELETE FROM cards WHERE id=${cardId}`;
       await sql`DELETE FROM card_sets WHERE id=${setId}`;
-    } finally { await closeDatabase();await sql.end(); }
+    } finally {
+      await sql`DELETE FROM price_fx_rates`;
+      for(const row of savedRates) await sql`INSERT INTO price_fx_rates ${sql(row,'currency','aud_rate','rate_date','fetched_at')}`;
+      await closeDatabase();await sql.end();
+    }
   }
 });

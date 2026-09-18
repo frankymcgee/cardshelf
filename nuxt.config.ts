@@ -15,11 +15,12 @@ export default defineNuxtConfig({
   // Keep shared-module paths absolute until Nitro bundles the SSR output.
   vite: { $server: { build: { rolldownOptions: { makeAbsoluteExternalsRelative: false } } } },
   devtools: { enabled: false },
-  css: ['~/assets/css/main.css', '~/assets/css/features.css', '~/assets/css/appearance.css', '~/assets/css/marketing.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/features.css', '~/assets/css/appearance.css', '~/assets/css/marketing.css', '~/assets/css/themes.css'],
   nitro: { preset: 'node-server', externals: { external: ['postgres', 'sharp'] } },
   typescript: { strict: true, tsConfig: { compilerOptions: { allowJs: true, checkJs: false } } },
   app: { head: {
     title: 'CardShelf', htmlAttrs: { lang: 'en' },
+    script: [{ src: '/theme-init.js?v=0.12.0', tagPriority: 'critical' }],
     meta: [
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
       { name: 'theme-color', content: '#5546d8' },

@@ -12,7 +12,7 @@ const reference = (metric='trend',amount=5) => ({source:'Cardmarket',currency:'E
   variant:metric.endsWith('-holo')?'holo-reference':'card-reference',source_updated_at:date});
 const tcg = data => extractPricing({tcgplayer:{unit:'USD',updated:date,...data}}).quotes;
 
-test('screenshot-shaped Cardmarket-only Holo case has visible references, not an invented printing value', () => {
+test('screenshot-shaped Cardmarket-only Holo has a labelled approximation, not an invented exact match', () => {
   // Synthetic amounts, not a quote or captured response for Mega Delphox ex.
   const parsed = extractPricing({cardmarket:{unit:'EUR',updated:date,trend:5}});
   const references = parsed.references.map(q=>displayPrice(q,cache,rates,now));
@@ -20,7 +20,8 @@ test('screenshot-shaped Cardmarket-only Holo case has visible references, not an
   assert.equal(cardmarketHighlights(references)[0].aud,8.5);
   assert.match(priceAvailabilityMessage({...cache,references,printings:[{price:null}]}),/Cardmarket reference prices are available/);
   assert.match(missingPrintingMessage(printing,cache),/TCGplayer Holo/);
-  assert.equal(valueRows([{...printing,quotes:parsed.quotes,reference_prices:parsed.references,quantity:2,...cache}],rates,now).aud_total,null);
+  const estimate=valueRows([{...printing,quotes:parsed.quotes,reference_prices:parsed.references,quantity:2,...cache}],rates,now);
+  assert.equal(estimate.aud_total,17);assert.equal(estimate.approximate_aud_total,17);assert.equal(estimate.matched_quantity,0);
 });
 
 for (const metric of CARDMARKET_REFERENCE_METRICS) test(`extracts and labels Cardmarket ${metric} without turning it into a matched price`,()=>{
@@ -124,7 +125,8 @@ test('genuinely matched aliases use existing valuation safeguards without counti
   const quotes=tcg({holofoil:{marketPrice:10}}), refs=[reference('trend',1000)];
   const row={...printing,quotes,reference_prices:refs,quantity:2,...cache};
   assert.equal(valueRows([row],rates,now).aud_total,30);
-  assert.equal(valueRows([{...row,last_error:'offline'}],rates,now).aud_total,null);
-  assert.equal(valueRows([{...row,source:'manual'}],rates,now).aud_total,null);
-  assert.equal(valueRows([{...row,key:'reverse'}],rates,now).aud_total,null);
+  assert.equal(valueRows([{...row,last_error:'offline'}],rates,now).aud_total,3400);
+  assert.equal(valueRows([{...row,last_error:'offline'}],rates,now).failed_reference_quantity,2);
+  assert.equal(valueRows([{...row,source:'manual'}],rates,now).approximate_quantity,2);
+  assert.equal(valueRows([{...row,key:'reverse'}],rates,now).approximate_aud_total,3400);
 });

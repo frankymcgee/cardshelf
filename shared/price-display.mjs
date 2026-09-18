@@ -1,4 +1,4 @@
-// Presentation only. References must never be passed into ownership valuations.
+// Presentation helpers. Exact quotes remain separate from labelled approximate estimates.
 /**
  * @typedef {Object} DisplayQuote
  * @property {string} source
@@ -12,6 +12,8 @@
  * @property {number|null} [fx_rate]
  * @property {boolean} [stale]
  * @property {boolean} [fetch_error]
+ * @property {boolean} [approximate]
+ * @property {string} [estimate_note]
  */
 export const CARDMARKET_REFERENCE_METRICS = Object.freeze([
   'trend', 'avg30', 'avg7', 'avg', 'avg1',
@@ -73,7 +75,7 @@ export function priceAvailabilityMessage(state) {
   if (!state.fetched_at) return 'Prices have not been checked yet. Use Check prices to request the existing free feed.';
   if (state.printings?.some(printing => printing.price)) return '';
   if (cardmarketHighlights(state.references).length) {
-    return 'Cardmarket reference prices are available below. An exact printing match is not confirmed; these references are not included in collection totals.';
+    return 'Cardmarket reference prices are available below. An exact printing match is not confirmed; these can contribute labelled approximations to collection estimates.';
   }
   return 'The current feed returned no supported price for this card. This does not mean that the marketplaces have no listings.';
 }

@@ -125,12 +125,15 @@ await test('isolated end-to-end API and database checks',async t=> {
       const catalogue=await request('catalogue',{cookie:adminCookie});assert.equal(catalogue.status,200);
       assert.equal(catalogue.data.items.find(c=>c.id==='en:demo-1').price_from.aud,15);
     });
-    await t.test('provider failures preserve old prices but exclude them from totals',async()=>{
+    await t.test('provider failures retain explicitly itemised Cardmarket estimates, not failed exact quotes',async()=>{
       await priceFailure('en:demo-1',new Error('Synthetic provider outage'));
       const prices=(await request('cards/en%3Ademo-1/prices',{cookie:adminCookie})).data;
       assert.equal(prices.printings[0].price.amount,10);assert.match(prices.last_error,/Synthetic provider outage/);
       const summary=(await request('prices/summary',{cookie:adminCookie})).data;
-      assert.equal(summary.valuation.aud_total,null);assert.ok(summary.valuation.stale_quantity>0);
+      assert.equal(summary.valuation.aud_total,summary.valuation.quantity*34);
+      assert.equal(summary.valuation.approximate_quantity,summary.valuation.quantity);
+      assert.equal(summary.valuation.failed_reference_quantity,summary.valuation.quantity);
+      assert.equal(summary.valuation.matched_quantity,0);
     });
     await t.test('a successful absent-price response does not keep a withdrawn quote current',async()=>{
       await storePricing('en:demo-1',null);
