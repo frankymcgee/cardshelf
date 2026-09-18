@@ -1,7 +1,8 @@
 import { publicPage, sharedPage, safeReturnTo } from '../../shared/platform.mjs'
+import { recoveryPage } from '../../shared/password-recovery.mjs'
 export default defineNuxtRouteMiddleware(async to => {
   // Public marketing is server-rendered without looking up a private session.
-  if (publicPage(to.path) || sharedPage(to.path)) return
+  if (publicPage(to.path) || sharedPage(to.path) || recoveryPage(to.path)) return
   if (import.meta.server) return
   const auth = useAuth()
   const login = {path:'/login',query:{next:safeReturnTo(to.fullPath)}}

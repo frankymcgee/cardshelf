@@ -9,6 +9,7 @@ export default defineNuxtConfig({
     '/binders': { ssr: false }, '/binders/**': { ssr: false },
     '/marketplace': { ssr: false }, '/marketplace/**': { ssr: false },
     '/games': { ssr: false }, '/register': { ssr: false },
+    '/forgot-password': { ssr: false }, '/reset-password': { ssr: false },
     '/settings': { ssr: false }, '/account': { ssr: false },
     '/membership': { ssr: false }, '/referrals': { ssr: false },
     '/admin/**': { ssr: false }, '/print/**': { ssr: false }, '/shared/**': { ssr: false }
@@ -17,7 +18,7 @@ export default defineNuxtConfig({
   vite: { $server: { build: { rolldownOptions: { makeAbsoluteExternalsRelative: false } } } },
   devtools: { enabled: false },
   css: ['~/assets/css/main.css', '~/assets/css/features.css', '~/assets/css/appearance.css', '~/assets/css/marketing.css', '~/assets/css/themes.css', '~/assets/css/games.css'],
-  nitro: { preset: 'node-server', externals: { external: ['postgres', 'sharp'] } },
+  nitro: { preset: 'node-server', externals: { external: ['postgres', 'sharp', 'nodemailer'] } },
   typescript: { strict: true, tsConfig: { compilerOptions: { allowJs: true, checkJs: false } } },
   app: { head: {
     title: 'CardShelf', htmlAttrs: { lang: 'en' },

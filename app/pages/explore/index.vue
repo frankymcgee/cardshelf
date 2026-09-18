@@ -31,6 +31,7 @@ async function next(delta: number) { page.value += delta; await load() }
     <div v-if="data" class="public-card-grid"><NuxtLink v-for="card in data.items" :key="card.id" :to="'/explore/' + encodeURIComponent(card.id)" class="public-card-tile"><CardArtwork :card="card" :badges="false" effects-mode="off" /><strong>{{ card.name }}</strong><small>{{ card.set_name }} · #{{ card.local_id }}</small><span class="badge">{{ gameName(card.game) }}</span></NuxtLink></div>
     <p v-if="data && !data.items.length && !loading" class="empty-state">No cards match. The administrator can import more sets; no subscription is required to browse them.</p>
     <nav v-if="data" class="catalogue-pagination" aria-label="Catalogue pages"><button class="button secondary" :disabled="loading || page <= 1" @click="next(-1)">Previous</button><span>Page {{ page }} / {{ Math.max(1, Math.ceil(data.total / data.limit)) }}</span><button class="button secondary" :disabled="loading || page * data.limit >= data.total" @click="next(1)">Next</button></nav>
+    <AdSenseSlot :content-ready="!!data?.items?.length && !error" />
     <SponsorSlot placement="catalogue" />
     <CatalogueCredits />
   </div>
