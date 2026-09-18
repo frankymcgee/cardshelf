@@ -2,6 +2,7 @@
 /**
  * @typedef {Object} DisplayQuote
  * @property {string} source
+ * @property {string} [provider]
  * @property {string} variant
  * @property {string} currency
  * @property {string} metric

@@ -3,7 +3,7 @@ import { cardmarketHighlights, cardmarketMetricLabel, cardmarketGroupLabel, pric
 import type { DisplayQuote } from '../../shared/price-display.mjs';
 interface PrintingPrice { id: string; key: string; label: string; source: string; price: DisplayQuote | null; estimate?: DisplayQuote | null }
 interface PricesResponse {
-  enabled: boolean; fetched_at: string | null; attempted_at: string | null; last_error: string;
+  game?: string; enabled: boolean; fetched_at: string | null; attempted_at: string | null; last_error: string;
   printings: PrintingPrice[]; references: DisplayQuote[]; history: DisplayQuote[];
 }
 const props = defineProps<{ cardId: string }>();
@@ -12,7 +12,8 @@ const data = ref<PricesResponse | null>(null), error = ref(''), busy = ref(false
 let sequence = 0, timer: ReturnType<typeof setTimeout> | undefined, alive = true;
 const money = (amount: number | null, currency: string) => amount == null ? 'Unavailable' : new Intl.NumberFormat('en-AU', { style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).format(amount);
 const highlights = computed(() => cardmarketHighlights(data.value?.references || []));
-const availability = computed(() => data.value ? priceAvailabilityMessage(data.value) : '');
+const additionalGame = computed(() => !!data.value?.game && data.value.game !== 'pokemon');
+const availability = computed(() => !data.value ? '' : additionalGame.value && data.value.references.length ? 'Available provider references are shown below. Edition, condition and realised sale values are not confirmed.' : priceAvailabilityMessage(data.value));
 const date = (value: string | null | undefined) => value ? new Date(value).toLocaleString() : 'Not supplied';
 async function load() {
   const request = ++sequence, id = props.cardId;
@@ -53,12 +54,12 @@ async function refresh() {
     <template v-if="data">
       <p class="muted small">Last successful check: {{ date(data.fetched_at) }}</p>
       <p v-if="data.enabled === false" class="muted small">Automatic pricing is disabled. Previously cached observations may still be shown.</p>
-      <p v-if="data.last_error" class="alert warning">Latest refresh failed. Last-known Cardmarket approximations remain visible and may contribute to estimated totals; failed matched quotes are excluded. {{ data.last_error }}</p>
+      <p v-if="data.last_error" class="alert warning">Latest refresh failed. Last-known reference approximations remain visible and may contribute to estimated totals; failed matched quotes are excluded. {{ data.last_error }}</p>
       <p v-if="availability" class="alert info" role="status">{{ availability }}</p>
 
       <!-- A reference is presented once per provider category, never attached to
            a matched printing value. Approximate selections are labelled separately. -->
-      <section v-if="highlights.length" class="cm-references" aria-label="Cardmarket reference prices">
+      <section v-if="!additionalGame && highlights.length" class="cm-references" aria-label="Cardmarket reference prices">
         <div class="cm-heading"><h4>Cardmarket</h4><span class="badge">Reference prices</span></div>
         <p class="data-note">Printing not confirmed · Used as an approximate fallback in collection and binder estimates when a usable matched price is unavailable.</p>
         <div v-for="reference in highlights" :key="reference.variant" class="cm-reference-quote">
@@ -77,25 +78,26 @@ async function refresh() {
           <p class="data-note">The highlighted metric prefers trend, then a 30-day average, 7-day average, average selling price or 1-day average. Original metric labels and timestamps are retained.</p>
         </details>
       </section>
-      <p v-else-if="data.fetched_at && !data.last_error" class="muted small">No supported Cardmarket reference was supplied in the last successful feed response.</p>
+      <p v-else-if="!additionalGame && data.fetched_at && !data.last_error" class="muted small">No supported Cardmarket reference was supplied in the last successful feed response.</p>
 
-      <h4 class="tcg-heading">TCGplayer printing prices</h4>
+      <ProviderReferencePrices v-if="additionalGame" :references="data.references" :printings="data.printings" />
+      <h4 class="tcg-heading">{{ additionalGame ? 'Printing price estimates' : 'TCGplayer printing prices' }}</h4>
       <div v-for="printing in data.printings" :key="printing.id" class="printing-price">
         <strong>{{ printing.label }}</strong>
-        <span v-if="printing.estimate?.approximate" class="badge amber">Cardmarket approximation used for estimate</span>
-        <span v-if="printing.estimate?.approximate" class="small">{{ printing.estimate.aud == null ? money(printing.estimate.amount,printing.estimate.currency) + ' ' + printing.estimate.currency + ' · AUD rate unavailable' : '≈ ' + money(printing.estimate.aud,'AUD') + ' AUD' }} · {{ cardmarketMetricLabel(printing.estimate.metric) }}<template v-if="printing.estimate.stale || printing.estimate.fetch_error"> · Last-known / may be outdated</template></span>
+        <span v-if="printing.estimate?.approximate" class="badge amber">{{ printing.estimate.source }} approximation used for estimate</span>
+        <span v-if="printing.estimate?.approximate" class="small">{{ printing.estimate.aud == null ? money(printing.estimate.amount,printing.estimate.currency) + ' ' + printing.estimate.currency + ' · AUD rate unavailable' : '≈ ' + money(printing.estimate.aud,'AUD') + ' AUD' }} · {{ additionalGame ? printing.estimate.metric : cardmarketMetricLabel(printing.estimate.metric) }}<template v-if="printing.estimate.stale || printing.estimate.fetch_error"> · Last-known / may be outdated</template></span>
         <template v-if="printing.price">
           <span>{{ printing.price.aud == null ? money(printing.price.amount, printing.price.currency) : money(printing.price.aud, 'AUD') + ' AUD' }}</span>
-          <small class="muted">{{ printing.price.source }} · {{ money(printing.price.amount, printing.price.currency) }} {{ printing.price.currency }} · Market price</small>
+          <small class="muted">{{ printing.price.source }} · {{ money(printing.price.amount, printing.price.currency) }} {{ printing.price.currency }} · {{ printing.price.metric === 'retail' ? 'Retail reference' : 'Market price' }}</small>
           <small class="muted">Source updated {{ date(printing.price.source_updated_at) }}<template v-if="printing.price.fx_date"> · AUD rate date {{ printing.price.fx_date }}</template></small>
           <span v-if="printing.price.stale" class="badge amber">Stale / source date unavailable</span><span v-if="printing.price.aud == null" class="badge">AUD rate unavailable</span>
         </template>
-        <span v-else class="muted small">{{ missingPrintingMessage(printing, data) }}</span>
+        <span v-else class="muted small">{{ additionalGame ? 'No matched printing quote is available. Any guide value shown above is approximate.' : missingPrintingMessage(printing, data) }}</span>
       </div>
       <details v-if="data.history.length"><summary>Recorded price history</summary><div class="table-scroll"><table><thead><tr><th>Source update</th><th>Market / category</th><th>Metric</th><th>Price</th></tr></thead><tbody><tr v-for="(history, index) in data.history.slice(0, 30)" :key="index"><td>{{ date(history.source_updated_at) }}</td><td>{{ history.source }} / {{ history.variant }}</td><td>{{ history.source === 'Cardmarket' ? cardmarketMetricLabel(history.metric) : history.metric }}</td><td>{{ money(history.amount, history.currency) }} {{ history.currency }}</td></tr></tbody></table></div><p class="data-note">Up to 30 recent observations shown. A 7-day or 30-day average is one provider observation, not a reconstructed sale history. Historical observations are not added together; at most one current or last-known reference contributes per owned copy.</p></details>
     </template>
     <p v-else-if="!error" class="muted small">Loading prices…</p>
-    <p class="data-note">Indicative market prices, not an appraisal, sale guarantee or condition-specific value. Both marketplaces are supplied through the existing TCGdex feed; no extra API key is needed. English and Japanese card records are never substituted for one another.</p>
+    <p class="data-note">Indicative market prices, not an appraisal, sale guarantee or condition-specific value. Pokémon uses TCGdex; additional games use their named free catalogue feeds. No extra API key is needed. English and Japanese card records are never substituted for one another.</p>
   </section>
 </template>
 <style scoped>

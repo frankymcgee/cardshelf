@@ -7,6 +7,7 @@ import { providerPrintings,safeImageUrl } from '../lib/variants.mjs';
 import { ensure } from '../lib/errors.mjs';
 import { storePricing,schedulePriceRefresh,pricingConfiguration } from '../lib/prices.mjs';
 import { runPriceJob,refreshFx } from '../lib/price-worker.mjs';
+import { runGameImport } from '../lib/game-catalogue.mjs';
 import * as v from '../lib/validate.mjs';
 const HEARTBEAT='/tmp/cardshelf-worker-heartbeat',sql=db();
 let stopping=false;
@@ -107,7 +108,7 @@ try {
             .catch(error=>console.error('Lease heartbeat:',error.message));
         },15000);
         leaseTimer.unref();
-        try {if(job.kind==='refresh-prices') await runPriceJob(job,progress,()=>stopping);else await run(job);} catch(error) {
+        try {if(job.kind==='refresh-prices') await runPriceJob(job,progress,()=>stopping);else if(job.kind==='import-game-set') await runGameImport(job,progress,()=>stopping);else await run(job);} catch(error) {
           console.error('Import failed:',error.message);
           await sql`UPDATE jobs SET status='failed',message=${String(error.message).slice(0,500)},lease_token=NULL,finished_at=now()
             WHERE id=${job.id} AND lease_token=${job.lease_token}`;

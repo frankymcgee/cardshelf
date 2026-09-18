@@ -8,6 +8,7 @@ export default defineNuxtConfig({
     '/login': { ssr: false }, '/cards': { ssr: false }, '/cards/**': { ssr: false },
     '/binders': { ssr: false }, '/binders/**': { ssr: false },
     '/marketplace': { ssr: false }, '/marketplace/**': { ssr: false },
+    '/games': { ssr: false }, '/register': { ssr: false },
     '/settings': { ssr: false }, '/account': { ssr: false },
     '/membership': { ssr: false }, '/referrals': { ssr: false },
     '/admin/**': { ssr: false }, '/print/**': { ssr: false }, '/shared/**': { ssr: false }
@@ -15,7 +16,7 @@ export default defineNuxtConfig({
   // Keep shared-module paths absolute until Nitro bundles the SSR output.
   vite: { $server: { build: { rolldownOptions: { makeAbsoluteExternalsRelative: false } } } },
   devtools: { enabled: false },
-  css: ['~/assets/css/main.css', '~/assets/css/features.css', '~/assets/css/appearance.css', '~/assets/css/marketing.css', '~/assets/css/themes.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/features.css', '~/assets/css/appearance.css', '~/assets/css/marketing.css', '~/assets/css/themes.css', '~/assets/css/games.css'],
   nitro: { preset: 'node-server', externals: { external: ['postgres', 'sharp'] } },
   typescript: { strict: true, tsConfig: { compilerOptions: { allowJs: true, checkJs: false } } },
   app: { head: {

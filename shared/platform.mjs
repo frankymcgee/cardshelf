@@ -1,5 +1,6 @@
 // Public routes are explicit. All other UI routes continue to require sign-in.
-export const PUBLIC_PAGES = ['/', '/features', '/pricing', '/early-access', '/privacy'];
+import { gameFromCardId } from './games.mjs';
+export const PUBLIC_PAGES = ['/', '/features', '/pricing', '/early-access', '/privacy', '/explore', '/register'];
 export const CURRENT_FEATURES = [
   { code: 'tracking_binders', label: 'Quick-add tracking binders' },
   { code: 'collection', label: 'Collection and variant tracking' },
@@ -17,7 +18,13 @@ export const CURRENT_FEATURES = [
 export const BILLING_ENABLED = false;
 export const ACCESS_ENFORCED = false;
 export function cleanPath(path) { return typeof path === 'string' ? path.replace(/\/+$/, '') || '/' : ''; }
-export function publicPage(path) { return PUBLIC_PAGES.includes(cleanPath(path)); }
+export function publicPage(path) {
+  const p=cleanPath(path);
+  if(PUBLIC_PAGES.includes(p)) return true;
+  if(!p.startsWith('/explore/')) return false;
+  try { return !!gameFromCardId(decodeURIComponent(p.slice('/explore/'.length))); }
+  catch { return false; }
+}
 export function sharedPage(path) { return /^\/shared\/[a-f0-9]{64}\/?$/.test(path); }
 export function safeReturnTo(value) {
   if (typeof value !== 'string' || value.length > 2048 || !value.startsWith('/') || value.startsWith('//') || /[\\\r\n\u0000]/.test(value)) return '/app';
@@ -25,7 +32,7 @@ export function safeReturnTo(value) {
     const url = new URL(value, 'https://cardshelf.invalid');
     if (url.origin !== 'https://cardshelf.invalid') return '/app';
     const path = decodeURIComponent(url.pathname);
-    if (/[%\\\r\n\u0000]/.test(path) || !/^\/(?:app|cards|binders|marketplace|settings|account|membership|referrals|admin\/(?:platform|memberships|integrations)|print)(?:\/|$)/.test(path)) return '/app';
+    if (/[%\\\r\n\u0000]/.test(path) || !/^\/(?:app|cards|binders|marketplace|settings|games|account|membership|referrals|admin\/(?:platform|memberships|integrations|free-platform|game-catalogue)|print)(?:\/|$)/.test(path)) return '/app';
     return url.pathname + url.search + url.hash;
   } catch { return '/app'; }
 }
