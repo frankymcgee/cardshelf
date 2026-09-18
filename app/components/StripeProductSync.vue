@@ -41,6 +41,7 @@ onMounted(load)
   <div class="section-heading"><div><span class="eyebrow">STRIPE PRODUCT CATALOGUE</span><h2>Manage it once. Keep it in sync.</h2><p class="small muted">Products, descriptions, images, unit labels, marketing features and recurring prices come from Stripe. Existing paid subscriptions keep their accepted terms.</p></div>
     <label>Catalogue environment<select v-model="environment" :disabled="busy"><option value="sandbox">Test / Sandbox</option><option value="production">Live / Production</option></select></label>
   </div>
+  <p class="small muted">Review the website without enabling payments: <NuxtLink to="/admin/integrations/stripe-preview" class="text-button">Preview Stripe Test pricing</NuxtLink>. This administrator-only preview always uses Test / Sandbox products, even when Live is selected here.</p>
   <p v-if="error" class="alert error" role="alert">{{ error }}</p><p v-if="notice" class="alert info" role="status">{{ notice }}</p>
   <p v-if="!data&&!error" role="status">Loading sync settings…</p>
   <template v-if="data">
