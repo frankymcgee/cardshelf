@@ -30,10 +30,19 @@ await test('multi-game access, public reference data and Free-only sponsorship',
     }
     return {id,email,cookie:'cardshelf_session='+token};
   }
-  async function saveSettings(changes={}){
-    const body={registration_enabled:false,ads_enabled:false,sponsor_name:'Synthetic Sponsor',sponsor_text:'An explicitly labelled advertisement.',sponsor_url:'https://example.com/sponsor',sponsor_cta:'Read more',sponsor_image_alt:'Synthetic banner',reason:'Integration test setting',confirm_sponsor:true,...settings,...changes,password,revision:settings?.revision||0};
+  const sponsorFixture=Object.freeze({sponsor_name:'Synthetic Sponsor',sponsor_text:'An explicitly labelled advertisement.',
+    sponsor_url:'https://example.com/sponsor',sponsor_cta:'Read more',sponsor_image_alt:'Synthetic banner',confirm_sponsor:true});
+  function settingsBody(changes={}){
+    // Preserve the saved blank/disabled defaults. Tests that enable ads must
+    // explicitly supply a complete reviewed creative AFTER the saved settings.
+    const body={registration_enabled:false,ads_enabled:false,...settings,...changes,password,
+      revision:settings?.revision??0,reason:'Integration test setting'};
     delete body.has_image;delete body.updated_at;
-    const result=await request('/api/admin/free-platform/settings',{method:'POST',cookie:admin.cookie,body});assert.equal(result.status,200,JSON.stringify(result.data));settings=result.data;return result;
+    return body;
+  }
+  async function saveSettings(changes={}){
+    const result=await request('/api/admin/free-platform/settings',{method:'POST',cookie:admin.cookie,body:settingsBody(changes)});
+    assert.equal(result.status,200,JSON.stringify(result.data));settings=result.data;return result;
   }
   try{
     oldSettings=await sql`SELECT * FROM free_platform_settings`;await sql`DELETE FROM free_platform_settings`;
@@ -82,6 +91,8 @@ await test('multi-game access, public reference data and Free-only sponsorship',
       const denied=await request('/api/admin/free-platform/settings',{method:'POST',cookie:admin.cookie,body:{registration_enabled:false,ads_enabled:false,revision:0,reason:'Wrong-password test',password:'incorrect password'}});assert.equal(denied.status,403);
       const before=await sql`SELECT * FROM stripe_billing_controls`;
       await saveSettings({registration_enabled:true});assert.deepEqual(await sql`SELECT * FROM stripe_billing_controls`,before);
+      assert.equal(settings.ads_enabled,false);
+      for(const field of ['sponsor_name','sponsor_text','sponsor_url'])assert.equal(settings[field],'');
     });
     await t.test('Free registration creates only a new non-tester account and cannot select privileges',async()=>{
       const email='registered-'+suffix+'@example.test',body={name:'New Free collector',email,password,consent:true};
@@ -102,14 +113,35 @@ await test('multi-game access, public reference data and Free-only sponsorship',
       assert.equal((await request('/api/public/catalogue/cards/'+encodeURIComponent(cardIds[2])+'/prices',{cookie:freeCookie})).status,200);
       assert.equal((await request('/api/collection/export?format=json',{cookie:freeCookie})).status,200);
     });
+    for(const [label,invalid] of [
+      ['empty sponsor name',{sponsor_name:''}],['empty sponsor message',{sponsor_text:''}],
+      ['empty sponsor destination',{sponsor_url:''}],['missing consent',{confirm_sponsor:undefined}],
+      ['declined consent',{confirm_sponsor:false}],['non-boolean consent',{confirm_sponsor:'true'}]
+    ])await t.test('ad activation rejects '+label+' without changing settings or delivery',async()=>{
+      const before=await request('/api/admin/free-platform',{cookie:admin.cookie});assert.equal(before.status,200);settings=before.data;
+      const result=await request('/api/admin/free-platform/settings',{method:'POST',cookie:admin.cookie,
+        body:settingsBody({...sponsorFixture,ads_enabled:true,...invalid})});
+      assert.equal(result.status,400,JSON.stringify(result.data));assert.match(result.headers.get('content-type'),/json/);
+      assert.match(result.data.message,/Review the sponsor/);
+      const after=await request('/api/admin/free-platform',{cookie:admin.cookie});assert.equal(after.status,200);assert.deepEqual(after.data,before.data);
+      assert.equal(after.data.ads_enabled,false);assert.equal(after.data.registration_enabled,true);
+      assert.deepEqual((await request('/api/ads/placement?placement=overview',{cookie:freeCookie})).data,{eligible:false});
+      assert.equal((await request('/api/ads/image',{cookie:freeCookie})).status,404);
+    });
     await t.test('ads appear only for explicit Free accounts and never contain private settings',async()=>{
-      await saveSettings({ads_enabled:true});
+      await saveSettings({...sponsorFixture,ads_enabled:true});
+      assert.equal(settings.ads_enabled,true);assert.equal(settings.registration_enabled,true);
+      for(const field of ['sponsor_name','sponsor_text','sponsor_url','sponsor_cta','sponsor_image_alt'])assert.equal(settings[field],sponsorFixture[field]);
       const r=await request('/api/ads/placement?placement=overview',{cookie:freeCookie});assert.equal(r.status,200);assert.equal(r.data.eligible,true);assert.equal(r.data.creative.sponsor,'Synthetic Sponsor');assert.match(r.headers.get('cache-control'),/no-store/);
       for(const cookie of [undefined,admin.cookie,collector.cookie,pro.cookie,tester.cookie])assert.deepEqual((await request('/api/ads/placement?placement=catalogue',{cookie})).data,{eligible:false});
       for(const field of ['password','updated_by','registration_enabled','sponsor_image'])assert.ok(!Object.hasOwn(r.data.creative,field));
       assert.equal((await request('/api/ads/placement?placement=private-messages',{cookie:freeCookie})).status,400);
     });
     await t.test('sponsor uploads are local re-encoded images with the same Free-only delivery check',async()=>{
+      // Establish this test's own ad state; a failed earlier assertion must not
+      // turn an intentional disabled-image 404 into a misleading upload failure.
+      const current=await request('/api/admin/free-platform',{cookie:admin.cookie});assert.equal(current.status,200);settings=current.data;
+      await saveSettings({...sponsorFixture,ads_enabled:true});
       const {default:sharp}=await import('sharp');const bytes=await sharp({create:{width:4,height:4,channels:3,background:{r:1,g:2,b:3}}}).png().toBuffer();
       const upload=await request('/api/admin/free-platform/image',{method:'POST',cookie:admin.cookie,body:{password,revision:settings.revision,image_base64:bytes.toString('base64')}});
       assert.equal(upload.status,200,JSON.stringify(upload.data));settings=upload.data;
