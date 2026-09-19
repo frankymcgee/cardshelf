@@ -25,7 +25,8 @@ export default defineEventHandler(event => platformResult(async () => {
     'This action needs an active membership with this feature. Open Membership to review your access.')
   const method = event.method
   if (/^\/api\/prices(?:\/|$)/.test(path) || /^\/api\/cards\/[^/]+\/prices$/.test(path)) needs('prices')
-  if (path === '/api/collection' && method === 'PUT') needs('collection')
+  if ((path === '/api/collection' && method === 'PUT') ||
+      (path === '/api/collection/wishlist' && method === 'POST')) needs('collection')
   if (path === '/api/collection/import' && method === 'POST') needs('exports')
   if (path.startsWith('/api/marketplace/')) {
     // Existing conversations, withdrawal and seller status management remain accessible.
