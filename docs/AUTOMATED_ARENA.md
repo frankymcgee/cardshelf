@@ -1,12 +1,12 @@
-# Automated Battle Arena — CardShelf 0.18.0
+# Automated Battle Arena — CardShelf 0.19.0
 
 ## Release boundary
 
-This release adds an end-to-end, server-authoritative **Automated Casual Core** format for Pokémon-style play: supported decks, private two-player games, a computer opponent, solo Auto play, a guided walkthrough, and a graphical tabletop. It is **not a complete implementation of every Pokémon card, expansion, tournament format or card-specific ruling**. It is not an official Pokémon service.
+This release adds an end-to-end, server-authoritative **Automated Casual Expanded** format for Pokémon-style play: supported decks, private two-player games, a computer opponent, solo Auto play, a guided walkthrough, and a graphical tabletop. It is **not a complete implementation of every Pokémon card, expansion, tournament format or card-specific ruling**. It is not an official Pokémon service.
 
 A card is admitted only when the whole gameplay definition is supported. The application does not pretend that an unimplemented Ability or effect has resolved. Unsupported cards have a reason in the deck builder and cannot enter an automated game. Existing collection and manual-table records are preserved.
 
-The engine version is `pokemon-core-v1`. Keep this version available while it has saved matches. Changes to its rules need a deliberate version/compatibility decision, not a silent reinterpretation of an active match.
+New matches use `pokemon-expanded-v2`. The frozen `pokemon-core-v1` compiler and engine remain installed for existing matches, including waiting lobbies and pending decisions. Joining a Core lobby validates the joining deck against Core. Source-deck edits and new card support do not reinterpret a saved match. See [ARENA_EXPANSION.md](ARENA_EXPANSION.md) for the expanded card pool.
 
 ## Availability and membership
 
@@ -32,7 +32,7 @@ No billing requests, subscriptions, refunds, tier assignments or advertising set
 3. Sign in with a qualifying Collector, Collector Plus or explicitly assigned Complimentary account and open **Arena** (`/arena`).
 4. Select **Start walkthrough**. No card catalogue import is needed: this uses original fictional teaching cards, not publisher artwork or a downloaded card dataset.
 5. Follow the opening-field prompt, attach Energy, choose an attack and resolve the selection prompts. The CPU plays the opposing seat. Use **Table tools → How to play** to reopen guidance. The same menu contains optional Sound & music controls. See `NAVIGATION_ARENA_AUDIO.md` for the new navigation and bundled audio.
-6. Try **Computer battle**. The empty saved-deck selection uses the original Ember teaching deck against the Tide teaching deck. Choose a supported saved deck to practise with imported cards instead.
+6. Try **Computer battle** with a supported saved deck. Choose **Matched Deck**, **Mirror Deck**, or **Choose Opponent Deck**. Matched Deck chooses a comparable playable deck from your saved decks, or clearly discloses a mirror fallback. The explicitly labelled teaching-deck option still uses original fictional cards.
 7. For real-user multiplayer, prepare supported 60-card decks in two qualifying accounts, create a private table, share its invitation code, join, approve the joining seat, ready both players and start.
 
 The two original teaching decks and their illustrations are generated locally. They do not become owned cards or catalogue records. The walkthrough deliberately sets up a teaching opening; it is labelled training, not a competitively random deal.
@@ -49,18 +49,15 @@ Deck quantities are not inventory quantities. No deck operation updates ownershi
 
 ### Supported card pool
 
-The current compiler supports ordinary, single-type Basic, Stage 1 and Stage 2 Pokémon with complete HP/retreat data; recognised Basic Energy; and a bounded set of Item/Supporter effects. Examples of executable effect classes include:
+The expanded compiler supports complete, reviewed card profiles for ordinary Pokémon, Pokémon EX/ex and legacy Mega Pokémon-EX; Basic Energy; Items, Supporters, Pokémon Tools and Stadiums. Supported Abilities and Trainer sequences run on the server with their own limits and selection prompts. ACE SPEC cards count toward a one-per-deck limit.
 
-- Fixed attack damage, supported heads/tails checks and coin-based damage, supported Special Conditions, recoil, self-healing, drawing and Energy discard;
-- Drawing cards, discarding or shuffling the hand and drawing, healing, switching/gusting, supported deck searches with required costs, and Basic Energy recovery.
+Admission still requires every gameplay clause and required provider field to be understood. A multi-attack Pokémon is rejected if any attack or Ability is unsupported. Similar wording alone does not guarantee support. The workshop explains why a card is unavailable. See [the coverage table](ARENA_EXPANSION.md) for supported effect families and exclusions.
 
-These are complete-clause matches, **not a promise that every card using similar language is supported**. Wording, additional clauses and provider completeness matter. A multi-attack Pokémon is rejected if any attack is unsupported. Missing data is not guessed.
-
-Unimplemented classes include Abilities, rule-box Pokémon such as ex/GX/V/VMAX/VSTAR, Radiant and other special-rule cards, Special Energy, Tools, Stadiums, Tera/Ancient Traits, expanded Bench rules, arbitrary target/damage formulas, most persistent/prevention effects and other complex card-specific mechanics. They are intentionally not admitted. Rotation, banned lists, Standard/Expanded legality, tournament deck checks, rankings and official rulings are not certified.
+Rotation, banned lists, Standard/Expanded legality, tournament deck checks, rankings and official rulings are not certified. The word “Expanded” here names the CardShelf engine expansion, not the official Expanded tournament format.
 
 ## The graphical table
 
-The table separates your field and private hand from your opponent's field. It includes Active spots, five Bench slots, face-down Prize cards, deck/discard piles, HP bars, damage badges, Energy markers and Special Conditions. Imported card artwork is used where already available; unavailable images have a readable fallback.
+The table separates your field and private hand from your opponent's field. It includes Active spots, five Bench slots, face-down Prize cards, deck/discard piles, effective HP bars, damage badges, inspectable Energy and Tool attachments, evolution stacks, a shared Stadium zone and Special Conditions. Imported card artwork is used where already available; unavailable images have a readable fallback.
 
 Select a card to inspect it and see its currently legal actions. Attacks are real actions rather than text-only references. Buttons identify Active and numbered Bench positions so identically named cards remain distinguishable. On narrow screens the inspector is below the board; selecting a card or receiving a decision scrolls it into view. Reduced-motion settings are respected.
 
