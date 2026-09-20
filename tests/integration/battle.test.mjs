@@ -33,6 +33,9 @@ await test('private battle beta: access, saved decks, two-player state and conce
   try {
     oldSettings=await sql`SELECT * FROM battle_settings`;await sql`DELETE FROM battle_settings`;
     admin=await account('Battle admin','admin');host=await account('Host account');guest=await account('Guest account');outsider=await account('Unseated administrator','admin');unapproved=await account('Not approved');
+    // Legacy manual playback now also requires explicit Collector-tier entitlement.
+    // These assignments are test-only; no payment or production setting is created.
+    for(const user of [host,guest,outsider])await sql`INSERT INTO account_tier_overrides(user_id,tier,reason) VALUES(${user.id},'collector','Synthetic battle entitlement')`;
     await sql`INSERT INTO card_sets(id,provider_id,game,language,name,card_count) VALUES(${setId},${'battle-'+suffix},'pokemon','en','Synthetic battle set',2)`;
     for(const [i,category] of ['Pokemon','Energy'].entries()){
       const id=setId+'-'+i;cards.push(id);
@@ -60,6 +63,12 @@ await test('private battle beta: access, saved decks, two-player state and conce
       await settingsChange({user_id:host.id,approved:true});await settingsChange({user_id:guest.id,approved:true});
       assert.deepEqual(await sql`SELECT * FROM account_access_grants WHERE user_id IN ${sql([host.id,guest.id])} ORDER BY user_id`,before);
       assert.equal((await request('/api/battle',{user:host})).data.allowed,true);assert.equal((await request('/api/battle',{user:unapproved})).data.allowed,false);
+    });
+    await t.test('legacy approvals do not bypass the new paid-tier requirement',async()=>{
+      await settingsChange({user_id:unapproved.id,approved:true});
+      const blocked=await request('/api/battle',{user:unapproved});assert.equal(blocked.data.approved,true);assert.equal(blocked.data.entitled,false);assert.equal(blocked.data.allowed,false);
+      assert.equal((await request('/api/battle/decks',{user:unapproved})).status,403);
+      await settingsChange({user_id:unapproved.id,approved:false});
     });
     await t.test('catalogue lookup returns safe English Pokémon text and own ownership only',async()=>{
       const [p]=await sql`SELECT id FROM printings WHERE card_id=${cards[0]}`;

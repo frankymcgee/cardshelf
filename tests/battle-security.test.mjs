@@ -13,8 +13,8 @@ test('battle migration adds isolated tables without rewriting ownership, passwor
 test('battle API checks real sessions and disables shared response caches',async()=>{
   for(const file of ['server/api/battle/index.get.ts','server/api/battle/[...action].ts','server/api/admin/battle/index.get.ts','server/api/admin/battle/settings.post.ts']){const s=await read(file);assert.match(s,/platformUser\(event/);assert.match(s,/private, no-store/);}
 });
-test('battle access is explicit, not purchased or inferred from a testing membership',async()=>{
-  const s=await read('lib/battle/access.mjs');assert.match(s,/battle_access/);assert.match(s,/verifyPassword/);assert.match(s,/pg_advisory_xact_lock_shared/);assert.ok(!/account_access_grants|plan_code|STRIPE|stripeRequest/.test(s));
+test('legacy battle access requires approval and a separate qualifying paid tier',async()=>{
+  const s=await read('lib/battle/access.mjs');assert.match(s,/battle_access/);assert.match(s,/arenaEntitlement/);assert.match(s,/access\.entitled/);assert.match(s,/verifyPassword/);assert.match(s,/pg_advisory_xact_lock_shared/);assert.ok(!/account_access_grants|plan_code|STRIPE|stripeRequest/.test(s));
 });
 test('live game persistence stores authoritative state under a row lock and checks exact revisions before mutations',async()=>{
   const s=await read('lib/battle/matches.mjs');assert.match(s,/FOR UPDATE/);assert.match(s,/row\.revision===o\.revision/);assert.match(s,/request_hash===requestHash/);assert.match(s,/battleView\(row.state,seat\)/);assert.match(s,/row.host_id===userId\|\|row.guest_id===userId/);

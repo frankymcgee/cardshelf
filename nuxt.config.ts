@@ -5,6 +5,7 @@ export default defineNuxtConfig({
   // Searchable public pages; private collector/account pages stay client-rendered.
   routeRules: {
     '/app': { ssr: false }, '/app/**': { ssr: false },
+    '/arena': { ssr: false }, '/arena/**': { ssr: false },
     '/battle': { ssr: false }, '/battle/**': { ssr: false },
     '/login': { ssr: false }, '/cards': { ssr: false }, '/cards/**': { ssr: false },
     '/binders': { ssr: false }, '/binders/**': { ssr: false },

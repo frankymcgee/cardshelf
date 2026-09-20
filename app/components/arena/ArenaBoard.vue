@@ -1,0 +1,19 @@
+<script setup lang="ts">
+import ArenaCard from './ArenaCard.vue'
+const props = defineProps<{ table: any; aliases: string[]; selected?: string; hit?: string; focusZone?: string }>()
+const emit = defineEmits<{ select: [unit: any]; discard: [seat: number] }>()
+const self = computed(() => props.table.seat), other = computed(() => self.value === 0 ? 1 : 0)
+const sides = computed(() => [other.value, self.value])
+const player = (seat: number) => props.table.players[seat]
+</script>
+<template>
+  <div class="arena-board" :data-focus-zone="focusZone || ''">
+    <section v-for="seat in sides" :key="seat" class="arena-field" :class="{ 'is-opponent': seat !== self, 'is-your-turn': table.turn === seat && table.phase === 'playing' }" :aria-label="aliases[seat] + ' play area'">
+      <div class="arena-player-strip"><span class="arena-avatar">{{ aliases[seat]?.slice(0, 1).toUpperCase() }}</span><strong>{{ aliases[seat] }} <small>{{ seat === self ? 'YOU' : 'OPPONENT' }}</small></strong><span class="arena-hand-count">{{ player(seat).hand_count }} in hand</span><span v-if="table.turn === seat && table.phase === 'playing'" class="arena-turn-chip">TURN {{ table.turn_number }}</span><span v-else-if="table.phase === 'setup'" class="arena-turn-chip">{{ player(seat).ready ? 'READY' : 'PREPARING' }}</span></div>
+      <div class="arena-bench-row" aria-label="Bench"><div v-for="i in 5" :key="i" class="arena-bench-spot"><ArenaCard v-if="player(seat).bench[i - 1]" :unit="player(seat).bench[i - 1]" :selected="selected === player(seat).bench[i - 1].id" :hit="hit === player(seat).bench[i - 1].id" @select="emit('select', $event)"/><span v-else class="arena-empty-slot">BENCH {{ i }}</span></div></div>
+      <div class="arena-front-row"><div class="arena-prize-area" aria-label="Prize cards"><strong>{{ player(seat).prize_count }} <small>PRIZES</small></strong><div class="arena-prize-pips"><i v-for="i in player(seat).prize_count" :key="i" /></div><small>Choose when prompted</small></div><div class="arena-active-spot" data-zone="active"><ArenaCard v-if="player(seat).active" :unit="player(seat).active" :selected="selected === player(seat).active.id" :hit="hit === player(seat).active.id" @select="emit('select', $event)"/><span v-else class="arena-empty-slot">ACTIVE POKÉMON</span></div><div class="arena-pile-area"><div class="arena-deck-stack"><span class="arena-stack-mark">CS</span><b>{{ player(seat).deck_count }}</b><small>DECK</small></div><button type="button" class="arena-discard-button" @click="emit('discard', seat)">{{ player(seat).discard.length }} <span>Discard ↗</span></button></div></div>
+    </section>
+    <div class="arena-table-divider" aria-hidden="true"><i /><span>CS</span><i /></div>
+    <section class="arena-hand-area" data-zone="hand" aria-label="Your private hand"><div class="arena-zone-caption"><strong>Your hand</strong><span>{{ player(self).hand_count }} cards · only you can see these</span></div><div class="arena-hand-fan"><ArenaCard v-for="(unit, index) in player(self).hand" :key="unit.id" :unit="unit" :selected="selected === unit.id" :style="{ '--fan-index': index }" @select="emit('select', $event)"/><p v-if="!player(self).hand.length" class="arena-muted">Your hand is empty.</p></div></section>
+  </div>
+</template>
