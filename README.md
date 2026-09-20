@@ -1,8 +1,17 @@
-# CardShelf 0.11.0
+# CardShelf 0.19.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
 binders, quick tracking, artwork effects, binder themes and a member marketplace.
+
+## Arena
+
+The automated Arena now includes supported Pokémon EX/ex, Mega Evolution,
+Abilities, separate Pokémon Tools, shared Stadiums and multi-step Trainers.
+Computer practice offers Matched Deck, Mirror Deck and Choose Opponent Deck
+using supported saved catalogue cards. Existing Core matches keep their original
+rules. See [the expansion notes](docs/ARENA_EXPANSION.md) for exact card coverage,
+validation and the v0.18.0 patch instructions.
 
 ## Memberships
 

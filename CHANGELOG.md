@@ -1,3 +1,16 @@
+## 0.19.0 — Arena expansion
+
+- Add versioned expanded rules for supported EX/ex, Mega Evolution, Abilities,
+  Pokémon Tools, Stadiums, ACE SPEC restrictions and multi-step Trainers.
+- Preserve the original Core compiler, engine and CPU decisions for saved matches
+  and waiting lobbies; new games use `pokemon-expanded-v2`.
+- Use saved catalogue cards for Matched, Mirror and chosen computer opponent decks,
+  with disclosed mirror fallback and isolated snapshots.
+- Expose shared Stadiums, attachments, card classes, effective HP/retreat and
+  ability controls on the table while preserving private hands and prompts.
+- Add focused mechanics, legacy compatibility, CPU, opponent selection and
+  integration regressions. See `docs/ARENA_EXPANSION.md` for the tested boundary.
+
 ## 0.10.0 — Stripe-only subscriptions and administrator activation
 
 - Retire the Square connector, customer controls, endpoints and background processing.
