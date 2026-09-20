@@ -1,9 +1,53 @@
-# CardShelf 0.20.0 validation
+# CardShelf Postal validation
+
+## 0.20.1 CI correction
+
+Both the [pull-request run](https://github.com/frankymcgee/cardshelf/actions/runs/35511505045)
+and [push run](https://github.com/frankymcgee/cardshelf/actions/runs/35511497458)
+passed unit tests, type checking, the production build and migrations, then failed
+the same administrator delivery integration test. The earlier API suite changes a
+password and leaves a pending security notification. The email suite incorrectly
+assumed its own notification would be the next item in the global queue. The
+original local email validation ran separately and missed this interaction.
+
+The correction temporarily postpones pre-existing queued notifications during the
+email suite, then restores their exact original schedules in `finally`. A seeded
+older notification exercises this condition even when the suite runs alone;
+assertions verify that existing notifications are neither sent nor otherwise
+changed. Production queue logic and CI gates are unchanged.
+
+Correction validation on 20 September 2026:
+
+- All 1,677 unit tests, TypeScript/Vue type checking and the production build passed.
+- Reproduced the original failure by running the API and email suites against one
+  database, then verified all 19 Postal tests passed after the correction.
+- The email suite also passed on a fresh database with its seeded queue backlog.
+- The patch passed clean application, reversal and reapplication checks against
+  0.20.0; the resulting 519 tracked files and their modes matched the candidate.
+- Database checks used PGlite 0.5.8 / PostgreSQL 18.3 WASM. The combined API/email
+  run still reported the existing ownership-concurrency mismatch (HTTP 500 versus
+  409). A full integration attempt passed the Postal group but also encountered
+  Free-registration errors and stalled in Stripe product tests; it was stopped.
+  These tests passed on native PostgreSQL 17 in the original GitHub runs. This
+  local full-suite attempt is not counted as a passing CI run.
+
+Apply this incremental patch to the existing `feature/postal-email-system` branch
+containing 0.20.0, using your usual patch workflow:
+
+```sh
+git apply --check /path/to/cardshelf-0.20.1-postal-ci-fix.patch
+git apply /path/to/cardshelf-0.20.1-postal-ci-fix.patch
+```
+
+After committing and pushing the correction, both GitHub CI workflows must pass
+before merging. No database migration or Postal configuration change is required.
+
+## Original 0.20.0 validation
 
 Validated on 20 September 2026 against the completed CardShelf **0.19.0 Arena
 expansion**. Apply the 0.19.0 patch first if your checkout is still at 0.18.0.
 
-## Executed checks
+### Executed checks
 
 | Check | Result |
 | --- | --- |
@@ -35,7 +79,7 @@ certificate handling and failure without replacing working certificate files. Th
 do not contact a public certificate authority. Generated secrets are excluded from
 Git and Docker build contexts.
 
-## Validation boundaries
+### Validation boundaries
 
 Database/API checks used **PGlite 0.5.8, PostgreSQL 18.3 WASM**, with the actual
 migrations and production Node server. The native PostgreSQL 17 CI suite remains
@@ -54,7 +98,7 @@ verify DNS, PTR, port 25, public certificate issuance/renewal, mail authenticati
 headers, delivery callbacks and actual inbox receipt. Application tests and those
 email controls do not establish compliance with an unspecified security framework.
 
-## Applying the patch
+### Applying the original 0.20.0 patch
 
 From a clean checkout containing the 0.19.0 Arena expansion:
 

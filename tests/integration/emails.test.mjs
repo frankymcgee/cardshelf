@@ -36,6 +36,7 @@ await test('Postal settings, personal preferences, queue hooks and authenticated
   const smtpKeys=['RECOVERY_EMAIL_ENABLED','SMTP_HOST','SMTP_FROM','SMTP_PORT','SMTP_SECURITY','SMTP_USER','SMTP_PASSWORD'];
   const oldSmtp=Object.fromEntries(smtpKeys.map(key=>[key,process.env[key]]));
   let admin,guardAdmin,sender,buyer,outsider,settings,setId,printingId,listingId,threadId;
+  const existingUserId=randomUUID();let existingQueued=[];
   const eventIds=[],recorded=[];
   const queueEvent=async(kind,user,payload={})=>{
     const eventKey='integration-email:'+randomUUID();await enqueueEmail(sql,{eventKey,kind,userId:user.id,payload});
@@ -60,6 +61,17 @@ await test('Postal settings, personal preferences, queue hooks and authenticated
   }
   try{
     await sql`DELETE FROM email_settings`;
+    // Other integration files deliberately retain their accounts. Password
+    // changes now leave due security notifications for those accounts, so the
+    // real FIFO worker must not be assumed to pick this suite's newest job.
+    // Seed that situation even when this file is run by itself.
+    await sql`INSERT INTO app_users(id,email,name,password_hash) VALUES(${existingUserId},${existingUserId+'@example.test'},'Existing queued recipient',${await hashPassword(password)})`;
+    await sql`INSERT INTO email_outbox(event_key,kind,user_id,available_at,created_at)
+      VALUES(${'existing-email:'+randomUUID()},'password_changed',${existingUserId},now()-interval '1 hour',now()-interval '1 hour')`;
+    existingQueued=await sql`SELECT *,available_at::text AS original_available_at FROM email_outbox WHERE status='queued' ORDER BY id`;
+    // Temporarily isolate fixture scheduling; keep production claiming global
+    // and restore the original timestamps (including microseconds) in finally.
+    await sql`UPDATE email_outbox SET available_at=now()+interval '1 day' WHERE id IN ${sql(existingQueued.map(row=>row.id))}`;
     admin=await account('Email administrator','admin');guardAdmin=await account('Email security administrator','admin');sender=await account('Marketplace seller');buyer=await account('Marketplace buyer');outsider=await account('Independent member');
     await t.test('email endpoints require login and administration stays role-protected',async()=>{
       for(const path of ['/api/admin/emails','/api/admin/emails/diagnostics','/api/emails/preferences']){const r=await request(path);assert.equal(r.status,401,path);assert.match(r.headers.get('content-type'),/json/);}
@@ -107,6 +119,12 @@ await test('Postal settings, personal preferences, queue hooks and authenticated
       const result=await request('/api/admin/emails/test',{user:admin,method:'POST',body:{password}});assert.equal(result.status,200,JSON.stringify(result.data));
       const rows=await sql`SELECT * FROM email_outbox WHERE kind='test' AND user_id=${admin.id}`;assert.equal(rows.length,1);
       const sent=await deliver(rows[0]);assert.equal(sent.status,'accepted');assert.equal(recorded.at(-1).address,admin.email);assert.equal(sent.recipient_hash,digest(admin.email));assert.ok(sent.message_id);assert.equal(sent.delivered_at,null);
+    });
+    await t.test('unrelated pre-existing notifications are not delivered or changed by fixture workers',async()=>{
+      const current=await sql`SELECT *,available_at::text AS original_available_at FROM email_outbox WHERE id IN ${sql(existingQueued.map(row=>row.id))} ORDER BY id`;
+      const withoutSchedule=rows=>rows.map(({available_at,original_available_at,...row})=>row);
+      assert.deepEqual(withoutSchedule(current),withoutSchedule(existingQueued));
+      assert.ok(recorded.every(message=>message.address!==existingUserId+'@example.test'));
     });
     await t.test('queue event deduplication, private templates and bounded failed-send retries',async()=>{
       const job=await queueEvent('password_changed',sender);await enqueueEmail(sql,{eventKey:job.event_key,kind:'password_changed',userId:sender.id});assert.equal((await sql`SELECT id FROM email_outbox WHERE event_key=${job.event_key}`).length,1);
@@ -194,12 +212,21 @@ await test('Postal settings, personal preferences, queue hooks and authenticated
       const status=await recoveryDeliveryStatus(sql);assert.equal(status.provider,'postal');assert.equal(status.configured,false);
     });
   }finally{
-    for(const key of smtpKeys){if(oldSmtp[key]===undefined)delete process.env[key];else process.env[key]=oldSmtp[key];}
-    await sql`DELETE FROM email_settings`;if(previousSettings.length)await sql`INSERT INTO email_settings ${sql(previousSettings)}`;
-    if(users.length){await sql`DELETE FROM email_suppressions WHERE email IN ${sql(users.map(id=>id+'@example.test'))}`;await sql`DELETE FROM app_users WHERE id IN ${sql(users)}`;}
-    if(eventIds.length)await sql`DELETE FROM email_webhook_receipts WHERE event_key IN ${sql(eventIds.map(id=>digest(id.toLowerCase())))}`;
-    if(printingId)await sql`DELETE FROM printings WHERE id=${printingId}`;
-    if(setId){await sql`DELETE FROM cards WHERE set_id=${setId}`;await sql`DELETE FROM card_sets WHERE id=${setId}`;}
-    await sql.end();await closeDatabase();
+    try{
+      for(const row of existingQueued)await sql`UPDATE email_outbox SET available_at=${row.original_available_at}::timestamptz WHERE id=${row.id}`;
+      if(existingQueued.length){
+        const restored=await sql`SELECT *,available_at::text AS original_available_at FROM email_outbox WHERE id IN ${sql(existingQueued.map(row=>row.id))} ORDER BY id`;
+        assert.deepEqual(restored,existingQueued,'Other suites\' notifications and exact schedules must be preserved.');
+      }
+    }finally{
+      for(const key of smtpKeys){if(oldSmtp[key]===undefined)delete process.env[key];else process.env[key]=oldSmtp[key];}
+      await sql`DELETE FROM email_settings`;if(previousSettings.length)await sql`INSERT INTO email_settings ${sql(previousSettings)}`;
+      if(users.length){await sql`DELETE FROM email_suppressions WHERE email IN ${sql(users.map(id=>id+'@example.test'))}`;await sql`DELETE FROM app_users WHERE id IN ${sql(users)}`;}
+      await sql`DELETE FROM app_users WHERE id=${existingUserId}`;
+      if(eventIds.length)await sql`DELETE FROM email_webhook_receipts WHERE event_key IN ${sql(eventIds.map(id=>digest(id.toLowerCase())))}`;
+      if(printingId)await sql`DELETE FROM printings WHERE id=${printingId}`;
+      if(setId){await sql`DELETE FROM cards WHERE set_id=${setId}`;await sql`DELETE FROM card_sets WHERE id=${setId}`;}
+      await sql.end();await closeDatabase();
+    }
   }
 });

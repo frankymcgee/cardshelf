@@ -1,3 +1,11 @@
+## 0.20.1 — Postal integration test isolation
+
+- Isolate the email integration suite from notifications queued by earlier tests,
+  restoring existing queue schedules during cleanup.
+- Add a regression with an older unrelated notification so the administrator
+  delivery test also exercises a shared database with pending email.
+- Keep the production queue behavior and all CI validation gates unchanged.
+
 ## 0.20.0 — Postal email administration
 
 - Add **More → Emails** for Postal settings, password-confirmed credential changes,
