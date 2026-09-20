@@ -1,0 +1,96 @@
+# Third overlay: compose.yaml + compose.https.yaml + this file.
+# Paths resolve against the repository root (the first Compose file).
+x-postal: &postal
+  image: ghcr.io/postalserver/postal:3.3.7
+  restart: unless-stopped
+  init: true
+  volumes:
+    - ./deploy/postal/config:/config:ro
+  environment:
+    WAIT_FOR_TARGETS: postal-db:3306
+    WAIT_FOR_TIMEOUT: '90'
+  depends_on:
+    postal-db:
+      condition: service_healthy
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: '3'
+services:
+  postal-db:
+    image: mariadb:11.4.13
+    restart: unless-stopped
+    command: [--character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci, --innodb-log-file-size=256M, --max-allowed-packet=32M]
+    environment:
+      MARIADB_DATABASE: postal
+      MARIADB_ROOT_PASSWORD: ${POSTAL_DB_PASSWORD:?Run scripts/configure-postal.sh first}
+    volumes:
+      - postal_database:/var/lib/mysql
+    networks: [postal_internal]
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+  postal-web:
+    <<: *postal
+    command: [postal, web-server]
+    networks: [postal_internal, postal_proxy]
+    # Internal only. Caddy is the sole public web listener.
+    expose: ['5000']
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, --max-time, '5', http://127.0.0.1:5000/]
+      interval: 30s
+      timeout: 8s
+      retries: 5
+      start_period: 45s
+  postal-worker:
+    <<: *postal
+    command: [postal, worker]
+    networks: [postal_internal, postal_egress]
+    stop_grace_period: 60s
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, --max-time, '5', http://127.0.0.1:9090/health]
+      interval: 30s
+      timeout: 8s
+      retries: 5
+      start_period: 45s
+  postal-smtp:
+    <<: *postal
+    command: [postal, smtp-server]
+    networks: [postal_internal, postal_egress]
+    cap_add: [NET_BIND_SERVICE]
+    ports:
+      - '25:25'
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, --max-time, '5', http://127.0.0.1:9091/health]
+      interval: 30s
+      timeout: 8s
+      retries: 5
+      start_period: 45s
+  caddy:
+    # Retains existing app routing and the original certificate volumes.
+    volumes:
+      - ./deploy/postal/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile:/etc/caddy/cardshelf.Caddyfile:ro
+    networks:
+      default:
+        aliases: [postal.cardshelf.cloud]
+      postal_proxy:
+        aliases: [cardshelf.cloud]
+      postal_egress:
+        aliases: [cardshelf.cloud]
+networks:
+  postal_internal:
+    internal: true
+  postal_proxy:
+  postal_egress:
+volumes:
+  postal_database:

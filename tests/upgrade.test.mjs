@@ -10,6 +10,7 @@ function fixture(failure,run) {
   const dir=mkdtempSync(join(tmpdir(),'cardshelf-upgrade-'));
   mkdirSync(join(dir,'scripts'));mkdirSync(join(dir,'bin'));
   copyFileSync(join(root,'scripts/upgrade.sh'),join(dir,'scripts/upgrade.sh'));
+  copyFileSync(join(root,'scripts/compose.sh'),join(dir,'scripts/compose.sh'));
   writeFileSync(join(dir,'package.json'),'{"name":"cardshelf","version":"0.2.0"}\n');
   writeFileSync(join(dir,'.env'),'APP_VERSION=0.1.1\nPOSTGRES_PASSWORD=fixture-secret\nAPP_ORIGIN=https://tcg.example.test\n',{mode:0o600});
   writeFileSync(join(dir,'bin/docker'),'#!/bin/sh\nprintf "%s\\n" "$*" >> "$CALLS"\n[ "$*" != "$FAILURE" ] || exit 42\n',{mode:0o755});

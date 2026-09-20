@@ -10,3 +10,10 @@ backups/
 playwright-report/
 test-results/
 .DS_Store
+
+# Private self-hosted Postal bootstrap, signing keys and SMTP certificates.
+deploy/postal/config/
+deploy/postal/.env
+deploy/postal/.enabled
+deploy/postal/.bootstrap.*
+deploy/postal/.smtp-sync.lock/

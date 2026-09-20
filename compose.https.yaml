@@ -2,7 +2,7 @@
 # port 3000; only the HTTPS proxy is publicly exposed.
 services:
   caddy:
-    image: caddy:2-alpine
+    image: caddy:2.11.4-alpine
     restart: unless-stopped
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN in .env for HTTPS}

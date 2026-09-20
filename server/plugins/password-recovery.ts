@@ -1,5 +1,6 @@
 import { recoveryMailTick } from '../../lib/password-recovery.mjs'
 export default defineNitroPlugin(nitro => {
+  if (process.env.EMAIL_WORKER_ENABLED === 'false') return
   let running: Promise<void> | null = null
   const timer = setInterval(() => {
     if (running) return

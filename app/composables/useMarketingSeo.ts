@@ -1,6 +1,6 @@
 export function useMarketingSeo(title: string, description: string, path = '/') {
   const config = useRuntimeConfig()
-  let origin = 'https://tcg.webwire.cloud'
+  let origin = 'https://cardshelf.cloud'
   try {
     const url = new URL(String(config.public.siteUrl))
     if (['https:','http:'].includes(url.protocol) && !url.username && !url.password) origin = url.origin

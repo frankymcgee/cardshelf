@@ -1,6 +1,6 @@
 name: cardshelf
 x-app: &app
-  image: cardshelf:${APP_VERSION:-0.14.0}
+  image: cardshelf:${APP_VERSION:-0.20.0}
   build:
     context: .
     target: runtime
@@ -55,6 +55,9 @@ services:
     <<: *app
     environment:
       <<: *app-environment
+      CARDSHELF_INTEGRATION_KEY: ${CARDSHELF_INTEGRATION_KEY:-}
+      POSTAL_ORIGIN: ${POSTAL_ORIGIN:-https://postal.cardshelf.cloud}
+      EMAIL_WORKER_ENABLED: ${EMAIL_WORKER_ENABLED:-true}
       RECOVERY_EMAIL_ENABLED: ${RECOVERY_EMAIL_ENABLED:-false}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
@@ -62,7 +65,6 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      CARDSHELF_INTEGRATION_KEY: ${CARDSHELF_INTEGRATION_KEY:-}
       STRIPE_ENVIRONMENT: ${STRIPE_ENVIRONMENT:-sandbox}
       STRIPE_BILLING_ENABLED: ${STRIPE_BILLING_ENABLED:-false}
       STRIPE_CHECKOUT_KILL_SWITCH: ${STRIPE_CHECKOUT_KILL_SWITCH:-false}

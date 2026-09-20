@@ -9,3 +9,9 @@ backups
 *.dump
 *.zip
 *.log
+
+deploy/postal/config
+deploy/postal/.env
+deploy/postal/.enabled
+deploy/postal/.bootstrap.*
+deploy/postal/.smtp-sync.lock

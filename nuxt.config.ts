@@ -1,7 +1,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2026-09-16',
   ssr: true,
-  runtimeConfig: { public: { siteUrl: 'https://tcg.webwire.cloud' } },
+  runtimeConfig: { public: { siteUrl: 'https://cardshelf.cloud' } },
   // Searchable public pages; private collector/account pages stay client-rendered.
   routeRules: {
     '/app': { ssr: false }, '/app/**': { ssr: false },
@@ -12,7 +12,7 @@ export default defineNuxtConfig({
     '/marketplace': { ssr: false }, '/marketplace/**': { ssr: false },
     '/games': { ssr: false }, '/register': { ssr: false },
     '/forgot-password': { ssr: false }, '/reset-password': { ssr: false },
-    '/settings': { ssr: false }, '/account': { ssr: false },
+    '/settings': { ssr: false }, '/account': { ssr: false }, '/emails': { ssr: false },
     '/membership': { ssr: false }, '/referrals': { ssr: false },
     '/admin/**': { ssr: false }, '/print/**': { ssr: false }, '/shared/**': { ssr: false }
   },

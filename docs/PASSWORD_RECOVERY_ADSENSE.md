@@ -1,5 +1,10 @@
 # CardShelf 0.14.0 — Password recovery and Free-only Google AdSense
 
+> Current email administration: v0.20 adds **More → Emails** and Postal. Follow
+> [Postal email setup](POSTAL_EMAIL.md) for the current connection, delivery and
+> DNS controls. The SMTP instructions below describe the retained legacy fallback,
+> which is used only before Postal settings have been saved.
+
 Target source base: `c6c758d09a82747905a7a7f2441091b8cc74b8ff` (v0.13.0).
 
 This release adds migration `014_password_recovery_adsense.sql`, a server-side recovery mail queue and explicit Google AdSense configuration. It does not change any existing password, tier, grant, subscription, card or binder during migration. Recovery email, AdSense and AdSense site verification start disabled. First-party sponsorship remains a separate optional feature.
@@ -25,7 +30,7 @@ Open **Password recovery** in the administrator navigation (`/admin/passwords`);
 Choose either:
 
 - **Email**: queue a reset email to the account's existing registered address. No alternate recipient can be supplied in the request. Requires configured recovery email.
-- **One-time link**: explicitly confirm the account holder's identity and secure delivery. The link is shown once and is not retrievable from the account list or audit log. This mode works even while SMTP is disabled. Give it only to the verified account holder through a secure channel; do not paste it in tickets, shared documents or public chat.
+- **One-time link**: explicitly confirm the account holder's identity and secure delivery. The link is shown once and is not retrievable from the account list or audit log. This mode works even while email delivery is disabled. Give it only to the verified account holder through a secure channel; do not paste it in tickets, shared documents or public chat.
 
 The administrator does not need the user's old password and does not assign or learn their new password. Generating a link does not immediately revoke current sessions; revocation happens when the account holder successfully chooses a new password. Existing administrators can assist another administrator, and an administrator account can use email recovery just like other accounts.
 
@@ -33,7 +38,9 @@ There is no unauthenticated administrator backdoor. A sole administrator who has
 
 ### Configure recovery email on the server
 
-The package uses **Nodemailer 10.0.10**, pinned as a runtime dependency. It supports authenticated SMTP or a trusted TLS-protected relay. It does not add Microsoft Graph, OAuth mail-account onboarding, an external mail API, email verification, or an email subscription. Any charges/limits imposed by your chosen SMTP service are separate.
+Manage Postal in **More → Administration → Emails** (`/admin/emails`). Saving Postal settings selects Postal for recovery and account notifications. Disabling it, removing its API key, or an invalid configuration pauses delivery; the application does not fall back to SMTP after Postal settings have been saved. Signed Postal webhooks report subsequent delivery and bounce events.
+
+Existing installations that have never saved Postal settings can continue using **Nodemailer 10.0.10**, pinned as a runtime dependency, with authenticated SMTP or a trusted TLS-protected relay. The following environment settings describe that legacy fallback. Microsoft Graph, OAuth mail-account onboarding and email verification are not included. Mail-service charges and limits remain separate.
 
 Edit the existing server `.env`; do **not** replace it or regenerate its database, bootstrap or integration secrets. Add:
 
@@ -53,11 +60,13 @@ For implicit TLS, use your provider's documented port (commonly 465) with `SMTP_
 
 `SMTP_FROM` must be one email address, not a display-name/address list. Configure the sending-domain authorisation, SPF/DKIM and delivery arrangements with the mail service. `APP_ORIGIN` must be the correct HTTPS site origin; reset links never derive their origin from a request Host header. Plain HTTP is accepted only for localhost/loopback testing.
 
-Compose explicitly passes these variables into the **app** service. The recovery queue is drained by the running web application every five seconds, separately from large card-catalogue imports. Restart/recreate the app to adopt changed environment variables. After the update is merged, the normal upgrade command recreates it; for a later SMTP-only configuration change, use the same Compose files/options used by your installation when recreating the app.
+Compose explicitly passes these variables into the **app** service. The recovery queue is drained by the running web application every five seconds, separately from large card-catalogue imports. Set `EMAIL_WORKER_ENABLED=false` to pause both recovery and account-notification dispatch during maintenance; omission or `true` enables the workers. Restart/recreate the app to adopt changed environment variables. After the update is merged, the normal upgrade command recreates it; for a later SMTP-only configuration change, use the same Compose files/options used by your installation when recreating the app.
 
-Open `/admin/passwords`. The mail status reports whether the environment is configured, **not whether delivery has succeeded**. Use **Send test email** with your administrator password; the recipient is your own registered admin address, not an arbitrary address. A `sent` queue state means SMTP accepted the message, not that it reached the inbox. Check the real inbox/spam folder before relying on recovery.
+Open `/admin/passwords`. The mail status reports whether the selected transport is configured, **not whether delivery has succeeded**. Use **Send test email** with your administrator password; the recipient is your own registered admin address, not an arbitrary address. An `accepted` state means the provider accepted the message; historical `sent` records have the same limited meaning. `delivered` requires a verified Postal event and does not prove inbox placement or that the recipient read it. Check the real inbox/spam folder before relying on recovery.
 
-While email is disabled or misconfigured, public requests still receive the generic response. They expire rather than silently granting access. Administrators can use manual secure links instead. The app performs at most three mail attempts with delayed retries and records generic error codes, never SMTP credentials/responses or message bodies. Delivery jobs have a 30-minute expiry and are cleaned by the running application. Reset tokens are stored only as hashes and are bound to the account's current password snapshot.
+While email is disabled or misconfigured, public requests still receive the generic response. They expire rather than silently granting access. Administrators can use manual secure links instead. The app performs at most three automatic mail attempts with delayed retries and records generic error codes, never credentials, provider responses or message bodies. Unsent recovery jobs expire after 30 minutes; completed and expired delivery history is retained for up to 30 days. Reset tokens are generated immediately before sending, remain valid for 30 minutes, are stored only as hashes and are bound to the account's current password snapshot. Suppressed recipients are blocked before a recovery token is issued.
+
+Authenticated password changes also queue a mandatory security notice. Optional marketplace and membership messages default off and can be enabled at `/emails`; they contain an authenticated application link rather than private conversation text or administrator reasons. Optional preferences and recipient access are checked again before sending. Notification jobs expire after 24 hours.
 
 ## Google AdSense
 

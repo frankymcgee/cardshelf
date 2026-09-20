@@ -28,13 +28,13 @@ function fixture(run) {
   }
 }
 
-test('default deployment origin is tcg.webwire.cloud with matching release and proxy settings', () => {
+test('default deployment origin is cardshelf.cloud with matching release and proxy settings', () => {
   fixture(({ invoke, readEnv }) => {
     const result = invoke();
     assert.equal(result.status, 0, result.stderr);
     const env = readEnv();
-    assert.equal(env.APP_ORIGIN, 'https://tcg.webwire.cloud');
-    assert.equal(env.APP_DOMAIN, 'tcg.webwire.cloud');
+    assert.equal(env.APP_ORIGIN, 'https://cardshelf.cloud');
+    assert.equal(env.APP_DOMAIN, 'cardshelf.cloud');
     assert.equal(env.APP_VERSION, expectedVersion);
     assert.equal(env.TRUST_PROXY, 'true');
     assert.equal(env.APP_BIND, '127.0.0.1');

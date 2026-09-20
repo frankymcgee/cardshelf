@@ -1,8 +1,23 @@
-# CardShelf 0.19.0
+# CardShelf 0.20.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
 binders, quick tracking, artwork effects, binder themes and a member marketplace.
+
+## Emails
+
+**More → Emails** brings Postal connection settings, setup checks and delivery
+management into CardShelf. Administrators manage the sending identity and encrypted
+Postal API credential; members choose their optional activity notifications.
+Password recovery and account security notices use the same delivery service.
+
+The new installation defaults are `https://cardshelf.cloud` and
+`https://postal.cardshelf.cloud`. Existing installations retain their configured
+origin until the operator changes it. Postal is an optional, separately operated
+mail service: saving application settings does not install containers, publish DNS
+records or establish compliance. See [Postal setup and operation](docs/POSTAL_EMAIL.md)
+for installation, domain authentication, certificates and acceptance checks.
+See [v0.20 validation](docs/POSTAL_VALIDATION.md) for executed checks and their limits.
 
 ## Arena
 
@@ -79,8 +94,9 @@ integration-key tests plus Stripe payment tests remain, with new activation regr
   are not included in public binder layouts.
 - Existing accounts are preserved. Public account requests do not automatically create
   a paid subscription. Administrators separately create subscription-ready new accounts.
-- Migration 010 adds only subscription policy state. Applied migrations 001–009 and historic
-  financial records are not rewritten. No new runtime dependency or service is introduced.
+- Historical migrations and financial records are preserved. The Postal extension adds
+  email configuration and delivery records; the optional deployment adds Postal and its
+  own MariaDB database alongside the existing CardShelf services.
 
 ## Stripe-managed product catalogue
 

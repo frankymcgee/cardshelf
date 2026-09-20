@@ -22,6 +22,9 @@ jobs:
       BOOTSTRAP_TOKEN: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       TEST_BASE_URL: http://localhost:3000
       ALLOW_TEST_DATABASE: 'yes'
+      # Keep queue processing explicit in tests; never contact a live mail provider.
+      EMAIL_WORKER_ENABLED: 'false'
+      CARDSHELF_INTEGRATION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -1,3 +1,26 @@
+## 0.20.0 — Postal email administration
+
+- Add **More → Emails** for Postal settings, password-confirmed credential changes,
+  sender identity, DNS diagnostics, administrator delivery tests, recent delivery
+  history, safe notification retries and recipient suppression management.
+- Encrypt Postal API credentials with the existing server integration key. Submit
+  text email over HTTPS to the deployment-configured Postal host; retain legacy
+  TLS SMTP only until Postal settings are first saved.
+- Add a durable notification outbox and per-user preferences. Notify opted-in
+  members about marketplace enquiries/replies and administrator membership changes;
+  send security notices for signed-in password changes. Preserve the secure
+  password-reset workflow and its generic public response.
+- Verify Postal delivery callbacks against a configured RSA public key, reject
+  invalid signatures, deduplicate events and correlate delivery/bounce metadata
+  with known messages. Never store raw callback bodies or private message content
+  in notification records.
+- Add the optional Postal Docker deployment, domain-authentication instructions,
+  certificate handling and backup guidance for `cardshelf.cloud`. Installation
+  defaults use `cardshelf.cloud`; existing `.env` values are preserved.
+- Add migration `018_postal_email.sql`. No existing accounts, collections, Arena
+  matches or billing records are rewritten. Email starts disabled and optional
+  notification preferences start off.
+
 ## 0.19.0 — Arena expansion
 
 - Add versioned expanded rules for supported EX/ex, Mega Evolution, Abilities,
