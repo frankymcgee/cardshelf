@@ -47,9 +47,24 @@ await test('automated arena: paid eligibility, private decks, multiplayer, CPU a
       assert.equal((await request('/api/admin/arena/settings',{user:admin,method:'POST',body,headers:{Origin:'https://evil.test'}})).status,403);
       await settings(true);
     });
-    await t.test('Free, old tester, Complimentary and unassigned administrators do not bypass the subscription gate',async()=>{
-      for(const user of [free,tester,comp,admin]){const status=await request('/api/arena/status',{user});assert.equal(status.status,200);assert.equal(status.data.allowed,false);assert.equal((await request('/api/arena/decks',{user})).status,403);assert.equal((await request('/api/arena/matches',{user,method:'POST',body:{mode:'tutorial',training:true,alias:'Blocked',request_id:randomUUID()}})).status,403);}
-      for(const user of [host,guest])assert.equal((await request('/api/arena/status',{user})).data.allowed,true);
+    await t.test('Free, old tester and unassigned administrators do not bypass the subscription gate',async()=>{
+      for(const user of [free,tester,admin]){const status=await request('/api/arena/status',{user});assert.equal(status.status,200);assert.equal(status.data.allowed,false);assert.equal((await request('/api/arena/decks',{user})).status,403);assert.equal((await request('/api/arena/matches',{user,method:'POST',body:{mode:'tutorial',training:true,alias:'Blocked',request_id:randomUUID()}})).status,403);}
+      for(const user of [host,guest,comp])assert.equal((await request('/api/arena/status',{user})).data.allowed,true);
+    });
+    await t.test('Complimentary can save a deck and play a tutorial without payment or a beta approval',async()=>{
+      const before=await sql`SELECT * FROM account_tier_overrides WHERE user_id=${comp.id}`;
+      const deck=await request('/api/arena/decks',{user:comp,method:'POST',body:deckBody()});assert.equal(deck.status,200,JSON.stringify(deck.data));
+      const r=await request('/api/arena/matches',{user:comp,method:'POST',body:{mode:'tutorial',training:true,alias:'Complimentary player',request_id:randomUUID()}});assert.equal(r.status,200,JSON.stringify(r.data));
+      assert.deepEqual(r.data.table.players[1].hand,[]);
+      const step=await act(comp,{type:'autoplay'},r.data.id);assert.ok(step.revision>r.data.revision);
+      assert.deepEqual(await sql`SELECT * FROM account_tier_overrides WHERE user_id=${comp.id}`,before);
+      assert.equal((await sql`SELECT id FROM stripe_subscriptions WHERE user_id=${comp.id}`).length,0);
+      const [stored]=await sql`SELECT state,revision FROM arena_matches WHERE id=${r.data.id}`;
+      await sql`UPDATE account_tier_overrides SET tier='inherit' WHERE user_id=${comp.id}`;
+      assert.equal((await request('/api/arena/matches/'+r.data.id,{user:comp})).status,403);
+      assert.deepEqual((await sql`SELECT state,revision FROM arena_matches WHERE id=${r.data.id}`)[0],stored);
+      await sql`UPDATE account_tier_overrides SET tier='complimentary' WHERE user_id=${comp.id}`;
+      assert.equal((await request('/api/arena/matches/'+r.data.id,{user:comp})).status,200);
     });
     await t.test('catalogue compilation exposes unsupported effects and no private notes',async()=>{
       const r=await request('/api/arena/catalogue?q=Arena',{user:host});assert.equal(r.status,200);const unsupported=r.data.items.find(c=>c.card.id===cardIds[2]);assert.equal(unsupported.supported,false);assert.match(unsupported.reason,/ability/i);assert.ok(!JSON.stringify(r.data).includes('Arena must not edit this entry'));assert.ok(r.data.items.every(c=>!Object.hasOwn(c,'raw_data')));

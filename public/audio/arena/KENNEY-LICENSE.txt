@@ -1,0 +1,14 @@
+Interface Sounds (1.0)
+Created/distributed by Kenney (www.kenney.nl)
+Creation date: 11-02-2020
+
+License: Creative Commons Zero (CC0)
+http://creativecommons.org/publicdomain/zero/1.0/
+
+This content is free to use in personal, educational and commercial projects.
+Support us by crediting Kenney or www.kenney.nl (this is not mandatory).
+
+This copy accompanies the unchanged click_002.wav and click_003.wav samples,
+renamed kenney-click.wav and kenney-card.wav, respectively.
+Source pack: https://kenney.nl/assets/interface-sounds
+WAV distribution: https://github.com/Calinou/kenney-interface-sounds
