@@ -86,7 +86,7 @@ await test('Free-only Auto ads and marketplace display units preserve private da
       for(const cookie of [undefined,admin.cookie,pro.cookie,collector.cookie,tester.cookie,complimentary.cookie])for(const path of ['/','/app','/marketplace'])assert.deepEqual((await ad(cookie,path)).data,{eligible:false});
     });
     await t.test('private paths, My listings and explicit ad-free views cannot inherit Auto ads',async()=>{
-      for(const path of ['/account','/settings','/admin/adsense','/login','/reset-password','/membership','/binders','/battle','/marketplace/inbox',
+      for(const path of ['/account','/settings','/admin/adsense','/login','/reset-password','/membership','/binders','/battle','/arena','/arena/decks/new','/arena/matches/'+randomUUID(),'/marketplace/inbox',
         '/marketplace/new','/marketplace/moderation','/marketplace/'+listings[0],'/marketplace?mine=1','/marketplace?mine=true',
         '/marketplace?mine=false&mine=true','/cards?ads=off','/cards?card='+cardId,'/privacy','/early-access'])assert.deepEqual((await ad(free.cookie,path)).data,{eligible:false},path);
     });
@@ -97,9 +97,34 @@ await test('Free-only Auto ads and marketplace display units preserve private da
         const paid=await request(path,{cookie:pro.cookie});assert.equal(paid.status,200);assert.ok(!paid.data.includes('cardshelf-adsense-revision'));assert.ok(!paid.headers.get('content-security-policy').includes('strict-dynamic'));
       }
     });
-    await t.test('private editor and own-listing HTML never receive a Google-capable document',async()=>{
-      for(const path of ['/cards?ads=off&card='+encodeURIComponent(cardId),'/marketplace?mine=1','/marketplace/inbox','/account','/battle']){
-        const r=await request(path,{cookie:free.cookie});assert.equal(r.status,200,path);assert.ok(!r.data.includes('cardshelf-adsense-revision'));assert.ok(!r.headers.get('content-security-policy').includes('strict-dynamic'));
+    function assertAdFreeDocument(response,path){
+      assert.match(response.headers.get('content-type')||'',/^text\/html(?:;|$)/,path);
+      assert.equal(typeof response.data,'string',path);
+      assert.ok(!response.data.includes('cardshelf-adsense-revision'),path);
+      const csp=response.headers.get('content-security-policy');
+      assert.ok(csp,`Missing restrictive CSP for ${path}`);
+      assert.ok(!csp.includes('strict-dynamic'),path);
+      assert.ok(!csp.includes('googlesyndication.com'),path);
+      assert.match(response.headers.get('cache-control')||'',/no-store/,path);
+    }
+    await t.test('private editor, own-listing and Arena HTML never receive a Google-capable document',async()=>{
+      // The live Arena replaces /battle; retired pages intentionally redirect.
+      // Keep status checks exact rather than accepting redirects for live pages.
+      for(const path of ['/cards?ads=off&card='+encodeURIComponent(cardId),'/marketplace?mine=1','/marketplace/inbox','/account','/arena','/arena/decks/new','/arena/matches/'+randomUUID()]){
+        const r=await request(path,{cookie:free.cookie});assert.equal(r.status,200,path);assertAdFreeDocument(r,path);
+      }
+    });
+    await t.test('retired battle redirects and their Arena destinations stay ad-free with Auto ads enabled',async()=>{
+      assert.equal(settings.enabled,true);assert.equal(settings.auto_ads_enabled,true);
+      for(const [path,destination] of [['/battle','/arena'],['/battle/decks/archived?invite=private-test-code','/arena'],
+        ['/battle/matches/archived?token=private-test-code','/arena'],['/admin/battle?invite=private-test-code','/admin/arena']]){
+        const redirected=await request(path,{cookie:free.cookie});
+        assert.equal(redirected.status,302,path);assert.equal(redirected.headers.get('location'),destination,path);
+        assertAdFreeDocument(redirected,path);
+        assert.ok(!redirected.data.includes('private-test-code'),path);
+        const arrived=await request(destination,{cookie:free.cookie});
+        assert.equal(arrived.status,200,destination);assertAdFreeDocument(arrived,destination);
+        for(const target of [path,destination])assert.deepEqual((await ad(free.cookie,target)).data,{eligible:false},target);
       }
     });
     await t.test('manual marketplace and catalogue slots coexist without reusing the wrong ID',async()=>{
