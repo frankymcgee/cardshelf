@@ -2,12 +2,13 @@ import { defineEventHandler, setHeader, getHeader, createError, getCookie } from
 import { randomBytes } from 'node:crypto'
 import { sessionUser } from '../../lib/auth.mjs'
 import { adsensePlacement } from '../../lib/adsense.mjs'
-import { adsenseCataloguePath, adsenseCsp } from '../../lib/adsense-logic.mjs'
+import { adsenseCsp } from '../../lib/adsense-logic.mjs'
+import { adsensePageKind } from '../../shared/adsense-policy.mjs'
 import { publicPage } from '../../shared/platform.mjs'
 import { configuration } from '../../lib/config.mjs'
 import { isAllowedMutation } from '../../lib/security.mjs'
 export default defineEventHandler(async event => {
-  const path = event.path.split('?')[0]
+  const [path = ''] = event.path.split('?', 1)
   const isPublicWebsite = publicPage(path)
   setHeader(event, 'X-Robots-Tag', isPublicWebsite ? 'index, follow' : 'noindex, nofollow')
   if (!isPublicWebsite && !event.path.startsWith('/_nuxt/')) setHeader(event, 'Cache-Control', 'no-store')
@@ -17,12 +18,12 @@ export default defineEventHandler(async event => {
   setHeader(event, 'Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
   if (process.env.NODE_ENV === 'production') setHeader(event, 'Content-Security-Policy',
     "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://assets.tcgdex.net https://files.stripe.com https://stripe-camo.global.ssl.fastly.net data:; connect-src 'self'; font-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
-  if (adsenseCataloguePath(path) && event.method === 'GET') {
+  if (adsensePageKind(event.path) && event.method === 'GET') {
     // A document can differ by session and must never be shared by a CDN/cache.
     setHeader(event, 'Cache-Control', 'private, no-store')
     setHeader(event, 'Vary', 'Cookie')
     try {
-      const placement = await adsensePlacement(await sessionUser(getCookie(event, 'cardshelf_session')), path)
+      const placement = await adsensePlacement(await sessionUser(getCookie(event, 'cardshelf_session')), event.path)
       if (placement.eligible) {
         const nonce = randomBytes(16).toString('hex')
         event.context.cardshelfAdsense = { nonce, revision: placement.revision }

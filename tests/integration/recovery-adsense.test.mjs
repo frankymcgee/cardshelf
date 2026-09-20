@@ -171,7 +171,7 @@ await test('password recovery and Free-only AdSense on an isolated installation'
     await t.test('an enabled manual unit is returned only for the effective Free tier on allowed catalogue pages',async()=>{
       const protectedSettings=await sql`SELECT * FROM stripe_billing_controls`,sponsorSettings=await sql`SELECT * FROM free_platform_settings`;
       await save({enabled:true,verification_enabled:true});
-      const r=await ad(free.cookie);assert.equal(r.status,200);assert.deepEqual(r.data,{eligible:true,publisher_id:pub,slot_id:slot,revision:settings.revision});assert.match(r.headers.get('cache-control'),/no-store/);
+      const r=await ad(free.cookie);assert.equal(r.status,200);assert.deepEqual(r.data,{eligible:true,publisher_id:pub,slot_id:slot,auto_ads:false,page_kind:'catalogue',revision:settings.revision});assert.match(r.headers.get('cache-control'),/no-store/);
       for(const cookie of [undefined,admin.cookie,collector.cookie,pro.cookie,complimentary.cookie])assert.deepEqual((await ad(cookie)).data,{eligible:false});
       // Tester sessions were revoked by recovery: a new tester session is still ad-free.
       const tk=randomToken();await sql`INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(${digest(tk)},${tester.id},now()+interval '1 hour')`;
