@@ -1,4 +1,4 @@
-# Automated Battle Arena — CardShelf 0.17.0
+# Automated Battle Arena — CardShelf 0.18.0
 
 ## Release boundary
 
@@ -15,13 +15,13 @@ The automated arena starts **disabled**, independently of the old battle-beta sw
 Playing, deck editing, training, computer practice and reading private arena records require one of:
 
 - A locally verified, unexpired **Live Stripe Collector or Collector Plus** paid period; or
-- An explicit, unexpired **Collector or Collector Plus administrative tier assignment**. This preserves a deliberate, auditable route for controlled testing without creating a charge.
+- An explicit, unexpired **Collector, Collector Plus or Complimentary administrative tier assignment**. This preserves a deliberate, auditable route for controlled testing without creating a charge.
 
-The internal premium plan code remains `plus`; changing a product's display name does not change that mapping. Administrative tier assignment takes precedence. A current Complimentary assignment does not qualify for this module.
+The internal premium plan code remains `plus`; changing a product's display name does not change that mapping. Administrative tier assignment takes precedence. A current explicit Complimentary assignment qualifies without a Stripe paid period.
 
-Free membership, an old tester grant, old battle approval, an administrator role, a pending/unpaid checkout, a Stripe Sandbox payment or disabled general membership enforcement **does not by itself unlock battles**. Administrators retain access to the arena configuration page, but need a qualifying entitlement to play. To test, explicitly assign Collector/Collector Plus to a dedicated account in Memberships & referrals; do not remove its other data or create a Live charge just for testing.
+Free membership, an old tester grant, old battle approval, an administrator role, a pending/unpaid checkout, a Stripe Sandbox payment or disabled general membership enforcement **does not by itself unlock battles**. Administrators retain access to the arena configuration page, but need a qualifying entitlement to play. To test, explicitly assign Collector, Collector Plus or Complimentary to a dedicated account in Memberships & referrals; do not remove its other data or create a Live charge just for testing.
 
-The legacy manual battle module now requires the same qualifying entitlement as well as its existing beta availability/approval rules. Existing approval rows are retained, but are not a subscription substitute. Pausing the arena or losing entitlement retains decks and matches; it does not delete them. An expired player's presence pauses new gameplay in a head-to-head match until their access is restored.
+The earlier manual battle interface is retired in v0.18.0. Its browser routes redirect to Arena and authenticated API operations return 410 Gone. Old decks, matches and approval rows are retained; an old match is not converted into an automated game. The Arena deck workshop still supports copying an archived deck for validation. Pausing the arena or losing entitlement retains decks and matches; it does not delete them. An expired player's presence pauses new gameplay in a head-to-head match until their access is restored.
 
 No billing requests, subscriptions, refunds, tier assignments or advertising settings are created by installing this release. The old general tester access to collection features is not removed. Arena routes are private and ad-free.
 
@@ -29,9 +29,9 @@ No billing requests, subscriptions, refunds, tier assignments or advertising set
 
 1. Upgrade a validated release using the existing upgrade procedure. Migration `017_automated_arena.sql` creates isolated arena tables. Keep the real `.env`, database volume, integration encryption key and `cardshelf.cloud` configuration.
 2. Enable the automated arena in `/admin/arena`.
-3. Sign in with a qualifying Collector/Collector Plus account and open **Battle**, which now points to `/arena`.
+3. Sign in with a qualifying Collector, Collector Plus or explicitly assigned Complimentary account and open **Arena** (`/arena`).
 4. Select **Start walkthrough**. No card catalogue import is needed: this uses original fictional teaching cards, not publisher artwork or a downloaded card dataset.
-5. Follow the opening-field prompt, attach Energy, choose an attack and resolve the selection prompts. The CPU plays the opposing seat. Use **How to play** to reopen guidance.
+5. Follow the opening-field prompt, attach Energy, choose an attack and resolve the selection prompts. The CPU plays the opposing seat. Use **Table tools → How to play** to reopen guidance. The same menu contains optional Sound & music controls. See `NAVIGATION_ARENA_AUDIO.md` for the new navigation and bundled audio.
 6. Try **Computer battle**. The empty saved-deck selection uses the original Ember teaching deck against the Tide teaching deck. Choose a supported saved deck to practise with imported cards instead.
 7. For real-user multiplayer, prepare supported 60-card decks in two qualifying accounts, create a private table, share its invitation code, join, approve the joining seat, ready both players and start.
 

@@ -1,6 +1,10 @@
 # CardShelf 0.15.0 — Pokémon assisted battle beta
 
-## Scope
+## Retired in v0.18.0
+
+This document describes the archived assisted beta, not the current user workflow. Use the automated Arena instead. Old beta pages redirect to Arena and old authenticated API operations return HTTP 410 Gone. Records remain stored; saved decks can be copied and checked in the Arena workshop. See `NAVIGATION_ARENA_AUDIO.md` and `AUTOMATED_ARENA.md`. The historical instructions below must not be used to reactivate the retired UI.
+
+## Historical scope
 
 This release adds saved decks and private two-player tables for English Pokémon catalogue cards. It is an **assisted casual tabletop**, not Pokémon TCG Live, a tournament legality checker or an automated card-effect engine. Players resolve attacks, costs, timing restrictions, Knock Outs, Prize awards, status effects and wins themselves. No ranking, wager, financial prize, spectator mode, AI opponent, public matchmaking, chat or voice service is included.
 

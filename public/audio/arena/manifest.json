@@ -1,0 +1,65 @@
+{
+  "release": "0.18.0",
+  "files": [
+    {
+      "file": "attack.wav",
+      "bytes": 12390,
+      "sha256": "35e34859830d810f64d26ebdaac1c547ec26f74dbdbc07d088b9ceb8eb9af906",
+      "source": "Original synthesized CardShelf audio"
+    },
+    {
+      "file": "coin.wav",
+      "bytes": 12392,
+      "sha256": "587059146fc56b6deb03fb03f422e1557dfceb6c64adbc54ce3795eaca23fced",
+      "source": "Original synthesized CardShelf audio"
+    },
+    {
+      "file": "defeat.wav",
+      "bytes": 37970,
+      "sha256": "b8a8ceb7bfc13472044b8cdb18154e49ccdd17f000011bc36d90b110562f1a59",
+      "source": "Original synthesized CardShelf audio"
+    },
+    {
+      "file": "kenney-card.wav",
+      "bytes": 1742,
+      "sha256": "b035afe3fe08b0fd3517c612bdfd362799bffe762d2cbf8f09e6a50322067358",
+      "source": "Kenney Interface Sounds / CC0"
+    },
+    {
+      "file": "kenney-click.wav",
+      "bytes": 1102,
+      "sha256": "3ebdb096e13b11d2ff1383e035847acb6a70e159edfb06bc94d59cbe40b1b713",
+      "source": "Kenney Interface Sounds / CC0"
+    },
+    {
+      "file": "knockout.wav",
+      "bytes": 17684,
+      "sha256": "96da74bf29e8eb832922efa853b0c9cf6ed29e081c59387c024f187df625b234",
+      "source": "Original synthesized CardShelf audio"
+    },
+    {
+      "file": "pulse-table.mp3",
+      "bytes": 288749,
+      "sha256": "814cc63f7cb74bc534fbbcda8eea3596157cd1749b25ec5f73374970cef325d3",
+      "source": "Original synthesized CardShelf audio"
+    },
+    {
+      "file": "quiet-table.mp3",
+      "bytes": 384670,
+      "sha256": "46f3c13ec055b1b27fa124e47a888525759200f00978511b548b8f26e719c366",
+      "source": "Original synthesized CardShelf audio"
+    },
+    {
+      "file": "turn.wav",
+      "bytes": 16800,
+      "sha256": "41624b88f61a688018712707dc5144d562c2d7b9afed3df6ccd91b2328eb9a36",
+      "source": "Original synthesized CardShelf audio"
+    },
+    {
+      "file": "victory.wav",
+      "bytes": 43702,
+      "sha256": "86693e0beb8bf4de773d8e63ba019398627caee67e24c3ece50d4df4c2e888e3",
+      "source": "Original synthesized CardShelf audio"
+    }
+  ]
+}

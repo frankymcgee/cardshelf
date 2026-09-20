@@ -20,10 +20,11 @@ export const LESSONS = Object.freeze([
 export function nextLesson(progress = {}) { return LESSONS.find(step => !progress[step.id]) || null; }
 export function arenaPaidTier({ override = null, subscriptions = [] } = {}, now = Date.now()) {
   // Explicit administrative tier assignments remain a controlled testing path.
-  // General beta grants, Complimentary and enforcement-off fallback are NOT entitlements.
+  // Explicit Complimentary assignments also include Arena. General beta grants
+  // and enforcement-off fallback are not entitlements.
   if (override && (!override.expires_at || Date.parse(override.expires_at) > now)) {
     if (['collector','plus'].includes(override.tier)) return { tier:override.tier, reason:'administrator_assignment' };
-    if (override.tier === 'complimentary') return null;
+    if (override.tier === 'complimentary') return { tier:'complimentary', reason:'complimentary' };
   }
   const valid = subscriptions.filter(s => s.environment === 'production' && ['collector','plus'].includes(s.offer_snapshot?.plan_code)
     && Number.isFinite(Date.parse(s.paid_through)) && Date.parse(s.paid_through) > now);

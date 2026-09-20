@@ -1,0 +1,35 @@
+CARDSHELF ARENA AUDIO — 0.18.0
+
+SOURCED INTERFACE SAMPLES
+Kenney — Interface Sounds (2020), Creative Commons Zero (CC0).
+https://kenney.nl/assets/interface-sounds
+https://creativecommons.org/publicdomain/zero/1.0/
+WAV distribution by Calinou:
+https://github.com/Calinou/kenney-interface-sounds
+
+kenney-click.wav is the unchanged click_002.wav sample.
+Git blob: ff6b64fcfe07f29ac9d20edbedb4dbe85a196ce0
+kenney-card.wav is the unchanged click_003.wav sample.
+Git blob: 9276c9b268ae96f6473ce7035432bb3aaa78eb37
+See KENNEY-LICENSE.txt. No endorsement is implied.
+
+ORIGINAL SYNTHESIZED AUDIO
+Quiet table (32 seconds) and Pulse table (24 seconds), plus attack, knockout,
+coin, turn, victory and defeat cues, were generated specifically for this
+CardShelf update. These are original synthesized recordings, not downloads
+from Kenney or extracts from any commercial game soundtrack.
+No third-party samples, performer recordings or borrowed melodies were used
+in these generated files. They are supplied for use and modification with
+this project. No external licence fee, API service or streaming account is needed.
+
+All playback is self-hosted from /audio/arena/. Preferences are local to the
+browser. Audio stays silent until the player explicitly enables it, and is
+stopped on navigation, loss of arena access, or window/tab deactivation.
+See manifest.json for file hashes.
+
+OPTIONAL FURTHER SOURCES (NOT BUNDLED)
+Kenney Casino Audio (card handling and dice; CC0):
+https://kenney.nl/assets/casino-audio
+Chill (Loopable), Alex McCulloch / Pro Sensory (CC0; credit the composer):
+https://opengameart.org/content/chill-loopable
+Review each selected download's current licence before adding it to a release.
