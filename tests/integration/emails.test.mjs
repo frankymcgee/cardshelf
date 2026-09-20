@@ -64,10 +64,11 @@ await test('Postal settings, personal preferences, queue hooks and authenticated
     // Other integration files deliberately retain their accounts. Password
     // changes now leave due security notifications for those accounts, so the
     // real FIFO worker must not be assumed to pick this suite's newest job.
-    // Seed that situation even when this file is run by itself.
+    // Seed that situation even when this file is run by itself, including
+    // microseconds that cannot survive conversion through a JavaScript Date.
     await sql`INSERT INTO app_users(id,email,name,password_hash) VALUES(${existingUserId},${existingUserId+'@example.test'},'Existing queued recipient',${await hashPassword(password)})`;
     await sql`INSERT INTO email_outbox(event_key,kind,user_id,available_at,created_at)
-      VALUES(${'existing-email:'+randomUUID()},'password_changed',${existingUserId},now()-interval '1 hour',now()-interval '1 hour')`;
+      VALUES(${'existing-email:'+randomUUID()},'password_changed',${existingUserId},date_trunc('second',now())-interval '1 hour'+interval '0.123456 seconds',now()-interval '1 hour')`;
     existingQueued=await sql`SELECT *,available_at::text AS original_available_at FROM email_outbox WHERE status='queued' ORDER BY id`;
     // Temporarily isolate fixture scheduling; keep production claiming global
     // and restore the original timestamps (including microseconds) in finally.
@@ -213,7 +214,9 @@ await test('Postal settings, personal preferences, queue hooks and authenticated
     });
   }finally{
     try{
-      for(const row of existingQueued)await sql`UPDATE email_outbox SET available_at=${row.original_available_at}::timestamptz WHERE id=${row.id}`;
+      // Force a text parameter so the driver does not serialize it as a Date
+      // before PostgreSQL restores the timestamp's full microsecond precision.
+      for(const row of existingQueued)await sql`UPDATE email_outbox SET available_at=${row.original_available_at}::text::timestamptz WHERE id=${row.id}`;
       if(existingQueued.length){
         const restored=await sql`SELECT *,available_at::text AS original_available_at FROM email_outbox WHERE id IN ${sql(existingQueued.map(row=>row.id))} ORDER BY id`;
         assert.deepEqual(restored,existingQueued,'Other suites\' notifications and exact schedules must be preserved.');

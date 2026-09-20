@@ -1,3 +1,10 @@
+## 0.20.2 — Preserve queue fixture timestamp precision
+
+- Restore integration-test queue schedules through a text parameter so the
+  PostgreSQL driver preserves all six fractional timestamp digits.
+- Seed a notification with explicit microsecond precision to cover the native
+  PostgreSQL cleanup failure in local email integration tests as well.
+
 ## 0.20.1 — Postal integration test isolation
 
 - Isolate the email integration suite from notifications queued by earlier tests,

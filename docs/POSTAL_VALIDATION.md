@@ -1,5 +1,30 @@
 # CardShelf Postal validation
 
+## 0.20.2 native PostgreSQL follow-up
+
+Applying 0.20.1 directly to the feature branch fixed the original administrator
+email failure. Both native PostgreSQL 17 CI runs passed all 18 email subtests,
+then failed the suite cleanup assertion: 342 of 343 integration tests passed.
+The PostgreSQL driver inferred a timestamp parameter for schedule restoration
+and serialized the captured string through JavaScript `Date`, truncating
+microseconds. The earlier PGlite checks used millisecond-resolution `now()`
+fixtures, so they did not expose this precision loss.
+
+The restore query now binds the timestamp as text before PostgreSQL casts it to
+`timestamptz`. The seeded backlog uses an explicit `.123456` fractional timestamp,
+so the existing exact-restoration assertion detects truncation locally too. All
+queue preservation assertions and CI gates remain enabled. Production email
+behavior is unchanged; no migration or Postal configuration change is required.
+
+The explicit-microsecond fixture reproduced the cleanup failure locally before
+the cast change (18 passed, one parent failure); the corrected email suite passed
+all 19 tests with exact schedule restoration.
+
+This follow-up is committed directly to `feature/postal-email-system`. The
+[existing pull request](https://github.com/frankymcgee/cardshelf/pull/21) reruns both
+GitHub workflows on the updated branch; those results are the native PostgreSQL
+integration gate.
+
 ## 0.20.1 CI correction
 
 Both the [pull-request run](https://github.com/frankymcgee/cardshelf/actions/runs/35511505045)
