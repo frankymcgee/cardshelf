@@ -40,18 +40,21 @@ test('mail transport dependency is pinned and server configuration never enables
   const compose=await text('compose.yaml');assert.match(compose,/RECOVERY_EMAIL_ENABLED: \$\{RECOVERY_EMAIL_ENABLED:-false\}/);
   const code=await text('lib/password-recovery-mail.mjs');assert.match(code,/disableFileAccess: true/);assert.match(code,/disableUrlAccess: true/);assert.match(code,/transport.close\(\)/);
 });
-test('Google ad loader is not global and is requested only by public catalogue components',async()=>{
+test('Google loader stays conditional and sensitive pages never mount an ad controller',async()=>{
   for(const path of ['nuxt.config.ts','app/layouts/default.vue','app/layouts/marketing.vue','app/pages/login.vue','app/pages/reset-password.vue']){
-    const source=await text(path);assert.ok(!source.includes('adsbygoogle.js'),path);assert.ok(!source.includes('<AdSenseSlot'),path);
+    const source=await text(path);assert.ok(!source.includes('adsbygoogle.js'),path);
+    if(path!=='app/layouts/marketing.vue')assert.ok(!source.includes('<AdSenseSlot'),path);
   }
-  for(const path of ['app/pages/explore/index.vue','app/pages/explore/[id].vue'])assert.match(await text(path),/<AdSenseSlot :content-ready=/);
+  assert.match(await text('app/layouts/marketing.vue'), /v-if="\['\/', '\/features', '\/pricing'\]\.includes\(route\.path\)"/);
+  for(const path of ['app/pages/explore/index.vue','app/pages/explore/[id].vue','app/pages/cards.vue','app/pages/app.vue'])assert.match(await text(path),/<AdSenseSlot :content-ready=/);
+  assert.match(await text('app/pages/marketplace/index.vue'),/:content-ready="data\.items\.length > 0 && !failure && !mine"/);
 });
 test('Google payload is issued only after effective membership and pending billing are checked',async()=>{
   const source=await text('lib/adsense.mjs');assert.match(source,/membershipState\(user.id\)/);assert.match(source,/pendingBilling: billing.length > 0/);assert.match(source,/sponsorEligible\(/);
-  assert.match(source,/!adsenseCataloguePath\(path\)/);assert.match(source,/user.role !== 'user'/);
+  assert.match(source,/!adsensePageKind\(path\)/);assert.match(source,/user.role !== 'user'/);
 });
 test('nonce CSP scope and cache policy prevent advertising context leaking between users',async()=>{
-  const code=await text('server/middleware/security.ts');assert.match(code,/adsenseCataloguePath\(path\) && event.method === 'GET'/);assert.match(code,/randomBytes\(16\)/);
+  const code=await text('server/middleware/security.ts');assert.match(code,/adsensePageKind\(event.path\) && event.method === 'GET'/);assert.match(code,/randomBytes\(16\)/);
   assert.match(code,/setHeader\(event, 'Cache-Control', 'private, no-store'\)/);assert.match(code,/setHeader\(event, 'Vary', 'Cookie'\)/);
   assert.ok(code.indexOf('if (placement.eligible)')<code.indexOf('adsenseCsp(nonce)'));
   assert.match(code,/isAllowedMutation/);assert.match(code,/default-src 'self'/);

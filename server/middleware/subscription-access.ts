@@ -1,4 +1,5 @@
 import { defineEventHandler, getCookie, getQuery } from 'h3'
+import { freeMarketplaceReader } from '../../shared/adsense-policy.mjs'
 import { billingPolicy } from '../../lib/billing-policy.mjs'
 import { membershipState } from '../../lib/membership.mjs'
 import { sessionUser } from '../../lib/auth.mjs'
@@ -31,7 +32,7 @@ export default defineEventHandler(event => platformResult(async () => {
   if (path.startsWith('/api/marketplace/')) {
     // Existing conversations, withdrawal and seller status management remain accessible.
     if (path === '/api/marketplace/listings' && method === 'POST') needs('marketplace_sell')
-    if (path === '/api/marketplace/listings' && method === 'GET' && getQuery(event).mine !== '1') needs('marketplace_browse')
+    if (path === '/api/marketplace/listings' && method === 'GET' && getQuery(event).mine !== '1' && !freeMarketplaceReader(access)) needs('marketplace_browse')
   }
   if (/^\/api\/marketplace\/listings\/[^/]+\/enquiries$/.test(path) && method === 'POST') needs('marketplace_browse')
   const match = path.match(/^\/api\/binders\/([a-f0-9-]{36})(?:\/(slots|tracking|appearance|share))?$/i)
