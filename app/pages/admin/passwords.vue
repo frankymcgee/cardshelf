@@ -21,13 +21,6 @@ async function submit() {
   } catch (e) { error.value = errorMessage(e) }
   finally { busy.value = false; password.value = ''; confirmed.value = false }
 }
-async function emailTest() {
-  if (busy.value) return
-  busy.value = true; error.value = ''
-  try { notice.show((await api('/api/admin/password-recovery/test-email', { method: 'POST', body: { password: password.value } })).message); load() }
-  catch (e) { error.value = errorMessage(e) }
-  finally { busy.value = false; password.value = '' }
-}
 async function copy() {
   try { await navigator.clipboard.writeText(result.value.url); notice.show('Recovery link copied. Treat it like a temporary password.') }
   catch { notice.show('Select and copy the link manually.', 'error') }
@@ -36,11 +29,7 @@ async function copy() {
 <template>
   <header class="page-heading"><div><span class="eyebrow">ACCOUNT SECURITY</span><h1>Password recovery</h1><p>Help an account holder choose a new password. Existing passwords are never shown.</p></div></header>
   <p v-if="error" class="alert error" role="alert">{{ error }}</p>
-  <section v-if="data" class="panel recovery-panel"><h2>Email delivery</h2><p>{{ data.mail.message }}</p><p class="data-note">Configure RECOVERY_EMAIL_ENABLED and SMTP settings in the server .env and restart the app. No paid email API is required. A successful queue status means the mail server accepted the message, not guaranteed inbox delivery.</p>
-    <div class="button-row"><span v-for="row in data.queue" :key="row.status" class="badge">{{ row.status }}: {{ row.count }}</span></div>
-    <label>Current administrator password<input v-model="password" type="password" autocomplete="current-password" maxlength="128" :disabled="busy"></label>
-    <button class="button secondary" :disabled="busy || !password || !data.mail.configured" @click="emailTest">Send test email to my account</button>
-  </section>
+  <section v-if="data" class="panel recovery-panel"><h2>Email delivery</h2><p>{{ data.mail.message }}</p><p class="data-note">Manage the Postal connection, sender, delivery history and test emails in the central Emails workspace. Password recovery remains available here.</p><div class="button-row"><NuxtLink to="/admin/emails" class="button secondary">Manage Emails</NuxtLink><span v-for="row in data.queue" :key="row.status" class="badge">{{ row.status }}: {{ row.count }}</span></div></section>
   <section class="panel recovery-panel"><h2>Find an account</h2><form class="search-row" @submit.prevent="load"><label>Name or email<input v-model="search" minlength="2" maxlength="100" type="search" placeholder="Enter at least two characters"></label><button class="button secondary">Search</button></form>
     <div v-if="data?.users.length" class="table-scroll"><table><thead><tr><th>Account</th><th>Role</th><th>Action</th></tr></thead><tbody><tr v-for="user in data.users" :key="user.id"><td>{{ user.name }}<br>{{ user.email }}</td><td>{{ user.role }}</td><td><button class="button secondary" :disabled="busy" @click="choose(user)">Reset password</button></td></tr></tbody></table></div>
     <p v-else class="data-note">Search for an existing account. Up to 30 matches are shown.</p>

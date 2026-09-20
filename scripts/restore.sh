@@ -8,21 +8,34 @@ if [ "$#" -ne 2 ] || [ "$2" != '--confirm-restore' ] || [ ! -f "$1" ]; then
 fi
 DUMP="$1"
 # Validate the archive header before stopping services.
-docker compose exec -T db pg_restore --list < "$DUMP" > /dev/null
+sh scripts/compose.sh exec -T db pg_restore --list < "$DUMP" > /dev/null
 echo 'Stopping application and worker before the restore...'
-docker compose stop app worker
+sh scripts/compose.sh stop app worker
 # Keep a safety copy of the current database. Abort if it cannot be backed up.
 if ! sh scripts/backup.sh; then
   echo 'Safety backup failed. Database has not been replaced; app and worker remain stopped.' >&2
   exit 1
 fi
-if ! docker compose exec -T db pg_restore -U cardshelf -d cardshelf --clean --if-exists --no-owner --single-transaction --exit-on-error < "$DUMP"; then
+if ! sh scripts/compose.sh exec -T db pg_restore -U cardshelf -d cardshelf --clean --if-exists --no-owner --single-transaction --exit-on-error < "$DUMP"; then
   echo 'Restore failed and was rolled back. App and worker remain stopped; inspect the error before restarting.' >&2
   exit 1
 fi
-# Restoring a historical dump must not revive previously signed-out sessions.
-docker compose exec -T db psql -U cardshelf -d cardshelf -v ON_ERROR_STOP=1 -c "DELETE FROM sessions; UPDATE jobs SET status='queued', lease_token=NULL, message='Queued after restore' WHERE status='running';"
-# Run any migrations for the currently installed application version.
-docker compose run --rm migrate
-docker compose up -d app worker
+# Run migrations before expiring mail so older backups gain the current queue schema.
+sh scripts/compose.sh run --rm migrate
+# Historical sessions/reset links and unsent mail must not become active again.
+# Preserve accepted/delivered history, suppression lists and integration settings.
+sh scripts/compose.sh exec -T db psql -U cardshelf -d cardshelf -v ON_ERROR_STOP=1 <<'SQL'
+BEGIN;
+DELETE FROM sessions;
+DELETE FROM password_recovery_tokens;
+UPDATE jobs SET status='queued', lease_token=NULL, message='Queued after restore' WHERE status='running';
+UPDATE password_recovery_mail SET status='expired', lease_token=NULL, lease_until=NULL,
+  finished_at=now(), expires_at=now(), last_error='DATABASE_RESTORED'
+  WHERE status IN ('queued','sending');
+UPDATE email_outbox SET status='expired', lease_token=NULL, lease_until=NULL,
+  finished_at=now(), updated_at=now(), expires_at=now(), last_error='DATABASE_RESTORED'
+  WHERE status IN ('queued','sending');
+COMMIT;
+SQL
+sh scripts/compose.sh up -d app worker
 echo 'Database restored. Verify sign-in, collections and binder layouts now.'

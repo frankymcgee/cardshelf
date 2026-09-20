@@ -20,6 +20,7 @@ export const COLLECTION_LINKS = Object.freeze([
 export const MORE_GROUPS = Object.freeze([
   { id:'account', title:'Your account', links:[
     {to:'/account',label:'Account',description:'Profile and password.',icon:'shield'},
+    {to:'/emails',label:'Email preferences',description:'Your marketplace and membership email preferences.',icon:'mail'},
     {to:'/membership',label:'Membership',description:'Your plan and subscription.',icon:'star'},
     {to:'/referrals',label:'Referrals',description:'Referral access and rewards.',icon:'share'}
   ]},
@@ -37,6 +38,7 @@ export const ADMIN_LINKS = Object.freeze([
   {to:'/admin/game-catalogue',label:'Game imports',description:'Import additional card games.',icon:'download'},
   {to:'/admin/free-platform',label:'Free tier & sponsors',description:'Registration and first-party ads.',icon:'grid'},
   {to:'/admin/adsense',label:'Google AdSense',description:'Ad units, Auto ads and verification.',icon:'settings'},
+  {to:'/admin/emails',label:'Emails',description:'Postal, delivery, DNS checks and suppressed recipients.',icon:'mail'},
   {to:'/admin/passwords',label:'Password recovery',description:'Help an account recover access.',icon:'shield'},
   {to:'/admin/arena',label:'Arena administration',description:'Availability and supported gameplay.',icon:'cards'}
 ]);

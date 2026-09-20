@@ -1,0 +1,21 @@
+# The existing application Caddyfile remains authoritative for APP_DOMAIN.
+import /etc/caddy/cardshelf.Caddyfile
+
+postal.cardshelf.cloud {
+    encode zstd gzip
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        -Server
+    }
+    request_body {
+        max_size 16MB
+    }
+    reverse_proxy postal-web:5000
+}
+
+# Caddy obtains/renews the SMTP hostname's public certificate over HTTP/HTTPS.
+# SMTP itself remains on Postal's port 25; see sync-certificates.sh.
+smtp.cardshelf.cloud {
+    header -Server
+    respond "CardShelf mail transport" 200
+}

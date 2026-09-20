@@ -7,10 +7,10 @@ if [ -e .env ]; then
   echo 'Refusing to overwrite .env. Edit it manually or move it aside after a backup.' >&2
   exit 1
 fi
-ORIGIN="${1:-https://tcg.webwire.cloud}"
+ORIGIN="${1:-https://cardshelf.cloud}"
 # Permit only a straightforward origin; disallow shell, dotenv and URL injection.
 if ! printf '%s' "$ORIGIN" | grep -Eq '^https?://[A-Za-z0-9][A-Za-z0-9.-]*(:[0-9]{1,5})?$'; then
-  echo 'Usage: sh scripts/configure.sh https://tcg.webwire.cloud' >&2
+  echo 'Usage: sh scripts/configure.sh https://cardshelf.cloud' >&2
   echo 'Use an origin without a path, query, credentials or trailing slash.' >&2
   exit 1
 fi
@@ -34,7 +34,7 @@ DB_PASSWORD=$(random_hex)
 BOOTSTRAP=$(random_hex)
 INTEGRATION_KEY=$(random_hex)
 cat > .env <<EOF
-APP_VERSION=0.19.0
+APP_VERSION=0.20.2
 APP_ORIGIN=$ORIGIN
 APP_DOMAIN=$DOMAIN
 APP_BIND=127.0.0.1
@@ -43,6 +43,8 @@ POSTGRES_PASSWORD=$DB_PASSWORD
 BOOTSTRAP_TOKEN=$BOOTSTRAP
 CARDSHELF_INTEGRATION_KEY=$INTEGRATION_KEY
 TRUST_PROXY=$TRUST
+POSTAL_ORIGIN=https://postal.cardshelf.cloud
+EMAIL_WORKER_ENABLED=true
 CATALOGUE_REQUEST_INTERVAL_MS=300
 EOF
 chmod 600 .env

@@ -122,11 +122,22 @@ normal page visits. Queue processing is single-job/single-card at a time in the
 initial deployment. Scale workers only after measuring API/provider limits and
 confirming acceptable import behaviour.
 
-## Deliberate initial limitations
+## Email delivery (v0.20)
 
-Account administration lacks role editing, disabling and email-based recovery.
-There are no native applications, notifications, financial/pricing calculations,
-webhooks, inventory reservations, arbitrary uploads, offline mutation queues or
-third-party analytics. The PWA service worker caches only an informational
-fallback page, not collection API data. Share links are bearer URLs; revocation
-cannot recall copies already made by a viewer.
+Postal settings and delivery administration live under **More → Emails**. The
+application submits text email over HTTPS to a configured Postal host. A durable
+outbox records event references, retries and delivery metadata; private marketplace
+message bodies are not copied into notification email. Password recovery keeps its
+separate short-lived queue so link secrets are generated only at delivery time.
+Signed provider webhooks update correlated delivery records. Optional marketplace
+and membership messages require a member preference; account security messages do
+not. See [Postal deployment and operation](POSTAL_EMAIL.md).
+
+## Remaining limitations
+
+There are no native applications, inventory reservations or offline mutation
+queues. The PWA service worker caches only an informational fallback page, not
+collection API data. Share links are bearer URLs; revocation cannot recall copies
+already made by a viewer. Email authentication, TLS and delivery checks do not
+constitute a security certification. The operator owns host and DNS configuration,
+retention, mailbox reputation and production acceptance testing.

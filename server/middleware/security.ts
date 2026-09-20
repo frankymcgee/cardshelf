@@ -35,13 +35,14 @@ export default defineEventHandler(async event => {
     setHeader(event, 'Cache-Control', 'no-store')
     if (!['GET', 'HEAD', 'OPTIONS'].includes(event.method)) {
       // Every other mutation keeps the existing same-origin and application-header requirements.
-      const webhook = /^\/api\/billing\/stripe\/webhook\/(sandbox|production)$/.test(path || '') && event.method === 'POST'
+      const postalWebhook = path === '/api/webhooks/postal' && event.method === 'POST'
+      const webhook = (/^\/api\/billing\/stripe\/webhook\/(sandbox|production)$/.test(path || '') && event.method === 'POST') || postalWebhook
       if (!webhook && !isAllowedMutation({ origin: getHeader(event, 'origin'), expectedOrigin: configuration().origin,
         requestedWith: getHeader(event, 'x-requested-with'), fetchSite: getHeader(event, 'sec-fetch-site') })) {
         throw createError({ statusCode: 403, message: 'Request origin is not allowed. Check APP_ORIGIN on the server.' })
       }
       const length = Number(getHeader(event, 'content-length') || 0)
-      if (length > (webhook ? 262144 : 8_000_000)) throw createError({ statusCode: 413, message: 'Request body is too large.' })
+      if (length > (postalWebhook ? 65536 : webhook ? 262144 : 8_000_000)) throw createError({ statusCode: 413, message: 'Request body is too large.' })
     }
   }
 })
