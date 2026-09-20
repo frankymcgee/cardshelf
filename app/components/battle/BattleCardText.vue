@@ -1,0 +1,6 @@
+<script setup lang="ts">
+const props = defineProps<{ card: any }>()
+const broken = ref(false)
+watch(() => props.card?.image_url, () => { broken.value = false })
+</script>
+<template><div v-if="card"><img v-if="card.image_url && !broken" class="battle-detail-image" :src="card.image_url" :alt="card.name" referrerpolicy="no-referrer" @error="broken = true"><h3>{{ card.name }}</h3><p class="small muted">{{ card.set_name }} · {{ card.number }}<br>{{ card.category }} {{ card.stage }} <template v-if="card.hp">· {{ card.hp }} HP</template></p><p v-if="card.effect">{{ card.effect }}</p><p v-if="card.evolves_from">Evolves from {{ card.evolves_from }}</p><div v-for="(ability, i) in card.abilities" :key="'ability-' + i"><strong>{{ ability.name }}</strong><p>{{ ability.effect }}</p></div><div v-for="(attack, i) in card.attacks" :key="'attack-' + i"><strong>{{ attack.name }} · {{ attack.damage }}</strong><p>{{ attack.cost.join(', ') }}<br>{{ attack.effect }}</p></div><p v-if="card.retreat !== null">Retreat cost: {{ card.retreat }}</p><p v-if="card.weakness?.length">Weakness: {{ card.weakness.map((w: any) => w.type + ' ' + w.value).join(', ') }}</p><p v-if="card.resistance?.length">Resistance: {{ card.resistance.map((w: any) => w.type + ' ' + w.value).join(', ') }}</p></div></template>
