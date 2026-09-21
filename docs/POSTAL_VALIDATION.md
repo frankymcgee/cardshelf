@@ -1,5 +1,24 @@
 # CardShelf Postal validation
 
+## 0.20.3 Postal web health probe
+
+The previous loopback web probe omitted Postal's configured hostname. Postal
+3.3.7 [adds `postal.web_hostname` to Rails' host allowlist](https://github.com/postalserver/postal/blob/3.3.7/config/application.rb),
+so that request can receive HTTP 403 while the web server is running. The probe
+now sends `Host: postal.cardshelf.cloud` directly to `127.0.0.1:5000`, accepts the
+normal login redirect without following it, and retains failure detection for
+HTTP errors. Curl errors are included in the Docker health log.
+
+The focused deployment suite passed all seven tests. Its new regression reads
+the generated Postal hostname and executes the configured curl command against
+a local HTTP fixture: a matching-host 302 succeeds without following the
+redirect, omission of the Host header fails with 403, and an application 500
+fails with an error message. The Postal Compose overlay also parses as YAML.
+
+This fixture is not a running Postal instance. GitHub CI validates CardShelf;
+the server operator must recreate `postal-web` after updating and confirm its
+health on the actual deployment. See the recovery steps in `POSTAL_EMAIL.md`.
+
 ## 0.20.2 native PostgreSQL follow-up
 
 Applying 0.20.1 directly to the feature branch fixed the original administrator

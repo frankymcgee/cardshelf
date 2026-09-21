@@ -53,6 +53,30 @@ Postal creates its schema and its first administrator through the two explicit c
 
 The generated `deploy/postal/.enabled` makes `sh scripts/compose.sh` select all three Compose files and the private Postal environment file. Use this wrapper for the combined stack. CardShelf's upgrade, backup and restore scripts also use it. Existing installations without that marker keep their previous Compose behavior. Preserve your existing application `Caddyfile`: the Postal overlay imports it and adds only the Postal and SMTP hostnames. If you use a different reverse proxy instead of the supplied Caddy, adapt these routes and certificate handoff before enabling the overlay.
 
+## If postal-web is unhealthy
+
+Versions through 0.20.2 probe Postal's web server using the loopback address without its configured hostname. Postal's Rails host authorization rejects that request with HTTP 403 even when the web server is running. Version 0.20.3 sends `Host: postal.cardshelf.cloud` while still connecting directly to `127.0.0.1:5000`; it accepts the normal login redirect without following it through public DNS or HTTPS.
+
+After updating your checkout to 0.20.3 or later, recreate only the web container so Docker loads the corrected health check:
+
+```sh
+sh scripts/compose.sh up -d --no-deps --force-recreate --wait --wait-timeout 180 postal-web
+```
+
+A plain container restart keeps the old probe. Preserve the generated configuration, keys and database; this fix does not require running `configure-postal.sh`, `postal initialize` or `postal make-user` again. Resume the installation at the worker/Caddy steps once the web service is healthy.
+
+If it remains unhealthy, inspect only its health state and recent application logs:
+
+```sh
+postal_web_id=$(sh scripts/compose.sh ps -q postal-web)
+if [ -n "$postal_web_id" ]; then
+  docker inspect --format '{{json .State.Health}}' "$postal_web_id"
+fi
+sh scripts/compose.sh logs --tail=80 postal-web
+```
+
+The corrected probe includes curl error output so connection failures and HTTP errors appear in Docker's health log. These checks do not dump the container environment or private configuration.
+
 ## DNS records
 
 All names below are full names in the `cardshelf.cloud` zone. DNS panels may expect only the part before `.cardshelf.cloud`. Replace `<PUBLIC_IPV4>` with this server's real public IPv4; it is intentionally not supplied by the patch. A TTL of 300 is convenient during setup.

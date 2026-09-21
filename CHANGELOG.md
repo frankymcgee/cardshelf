@@ -1,3 +1,9 @@
+## 0.20.3 — Correct Postal web health check
+
+- Send Postal's configured web hostname in the local web health probe so Rails host authorization does not reject a running server with HTTP 403.
+- Retain HTTP failure detection and local probing without following the login redirect; expose curl errors in Docker's health log.
+- Add a regression exercising the deployed curl command against host authorization, login redirects and server errors, and document how to recreate the web container after updating.
+
 ## 0.20.2 — Preserve queue fixture timestamp precision
 
 - Restore integration-test queue schedules through a text parameter so the
