@@ -46,7 +46,8 @@ services:
     # Internal only. Caddy is the sole public web listener.
     expose: ['5000']
     healthcheck:
-      test: [CMD, curl, --fail, --silent, --max-time, '5', http://127.0.0.1:5000/]
+      # Rails accepts only web_hostname. Keep this check local and allow the login redirect.
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--max-time", "5", "--header", "Host: postal.cardshelf.cloud", "http://127.0.0.1:5000/"]
       interval: 30s
       timeout: 8s
       retries: 5

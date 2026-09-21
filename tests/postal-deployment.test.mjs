@@ -4,8 +4,9 @@ import { mkdtempSync,mkdirSync,copyFileSync,writeFileSync,readFileSync,existsSyn
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawnSync } from 'node:child_process';
+import { execFile,spawnSync } from 'node:child_process';
 import { createPrivateKey,createPublicKey } from 'node:crypto';
+import { createServer } from 'node:http';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const openssl=spawnSync('openssl',['version'],{encoding:'utf8'}).status===0;
 const key='a'.repeat(64);
@@ -43,6 +44,35 @@ test('Compose wrapper retains legacy arguments and selects all Postal files only
   assert.equal(invoke('scripts/compose.sh','ps').status,1);writeFileSync(join(dir,'deploy/postal/.env'),'POSTAL_DB_PASSWORD=fixture\n');
   assert.deepEqual(invoke('scripts/compose.sh','ps').stdout.trim().split('\n'),['compose','--env-file','.env','--env-file','deploy/postal/.env','-f','compose.yaml','-f','compose.https.yaml','-f','deploy/postal/compose.postal.yaml','ps']);
 }));
+test('Postal web health probe uses the configured Host, accepts login redirects without following them, and rejects HTTP failures',{skip:!openssl},async()=>{
+  let hostname;
+  fixture(({dir,invoke})=>{
+    const result=invoke('scripts/configure-postal.sh');assert.equal(result.status,0,result.stderr);
+    hostname=readFileSync(join(dir,'deploy/postal/config/postal.yml'),'utf8').match(/^  web_hostname: (\S+)$/m)?.[1];assert.ok(hostname);
+  });
+  const compose=readFileSync(join(root,'deploy/postal/compose.postal.yaml'),'utf8');
+  const web=compose.match(/^  postal-web:\r?\n((?: {4}.*(?:\r?\n|$))*)/m)?.[1];assert.ok(web,'postal-web service must exist');
+  const probe=JSON.parse(web.match(/^      test: (\[.*\])$/m)?.[1]||'null');
+  assert.ok(Array.isArray(probe),'web health probe must be an exec-form JSON array');assert.deepEqual(probe.slice(0,2),['CMD','curl']);
+  assert.equal(probe.at(-1),'http://127.0.0.1:5000/');
+  const requests=[];let healthyStatus=302;
+  const server=createServer((request,response)=>{
+    const status=request.headers.host===hostname?healthyStatus:403;
+    requests.push({host:request.headers.host,path:request.url,status});
+    // An inaccessible redirect target makes following redirects fail the probe.
+    response.writeHead(status,status===302?{Location:'http://127.0.0.1:1/unreachable-login'}:{});response.end();
+  });
+  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});
+  try{
+    const args=probe.slice(2,-1).concat(`http://127.0.0.1:${server.address().port}/`);
+    const run=argv=>new Promise(resolve=>execFile(probe[1],argv,{timeout:7000,env:{...process.env,NO_PROXY:'127.0.0.1',no_proxy:'127.0.0.1'}},(error,stdout,stderr)=>resolve({status:error?.code??0,stderr})));
+    const healthy=await run(args);assert.equal(healthy.status,0,healthy.stderr);assert.deepEqual(requests,[{host:hostname,path:'/',status:302}]);
+    const header=args.findIndex((arg,index)=>arg==='--header'&&/^Host:/i.test(args[index+1]||''));assert.ok(header>=0,'probe must send an explicit Host header');
+    const blocked=await run(args.filter((_,index)=>index!==header&&index!==header+1));assert.equal(blocked.status,22,blocked.stderr);assert.equal(requests.at(-1).status,403);assert.notEqual(requests.at(-1).host,hostname);
+    healthyStatus=500;
+    const failed=await run(args);assert.equal(failed.status,22,failed.stderr);assert.match(failed.stderr,/500/);assert.deepEqual(requests.at(-1),{host:hostname,path:'/',status:500});
+  }finally{await new Promise(resolve=>server.close(resolve));}
+});
 function cert(dir,name,days,ca=null){
   const call=args=>{const r=spawnSync('openssl',args,{cwd:dir,encoding:'utf8'});assert.equal(r.status,0,r.stderr);};
   const common=['-newkey','ec','-pkeyopt','ec_paramgen_curve:P-256','-nodes','-keyout',name+'.key','-subj','/CN=smtp.cardshelf.cloud','-addext','subjectAltName=DNS:smtp.cardshelf.cloud'];
