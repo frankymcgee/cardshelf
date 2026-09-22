@@ -1,3 +1,9 @@
+## 0.20.4 — Japanese Pokémon catalogue IDs
+
+- Accept TCGdex's literal-plus Japanese set and card IDs so loading the set index does not fail on expansions such as SM1+.
+- Encode validated provider path segments once and keep imported Pokémon identities compatible with card lookup and game access; retain strict handling for other games and unsafe URLs.
+- Add deterministic Japanese/English catalogue, request-encoding and input-safety regressions. No database migration is required.
+
 ## 0.20.3 — Correct Postal web health check
 
 - Send Postal's configured web hostname in the local web health probe so Rails host authorization does not reject a running server with HTTP 403.
