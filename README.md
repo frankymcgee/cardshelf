@@ -1,4 +1,4 @@
-# CardShelf 0.20.5
+# CardShelf 0.21.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -20,6 +20,10 @@ for installation, domain authentication, certificates and acceptance checks.
 See [v0.20 validation](docs/POSTAL_VALIDATION.md) for executed checks and their limits.
 
 ## Arena
+
+Phase 1 of the [Arena UI refresh](docs/ARENA_UI_REFRESH.md) adds an opposite-table
+shell, clear field and pile zones, and a shared central Stadium. Existing rules,
+private views, selection and actions are unchanged.
 
 The automated Arena now includes supported Pokémon EX/ex, Mega Evolution,
 Abilities, separate Pokémon Tools, shared Stadiums and multi-step Trainers.
