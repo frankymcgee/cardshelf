@@ -8,7 +8,8 @@ export const GAME_CODES = Object.freeze(GAMES.map(game=>game.code));
 export function gameName(code) { return GAMES.find(game=>game.code===code)?.name || 'Unknown game'; }
 export function gameFromCardId(id) {
   if(typeof id!=='string') return null;
-  if(/^(en|ja):[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/.test(id)) return 'pokemon';
+  // Keep TCGdex's plus-bearing Japanese identities intact; other games stay unchanged.
+  if(/^(en|ja):[A-Za-z0-9][A-Za-z0-9._+-]{0,99}$/.test(id)) return 'pokemon';
   const [game,language,provider,...extra]=id.split(':');
   return !extra.length && ['yugioh','mtg'].includes(game) && language==='en' &&
     /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/.test(provider||'') ? game : null;
