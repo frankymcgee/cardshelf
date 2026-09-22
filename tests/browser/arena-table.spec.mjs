@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './arena-fixtures.mjs';
 const widths = [320, 390, 768, 1024, 1440];
 for (const width of widths) for (const seat of [0, 1]) test(`${width}px, seat ${seat}: opposite table, usable zones and no page overflow`, async ({ page }, info) => {
   await page.setViewportSize({ width, height: 1000 });

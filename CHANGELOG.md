@@ -1,3 +1,19 @@
+## 0.23.1 — Arena counter and touch-capture validation
+
+- Remove outgoing count text immediately so rapid public-count updates render exactly one current value, including with reduced motion. Retain the incoming highlight rather than weakening browser assertions.
+- Distinguish implicit touch-capture transfer from genuine capture loss so the dedicated touch handle can continue its drag safely.
+- Add rapid-counter and capture-transfer regressions plus a Chromium touch-input drag/confirmation check. Keep the existing Chromium/WebKit cases, strict typecheck and full-stack gates.
+- Correct the synthetic Energy fixture, capture the mobile confirmation at its real viewport size and synchronise release stamps. No rules-engine, server or database changes.
+
+## 0.23.0 — Arena UI refresh, Phase 3
+
+- Highlight playable hand cards and their exact public destinations using only the current server-provided legal moves, for both retained rules versions and both seats.
+- Add mouse card dragging and an explicit touch drag handle with a movement threshold, captured pointer, bounded edge scrolling and a private noninteractive drag preview. Ordinary card-face touch scrolling and tap selection remain native.
+- Dropping opens a review, never an immediate game mutation. Keyboard/tap Choose target reaches the same confirmation. Forward the original server action through the existing guarded writer only after confirmation.
+- Cancel local gestures/reviews on changed disclosed tables, selections, locks, prompts, visibility loss, additional pointers and capture cancellation. Identical polling preserves review; no optimistic board move, extra request or new browser persistence is added.
+- Add subtle public-count feedback with reduced-motion support. Preserve Phase 2 previews, resumable decisions, the action tray and all existing CI gates, including the bounded browser-startup fixture.
+- Add routing/privacy and actual component-state regressions plus Chromium/WebKit drag, confirmation, invalidation and touch-alternative checks. Synchronise release stamps. No engine, API, database, dependency or live-configuration change is required.
+
 ## 0.22.1 — Arena component label validation
 
 - Provide consistent fallback player names for reusable field, pile, Stadium and turn labels when the alias list is incomplete.

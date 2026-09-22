@@ -1,4 +1,4 @@
-# CardShelf 0.22.1
+# CardShelf 0.23.1
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -21,10 +21,12 @@ See [v0.20 validation](docs/POSTAL_VALIDATION.md) for executed checks and their 
 
 ## Arena
 
-Phase 2 of the [Arena UI refresh](docs/ARENA_UI_REFRESH.md) builds on the opposite-table
-shell with reusable field/pile components, an interactive private hand fan, an explicit
-legal-action tray, larger card previews and resumable decision dialogs. Card selection
-does not play a move. Existing rules, server validation and private views are retained.
+[Phase 3](docs/ARENA_UI_PHASE3.md) adds playable-hand indicators, public legal-target
+highlighting, mouse dragging, a dedicated touch drag handle and keyboard/tap target
+selection. Dropping opens a confirmation; only confirming forwards an unchanged
+server-issued action. Existing rules, server validation and private views are retained.
+The [Phase 1/2 foundation](docs/ARENA_UI_REFRESH.md) includes the opposite-table shell,
+interactive private hand fan, explicit action tray and resumable inspection/decisions.
 
 The automated Arena now includes supported Pokémon EX/ex, Mega Evolution,
 Abilities, separate Pokémon Tools, shared Stadiums and multi-step Trainers.
