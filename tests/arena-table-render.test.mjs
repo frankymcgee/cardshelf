@@ -72,3 +72,14 @@ test('long aliases are escaped and all private-hand cards remain in the scroll r
   assert.match(html, /&lt;script&gt;/);
   assert.match(html, /Hand-29/);
 });
+for (const seat of [0, 1]) test(`seat ${seat}: missing aliases retain labelled fields, piles and turn captions`, async () => {
+  const props = tableFixture({ seat }); props.aliases = []; props.table.turn = 1 - seat;
+  const html = await render(props);
+  for (const index of [0, 1]) {
+    assert.ok(html.includes(`aria-label="Player ${index + 1} play area"`));
+    assert.ok(html.includes(`Inspect Player ${index + 1} discard: 1 cards`));
+  }
+  assert.ok(html.includes(`Player ${2 - seat} is playing`));
+  assert.ok(html.includes(`Played by Player ${2 - seat}`));
+  assert.doesNotMatch(html, /undefined (?:play area|is playing)|SECRET/);
+});

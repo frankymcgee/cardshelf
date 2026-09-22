@@ -1,9 +1,9 @@
 name: Validate Arena table UI
 on:
   push:
-    paths: ['app/components/arena/**', 'app/assets/css/**', 'shared/arena.mjs', 'tests/browser/**', 'tests/helpers/arena-table-fixtures.mjs', 'package*.json', '.github/workflows/arena-table-ui.yml']
+    paths: ['app/components/arena/**', 'app/pages/arena/matches/**', 'app/assets/css/**', 'shared/arena.mjs', 'tests/browser/**', 'tests/helpers/arena-table-fixtures.mjs', 'package*.json', '.github/workflows/arena-table-ui.yml']
   pull_request:
-    paths: ['app/components/arena/**', 'app/assets/css/**', 'shared/arena.mjs', 'tests/browser/**', 'tests/helpers/arena-table-fixtures.mjs', 'package*.json', '.github/workflows/arena-table-ui.yml']
+    paths: ['app/components/arena/**', 'app/pages/arena/matches/**', 'app/assets/css/**', 'shared/arena.mjs', 'tests/browser/**', 'tests/helpers/arena-table-fixtures.mjs', 'package*.json', '.github/workflows/arena-table-ui.yml']
   workflow_dispatch:
 permissions:
   contents: read

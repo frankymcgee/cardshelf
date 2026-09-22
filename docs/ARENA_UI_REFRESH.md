@@ -1,28 +1,45 @@
-# Arena UI refresh — Phase 1 (0.21.0)
+# Arena UI refresh
 
-## Scope
+## Phase 2 — reusable components and interaction (0.22.0)
 
-The opponent sits above the player. Each side has five Bench positions, an Active
-Pokémon nearest the centre, and separate deck, discard and Prize zones. The shared
-Stadium and turn caption sit between the two fields. The private hand remains below
-the player's field with native horizontal scrolling.
+Phase 2 builds on the merged Phase 1 opposite-table layout. It changes presentation
+and selection/inspection only, not the card compiler, rules engine or persistence.
 
-Depth is applied to the table surface, not to the card faces. Narrow tables move
-piles to a compact shelf to preserve usable field targets. Empty piles remain
-labelled; opponent hand backs and Prize decorations use bounded public counts only.
-Reduced-motion preferences remove the new surface perspective and card animation.
+### Components
 
-This is a presentation change to ArenaBoard, with board-specific CSS. The existing
-match page, card inspector, action/prompt handling, sounds, polling, rules versions,
-server engines, access controls and database are unchanged. Core snapshots without
-a Stadium field remain supported. No database migration is added.
+ArenaBoard remains the match page's compatible entry point and event boundary.
+ArenaTable supplies the table surface and tutorial focus hook. ArenaPlayerZone and
+ArenaFieldZone render the opposed Active/Bench zones in DOM order. ArenaCardStack
+accepts only public counts for deck/Prize/hand backs; ArenaDiscardPile emits an
+inspection event. ArenaHandFan is supplied only the seated player's hand.
 
-This phase does not add a new fan-selection interaction, drag-and-drop, card travel
-animations, attack effects or additional card mechanics. Those belong to later phases.
+The private hand has a bounded overlapping fan for ordinary hands, lifting a card
+on mouse hover, keyboard focus or selection. Large hands use a straight scrollable
+row. Left/Right and Home/End move focus; Enter selects. No pointer/touch gesture is
+prevented and a tap only selects. Selection is local and makes no API request.
+Reduced-motion removes fan transforms and transitions.
 
-## Validation
+ArenaActionTray lists only the selected card's server-provided moves, forwarding
+the original action unchanged to the existing guarded writer. On mobile it docks
+above the safe area without the old jump to an off-screen inspector. Inspect opens
+a larger ArenaCardPreview; the same preview also supplies desktop details. Attached
+Energy, Tools and evolution cards retain inspection and parent navigation. A newer
+snapshot clears selected cards that have left the disclosed view. Opponent hands
+are excluded from the inspector index, even if unexpected extra fields are present.
 
-Run with Node.js 24 after installing the repository dependencies:
+ArenaModal uses a native dialog with a persistent close header, contained body
+scrolling, Escape handling and focus restoration. Discard inspection uses the same
+modal infrastructure. ArenaPromptModal wraps the existing typed ArenaDecision:
+Back to table minimizes it without choosing/cancelling a move, and Resume decision
+retains in-progress choices. Equal-revision polling preserves choices; a new
+acknowledged revision separates even consecutive same-shaped decisions.
+
+No new runtime or test dependency, migration, billing/Postal configuration change,
+optimistic game-state update or local rules implementation is introduced. Existing
+idempotency keys, lost-response retries, revision checks, match access and CPU/PvP
+boundaries remain in place. Drag-and-drop and card-travel/attack effects are deferred.
+
+### Validation
 
 ```sh
 npm test
@@ -32,29 +49,52 @@ npx playwright install --with-deps chromium webkit
 npm run test:arena-ui
 ```
 
-The existing Validate CardShelf workflow retains unit tests, typecheck, production
-build, migrations and API integration tests against a disposable PostgreSQL database.
-Never run integration fixtures against a live database.
+The original Validate CardShelf workflow still performs the full unit suite,
+Nuxt typecheck/build, migrations and API integration on disposable PostgreSQL.
+The Arena table workflow compiles actual Vue components and loads the application,
+Arena, table and interaction styles through a localhost-only synthetic fixture.
+Its source allowlist is limited to the Arena components, named styles and fixture
+modules; it is not a production route or a filesystem proxy.
 
-The new Validate Arena table UI workflow compiles the actual ArenaBoard/ArenaCard
-components and loads the actual application and Arena styles in a local fixture.
-It exercises both player seats at 320, 390, 768, 1024 and 1440 pixels in Chromium and
-WebKit, including layout order, page overflow, Bench/pile target sizes, selection,
-keyboard discard/hand access, Stadium actions, lock state, setup secrecy, Core
-snapshots, empty piles and reduced motion. Screenshot/report artifacts are retained
-as arena-table-ui-evidence. Synthetic cards avoid live catalogue requests.
+Retained checks cover both seats at 320/390/768/1024/1440px, DOM/visual order,
+Bench/discard target sizes, horizontal page overflow, private cards, Core snapshots,
+setup, Stadium payload/lock and reduced motion. Added coverage checks fan focus,
+explicit actions, modal focus/Escape/return, minimization and identical-poll choice
+retention, new-decision resets, long search prompts, shrinking hands and touch taps.
+Actual match-page script regressions verify selection, invalidation and wiring to
+the unchanged guarded request/retry mechanism. Source-only layout checks were moved
+to the extracted component boundaries; their behavioral/render coverage is retained.
 
-The browser fixture is a development-only localhost server, not a production Nuxt
-route. It validates the real components, but it is not a full authenticated match
-play-through or physical iOS/Android device test. Use each commit's Actions results
-as the execution record; the existence of a test does not establish that it passed.
+Use the PR's Actions results and validation comment as the execution record. Test
+source is not proof of a passing run. Browser evidence is retained in the
+arena-table-ui-evidence artifact. Automated screenshots are not manual visual
+acceptance. Touch emulation verifies taps and scroll-container availability, not
+physical swipe momentum, device safe areas or a signed-in complete game.
 
-## Review before deployment
+### Review before deployment
 
-Review the PR and both workflows. On a test deployment, resume an existing Core
-match and an Expanded match, then check setup, card inspection, discard inspection,
-Stadium actions, a prompted decision and a large hand. Check actual mobile scrolling
-and the surrounding inspector/prompt controls on the devices used by members.
+On a test installation resume both Core and Expanded matches. Select/inspect cards
+and attachments, play an Energy/Trainer/attack through the tray, inspect both
+public discard piles, minimize/resume a required decision, and exercise a large
+hand. Test iOS/Android portrait and landscape and desktop keyboard navigation.
+Check the paused/retry controls after a dropped connection and confirm no double
+moves. Preserve existing .env, the database and integration key.
 
-Merging and deploying are separate operations. Preserve the existing .env, database
-and integration key. This change neither deploys itself nor resets saved matches.
+## Phase 1 — opposite-table foundation (0.21.0)
+
+The opponent sits above the player. Each side has five Bench positions, an Active
+Pokémon nearest the centre, and separate deck, discard and Prize zones. The shared
+Stadium and turn caption sit between the two fields. The private hand remains below
+the player's field with native horizontal scrolling.
+
+Depth is applied to the table surface, not to the card faces. Narrow tables move
+piles to a compact shelf to preserve usable field targets. Empty piles remain
+labelled; opponent hand backs and Prize decorations use bounded public counts only.
+Core snapshots without a Stadium field remain supported.
+
+Phase 1 established the board CSS and responsive Chromium/WebKit fixture. Its
+server rules, saved matches, database and action contracts were unchanged. Phase 2
+retains that foundation and splits the presentation into reusable components.
+
+Merging and deploying are separate operations. This source neither deploys itself
+nor resets saved matches.

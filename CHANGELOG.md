@@ -1,3 +1,19 @@
+## 0.22.1 — Arena component label validation
+
+- Provide consistent fallback player names for reusable field, pile, Stadium and turn labels when the alias list is incomplete.
+- Correct the strict Vue prop type error without weakening typechecking. Add rendered missing-alias regressions for both seats and synchronise release stamps.
+- Retain the Phase 2 interaction scope, server action guards and all existing validation gates.
+
+## 0.22.0 — Arena UI refresh, Phase 2
+
+- Extract reusable table, player/field zones, hidden-count stacks, discard piles and the private hand fan without changing server rules or saved matches.
+- Add a bounded overlapping hand fan with hover/focus/selection lift, native horizontal scrolling and Left/Right/Home/End keyboard navigation. Tapping selects only; no gesture plays a card.
+- Add the explicit server-provided action tray, a fixed mobile dock and larger card/discard previews using native modal dialogs. Remove the mobile inspector scroll jump.
+- Present required decisions in a resumable dialog. Returning to the table preserves choices, identical polling preserves progress, and a new acknowledged decision resets selections.
+- Drop unavailable selected-card previews when a newer disclosed view arrives; exclude opponent hands from the inspector index and retain request idempotency, locking and private-state cleanup.
+- Extend layout/state/render and Chromium/WebKit checks, including mobile touch emulation, focus restoration, long hands/searches, Core snapshots and hidden-card safety. Keep the existing full-stack CI gates and coordinated release stamps.
+- No new dependency, database migration, rules-engine change or production configuration change is required. Drag-and-drop and card-travel/attack effects remain later phases.
+
 ## 0.21.0 — Arena UI refresh, Phase 1
 
 - Introduce an opposite-table shell with the opponent above the player, Active Pokémon facing the centre, five Bench positions and clearly labelled deck, discard and Prize zones.

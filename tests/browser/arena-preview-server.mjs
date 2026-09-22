@@ -1,4 +1,4 @@
-// Local, synthetic component fixture only. Not a Nuxt route and never part of the production app.
+// Local synthetic fixture for actual components. Never a production Nuxt route.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -7,29 +7,46 @@ import { createRequire } from 'node:module';
 import ts from 'typescript';
 import { parse, compileScript } from '@vue/compiler-sfc';
 const root = fileURLToPath(new URL('../../', import.meta.url)), require = createRequire(import.meta.url);
+const components = fs.readdirSync(path.join(root, 'app/components/arena')).filter(name => name.endsWith('.vue')).map(name => 'app/components/arena/' + name);
 const files = new Map([
   ['/vue.js', path.join(path.dirname(require.resolve('vue/package.json')), 'dist/vue.esm-browser.prod.js')],
-  ...['app/components/arena/ArenaBoard.vue', 'app/components/arena/ArenaCard.vue', 'shared/arena.mjs',
-    'tests/helpers/arena-table-fixtures.mjs', 'app/assets/css/main.css', 'app/assets/css/arena.css', 'app/assets/css/arena-table.css']
+  ...[...components, 'shared/arena.mjs', 'tests/helpers/arena-table-fixtures.mjs',
+    'app/assets/css/main.css', 'app/assets/css/arena.css', 'app/assets/css/arena-table.css', 'app/assets/css/arena-interactions.css']
     .map(file => ['/' + file, path.join(root, file)])
 ]);
-const entry = `import { createApp, reactive, h, ref } from '/vue.js';
+const entry = `import { createApp, reactive, computed, h, ref } from '/vue.js';
 import ArenaBoard from '/app/components/arena/ArenaBoard.vue';
+import ArenaCard from '/app/components/arena/ArenaCard.vue';
+import ArenaActionTray from '/app/components/arena/ArenaActionTray.vue';
+import ArenaCardPreview from '/app/components/arena/ArenaCardPreview.vue';
+import ArenaModal from '/app/components/arena/ArenaModal.vue';
+import ArenaPromptModal from '/app/components/arena/ArenaPromptModal.vue';
 import { tableFixture } from '/tests/helpers/arena-table-fixtures.mjs';
 const query = new URLSearchParams(location.search);
 const options = { seat: query.get('seat') === '1' ? 1 : 0, legacy: query.has('legacy'), empty: query.has('empty'), setup: query.has('setup'), longHand: query.has('longHand'), locked: query.has('locked') };
-const props = reactive(tableFixture(options)), events = [], inspected = ref('Select a card or discard pile');
-window.arenaFixture = { events, props };
-createApp({ setup() { return () => h('div', { class: 'arena-root' }, h('main', { class: 'arena-main' }, [
+const props = reactive(tableFixture(options)), events = [], preview = ref(false), discard = ref(null), revision = ref(1);
+props.table.legal = props.table.players[props.table.seat].hand.map(unit => ({ card: unit.id, label: 'Play ' + unit.card.name, action: { type: 'bench', card: unit.id } }));
+function publicCards(units) { return units.filter(unit => unit && !unit.hidden && unit.card).flatMap(unit => [unit, ...publicCards([...(unit.tools || []), ...(unit.energy || []), ...(unit.under || [])])]); }
+const cards = computed(() => publicCards([...props.table.players.flatMap((p, seat) => [...(seat === props.table.seat ? p.hand : []), p.active, ...p.bench, ...p.discard]), props.table.stadium?.unit]));
+const current = computed(() => cards.value.find(unit => unit.id === props.selected));
+const parent = computed(() => cards.value.find(unit => [...(unit.tools || []), ...(unit.energy || []), ...(unit.under || [])].some(child => child.id === props.selected)));
+const moves = computed(() => props.table.legal.filter(move => move.card === props.selected));
+const select = unit => { props.selected = unit.id; discard.value = null; events.push(['select', unit.id]); };
+const action = value => events.push(['action', value]);
+window.arenaFixture = { events, props, setPrompt(value) { props.table.prompt = value; revision.value++; }, clearSelection() { props.selected = ''; preview.value = false; } };
+createApp({ setup() { return () => h('div', { class: 'arena-root' }, h('main', { class: ['arena-main', 'arena-match-view', current.value ? 'arena-match-has-selection' : ''] }, [
   h('div', { class: 'arena-table-top' }, h('div', [h('span', { class: 'arena-kicker' }, 'COMPONENT REVIEW · ORIGINAL TRAINING CARDS'), h('h1', 'Arena · Across the table')])),
+  h(ArenaPromptModal, { prompt: props.table.prompt, revision: revision.value, locked: props.locked, onChoose: ids => events.push(['choose', ids]) }),
   h('div', { class: 'arena-play-layout' }, [
-    h('div', { class: 'arena-board-wrap' }, h(ArenaBoard, { ...props,
-      onSelect: unit => { props.selected = unit.id; events.push(['select', unit.id]); inspected.value = unit.card.name; },
-      onDiscard: seat => { events.push(['discard', seat]); inspected.value = props.aliases[seat] + ' discard'; },
-      onAction: action => { events.push(['action', action]); }
-    })),
-    h('aside', { class: 'arena-inspector' }, h('div', { class: 'arena-panel' }, [h('span', { class: 'arena-kicker' }, 'CARD INSPECTOR'), h('h2', inspected.value), h('p', 'Presentation fixture only. Match actions and decisions remain in the existing match page.')]))
-  ])
+    h('div', { class: 'arena-board-wrap' }, h(ArenaBoard, { ...props, onSelect: select,
+      onDiscard: seat => { preview.value = false; discard.value = seat; events.push(['discard', seat]); }, onAction: action })),
+    h('aside', { class: 'arena-inspector' }, current.value ? [
+      h(ArenaActionTray, { unit: current.value, moves: moves.value, locked: props.locked, onAction: action, onInspect: () => { preview.value = true; }, onClear: () => { props.selected = ''; preview.value = false; } }),
+      h('div', { class: 'arena-panel arena-desktop-preview' }, h(ArenaCardPreview, { unit: current.value, parent: parent.value, selected: props.selected, onSelect: select }))
+    ] : h('section', { class: 'arena-panel arena-inspector-empty' }, [h('h2', 'Select a card'), h('p', 'Selection never plays a card. Inspect it or choose a server-provided move.')]))
+  ]),
+  h(ArenaModal, { open: preview.value && !!current.value, label: 'Card preview', onClose: () => { preview.value = false; } }, { default: () => current.value ? h(ArenaCardPreview, { unit: current.value, parent: parent.value, selected: props.selected, onSelect: select }) : null }),
+  h(ArenaModal, { open: discard.value !== null, label: 'Discard pile', onClose: () => { discard.value = null; } }, { default: () => discard.value === null ? null : h('div', { class: 'arena-discard-grid' }, props.table.players[discard.value].discard.map(unit => h(ArenaCard, { unit, onSelect: unit => { select(unit); preview.value = true; } }))) })
 ])); } }).mount('#app');`;
 const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Arena table fixture</title>'
   + [...files.keys()].filter(name => name.endsWith('.css')).map(name => `<link rel="stylesheet" href="${name}">`).join('')
@@ -48,7 +65,10 @@ const server = http.createServer((req, res) => {
       if (errors.length) throw errors[0];
       content = compileScript(descriptor, { id: name, inlineTemplate: true }).content;
       content = ts.transpileModule(content, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
-      content = 'import { ref, computed, watch } from "/vue.js";\n' + content.replace(/from (['"])vue\1/g, 'from "/vue.js"');
+      const ast = ts.createSourceFile(name, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS), imported = new Set();
+      for (const node of ast.statements) if (ts.isImportDeclaration(node) && node.importClause?.namedBindings && ts.isNamedImports(node.importClause.namedBindings)) for (const item of node.importClause.namedBindings.elements) imported.add(item.name.text);
+      const missing = ['ref', 'computed', 'watch', 'onMounted', 'onBeforeUnmount', 'nextTick'].filter(name => !imported.has(name));
+      content = (missing.length ? 'import { ' + missing.join(', ') + ' } from "/vue.js";\n' : '') + content.replace(/from (['"])vue\1/g, 'from "/vue.js"');
     }
     res.setHeader('Content-Type', name.endsWith('.css') ? 'text/css' : 'text/javascript'); res.end(content);
   } catch (error) { console.error(error); res.writeHead(500); res.end('Fixture compilation failed'); }
