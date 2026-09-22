@@ -1,0 +1,184 @@
+/* Phase 1: visual shell only. All rules, private views and actions remain server-owned.
+   Scope every override to this board; the workshop, old battle UI and inspector stay unchanged. */
+.arena-board.arena-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  max-width: none;
+  padding: 18px 18px 0;
+  overflow: visible;
+  border: 1px solid #8fb7b44d;
+  border-radius: 24px;
+  background: radial-gradient(ellipse at 50% 45%, #274851, #152733 62%, #101b2b);
+  box-shadow: inset 0 2px 0 #ffffff12, 0 22px 55px #0004;
+}
+.arena-board.arena-table::before {
+  width: auto;
+  height: auto;
+  inset: 48px 12px 145px;
+  border: 1px solid #b5d2c929;
+  border-radius: 38px;
+  background: repeating-linear-gradient(135deg, #ffffff03 0 1px, transparent 1px 7px);
+  transform: perspective(1000px) rotateX(7deg);
+  transform-origin: 50% 50%;
+  box-shadow: inset 0 0 75px #0003, 0 12px 0 #09162060;
+  pointer-events: none;
+}
+.arena-table .arena-table-side {
+  order: initial;
+  min-width: 0;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #91c9bf2b;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #457e7112, #122b3329);
+}
+.arena-board.arena-table > .arena-field.arena-table-side { margin: 0; }
+.arena-table .arena-table-side.is-opponent {
+  background: linear-gradient(180deg, #57769a1c, #2334480d);
+  border-color: #9ebce52b;
+}
+.arena-table .arena-table-side.is-your-turn { border-color: #d9bc7766; }
+.arena-board.arena-table .arena-table-side .arena-player-strip {
+  order: 0;
+  flex-wrap: wrap;
+  min-width: 0;
+  padding: 0 0 8px;
+  border-bottom: 1px solid #ffffff10;
+}
+.arena-table .arena-player-strip strong { min-width: 0; }
+.arena-table .arena-player-strip strong small { color: #b3c6d2; }
+.arena-table .arena-opponent-hand {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 40px;
+  padding: 2px 8px 4px;
+}
+.arena-table .arena-opponent-back {
+  display: grid;
+  place-items: center;
+  flex: 0 1 27px;
+  height: 38px;
+  min-width: 0;
+  margin-left: -6px;
+  border: 1px solid #a6bacb88;
+  border-radius: 4px;
+  background: repeating-linear-gradient(135deg, #ffffff08 0 1px, transparent 1px 5px), #23374b;
+  box-shadow: 2px 2px 5px #0005;
+  color: #e7cf9d;
+  font-size: 7px;
+  font-weight: 750;
+}
+.arena-table .arena-opponent-back:first-child { margin-left: 0; }
+.arena-table .arena-opponent-extra { margin-left: 9px; font-size: 11px; color: #d0dce6; }
+.arena-table .arena-table-empty-note { font-size: 11px; color: #b5c8d2; }
+.arena-table .arena-table-lanes {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) 74px;
+  grid-template-areas: 'reserve field prizes';
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.arena-table .arena-table-battle-line { grid-area: field; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.arena-table .arena-table-card-zone { min-width: 0; text-align: center; }
+.arena-table .arena-table-zone-label { display: block; margin-bottom: 10px; font-size: 9px; font-weight: 650; letter-spacing: .12em; text-transform: uppercase; color: #b8d0d3; }
+.arena-table .arena-bench-row { max-width: 440px; gap: 8px; }
+.arena-table .arena-bench-spot { width: 100%; max-width: none; }
+.arena-table .arena-active-spot { width: 112px; max-width: 100%; margin: 0 auto 6px; }
+.arena-table .arena-active-spot::before { inset: -5px; border-radius: 12px; }
+.arena-table .arena-empty-slot { color: #b7cdd0; border-color: #bedad144; }
+.arena-table .arena-table-reserve { grid-area: reserve; display: flex; flex-direction: column; gap: 20px; align-items: center; min-width: 0; }
+.arena-table .arena-deck-stack { width: 58px; height: 81px; flex-shrink: 0; }
+.arena-table .arena-table-discard {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 64px;
+  min-width: 44px;
+  min-height: 81px;
+  padding: 8px 4px;
+  background: linear-gradient(145deg, #2c3e48, #142837);
+  border: 1px solid #adc4c457;
+  box-shadow: 3px 3px 0 #07192580;
+  color: #deeaeb;
+}
+.arena-table .arena-table-discard b { font-size: 22px; }
+.arena-table .arena-table-discard span { font-size: 10px; }
+.arena-table .arena-table-discard:hover { border-color: var(--a-mint); background: #284953; }
+.arena-table .arena-deck-stack.is-empty,
+.arena-table .arena-table-discard.is-empty { background: #0d202833; border-style: dashed; box-shadow: none; }
+.arena-table .arena-table-prizes { grid-area: prizes; width: 100%; max-width: none; min-width: 0; padding: 8px 0; }
+.arena-table .arena-prize-area > strong { font-size: 23px; }
+.arena-table .arena-prize-area > strong small { display: block; margin-left: 0; font-size: 9px; }
+.arena-table .arena-prize-pips { grid-template-columns: repeat(2, 20px); min-height: 0; gap: 7px; }
+.arena-table .arena-prize-area > small { font-size: 10px; color: #b6c9d0; }
+.arena-table .arena-table-centre {
+  display: grid;
+  grid-template-columns: minmax(110px, .8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: 18px;
+  padding: 16px 10px;
+  margin: 4px 0;
+  min-width: 0;
+}
+.arena-table .arena-table-status { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.arena-table .arena-table-status strong { color: #f5e0b8; font-size: 15px; line-height: 1.4; }
+.arena-table .arena-table-status small { color: #c0d1d8; }
+.arena-table .arena-stadium-slot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed #cfbd8866;
+  border-radius: 12px;
+  background: #0e203499;
+}
+.arena-table .arena-stadium-slot > .arena-card { width: 54px; flex: 0 0 54px; }
+.arena-table .arena-stadium-slot > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.arena-table .arena-stadium-slot p { margin: 0; font-size: 12px; }
+.arena-table .arena-stadium-slot small { color: #c0d1d8; font-size: 10px; }
+.arena-table .arena-stadium-slot .arena-link { text-align: left; padding: 4px 0; min-height: 44px; }
+.arena-table .arena-stadium-slot .arena-button { min-height: 44px; font-size: 11px; padding: 8px; }
+.arena-table .arena-table-core-mark { justify-self: center; display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid #d9c69455; border-radius: 50%; color: #dec694; font-weight: 750; font-size: 12px; }
+.arena-table .arena-hand-area { order: initial; margin: 16px -18px 0; padding: 14px 18px 0; min-width: 0; border-radius: 0 0 24px 24px; background: #091b2bd9; border-top: 1px solid #bad5d433; }
+.arena-table .arena-zone-caption { gap: 10px; flex-wrap: wrap; }
+.arena-table .arena-hand-fan { display: flex; justify-content: flex-start; gap: 10px; width: 100%; max-width: 100%; overflow-x: auto; padding: 16px 8px 22px; scroll-padding-inline: 8px; touch-action: auto; }
+.arena-table .arena-hand-fan > .arena-card { width: 96px; flex: 0 0 96px; margin: 0; }
+/* Narrow tables use a full-width field so all five Bench targets remain usable.
+   Piles form a compact shelf; only the private hand scrolls horizontally. */
+@media (max-width: 1100px) and (min-width: 851px), (max-width: 600px) {
+  .arena-table .arena-table-lanes { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: 'field field' 'reserve prizes'; gap: 14px 10px; }
+  .arena-table .arena-table-reserve { flex-direction: row; justify-content: center; gap: 14px; }
+  .arena-table .arena-deck-stack { width: 44px; height: 62px; }
+  .arena-table .arena-table-discard { width: 58px; min-height: 62px; }
+  .arena-table .arena-table-prizes { display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; align-items: center; max-width: 160px; }
+  .arena-table .arena-table-prizes > small { grid-column: 1 / -1; margin: 0; }
+  .arena-table .arena-prize-pips { grid-template-columns: repeat(3, 15px); gap: 4px; margin: 0; }
+  .arena-table .arena-prize-pips > i { width: 15px; height: 22px; }
+}
+@media (max-width: 600px) {
+  .arena-board.arena-table { padding: 10px 8px 0; border-radius: 18px; }
+  .arena-board.arena-table::before { inset: 30px 6px 145px; border-radius: 22px; transform: none; }
+  .arena-table .arena-table-side { padding: 10px 8px; gap: 10px; border-radius: 12px; }
+  .arena-table .arena-table-battle-line { gap: 13px; }
+  .arena-table .arena-bench-row { gap: 6px; }
+  .arena-table .arena-active-spot { width: 98px; }
+  .arena-table .arena-table-centre { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 13px 6px; }
+  .arena-table .arena-table-status { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+  .arena-table .arena-table-status .arena-kicker { font-size: 8px; }
+  .arena-table .arena-table-status strong { font-size: 13px; }
+  .arena-table .arena-table-core-mark { width: 30px; height: 30px; font-size: 9px; }
+  .arena-table .arena-hand-area { margin: 12px -8px 0; padding: 12px 10px 0; border-radius: 0 0 18px 18px; }
+  .arena-table .arena-hand-fan > .arena-card { width: 85px; flex-basis: 85px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arena-board.arena-table::before { transform: none; }
+  .arena-table .arena-card { animation: none !important; transition: none !important; }
+  .arena-table .arena-hand-fan { scroll-behavior: auto; }
+}

@@ -1,3 +1,11 @@
+## 0.21.0 — Arena UI refresh, Phase 1
+
+- Introduce an opposite-table shell with the opponent above the player, Active Pokémon facing the centre, five Bench positions and clearly labelled deck, discard and Prize zones.
+- Move the existing shared Stadium to the battlefield centre. Keep the original card inspector, server-provided moves, private views, tutorial hooks and Core/Expanded match compatibility.
+- Add subtle table depth, public-count opponent hand backs, compact narrow-screen pile shelves, keyboard-accessible hand scrolling and reduced-motion styling.
+- Add layout and Vue-render regressions plus a separate Chromium/WebKit component workflow with responsive checks and screenshot artifacts. Retain every existing full-stack CI gate.
+- Synchronise release stamps. No database migration, rules-engine change, new card mechanics or production configuration changes are required. See docs/ARENA_UI_REFRESH.md for scope and validation boundaries.
+
 ## 0.20.5 — Japanese catalogue release validation
 
 - Synchronise the installer, example environment, Compose image default, workspace version labels and README with the package release version.
