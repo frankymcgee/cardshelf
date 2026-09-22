@@ -1,3 +1,9 @@
+## 0.22.1 — Arena component label validation
+
+- Provide consistent fallback player names for reusable field, pile, Stadium and turn labels when the alias list is incomplete.
+- Correct the strict Vue prop type error without weakening typechecking. Add rendered missing-alias regressions for both seats and synchronise release stamps.
+- Retain the Phase 2 interaction scope, server action guards and all existing validation gates.
+
 ## 0.22.0 — Arena UI refresh, Phase 2
 
 - Extract reusable table, player/field zones, hidden-count stacks, discard piles and the private hand fan without changing server rules or saved matches.
