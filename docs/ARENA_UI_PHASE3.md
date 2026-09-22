@@ -1,4 +1,4 @@
-# Arena UI refresh — Phase 3 (0.23.0)
+# Arena UI refresh — Phase 3 (0.23.1)
 
 ## Interaction, not a second rules engine
 
@@ -40,9 +40,10 @@ The original action tray remains a direct alternative to this optional workflow.
 
 A changed disclosed-table stamp, selection change, pending-action/network lock,
 new prompt, finished match, visibility loss, resize, window blur, additional pointer,
-pointer cancellation or lost capture clears the local intent. Escape cancels a
-live drag; the native review dialog supports Escape, focus restoration and a
-persistent close control. Identical polling preserves an existing review.
+pointer cancellation or genuine lost capture clears the local intent. The implicit
+touch-capture transfer from the handle to the surface is not treated as cancellation.
+Escape cancels a live drag; the native review dialog supports Escape, focus
+restoration and a persistent close control. Identical polling preserves review.
 Confirmation rechecks the latest visible hand and legal list; the server remains
 the final authority even when a revision changes without a different visible table.
 
@@ -53,29 +54,32 @@ capture and animation-frame cleanup happen on unmount. Follow-on pointer clicks
 from a completed drag are suppressed without blocking keyboard activation.
 
 Public hand/deck/discard/Prize count changes receive a short text-highlight effect.
-It does not animate on initial rendering or identical values. Reduced motion turns
-that feedback off, retaining static playable/target indicators. Full card-travel,
-attack, damage and cinematic effects remain Phase 4, not this phase.
+Outgoing count text is removed immediately so rapid updates show one current value.
+The highlight does not animate on initial rendering or identical values. Reduced
+motion turns that feedback off, retaining static playable/target indicators.
+Full card-travel, attack, damage and cinematic effects remain Phase 4.
 
 ## Validation and acceptance boundary
 
 Run the existing full application workflow and `npm run test:arena-ui`. The latter
-retains all 42 Phase 2 browser cases and adds Phase 3 cases in Chromium/WebKit.
-The separate bounded page-startup fixture is retained; UI test timeouts remain
-30 seconds and retries remain zero.
+retains all 42 Phase 2 browser cases and adds Phase 3 cases in Chromium/WebKit plus
+a Chromium-only CDP touch-input drag check. The separate bounded page-startup
+fixture is retained; UI test timeouts remain 30 seconds and retries remain zero.
 
 New unit tests exercise exact action routing for both rules versions/seats, typed
 setup targets, public opponent Trainer targets, locks/prompts, malformed shapes,
 poisoned private getters, identical polling and changed snapshots. Component-script
 tests exercise threshold/capture/cleanup, confirmation-once, cancellation, stale
-intents, touch-handle state and keyboard alternatives. Browser tests exercise actual
-mouse drags, target outlines, confirmation/no optimistic moves, payload identity,
-Escape, stale review, count feedback and touch taps into the non-drag alternative.
+intents, capture transfer, touch-handle state and keyboard alternatives. Browser
+tests exercise actual mouse drags, target outlines, confirmation/no optimistic
+moves, payload identity, Escape, stale review, singular count replacements and
+touch taps into the non-drag alternative. The extra CDP test supplies browser touch
+input to exercise handle capture, movement, release, review and explicit confirmation.
 
 Use the PR's Actions results as the executed validation record, not this document
 or test source. Component fixtures use synthetic cards and do not replace an
-authenticated full-match test or physical-device acceptance. In particular, touch
-state-machine tests and emulated taps are not proof of physical iOS/Android drag
-capture, swipe momentum or safe-area behaviour. Test those in portrait/landscape
-with long hands and the fixed action tray before broad rollout. Nothing here
-deploys automatically or changes an existing installation's .env or saved matches.
+authenticated full-match test or physical-device acceptance. In particular,
+Chromium touch-input emulation is not physical iOS/Android validation. Test drag
+capture, swipe momentum and safe-area behaviour in portrait/landscape with long
+hands and the fixed action tray before broad rollout. Nothing here deploys
+automatically or changes an existing installation's .env or saved matches.

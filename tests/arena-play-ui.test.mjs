@@ -20,7 +20,7 @@ function harness() {
   const document = { hidden: false, elementFromPoint: () => target, addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) };
   const script = source.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1].replace(/^import .*$/mg, '');
   const js = ts.transpileModule(script, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
-  const state = vm.runInNewContext('(function(){' + js + ';return {surface,gesture,review,hint,over,playable,targets,reviewMoves,beginDrag,moveDrag,endDrag,chooseTargets,confirm,cancel,escape,interrupted,additionalPointer,pause,visibility,swallowClick};})()', {
+  const state = vm.runInNewContext('(function(){' + js + ';return {surface,gesture,review,hint,over,playable,targets,reviewMoves,beginDrag,moveDrag,endDrag,chooseTargets,confirm,cancel,escape,interrupted,lostCapture,additionalPointer,pause,visibility,swallowClick};})()', {
     ...contract, HTMLElement: Element, window, document, Date, Math, Set,
     defineProps: () => props, defineEmits: () => (name, value) => { events.push([name, value]); if (name === 'select') props.selected = value.id; },
     ref: value => ({ value }), computed: fn => ({ get value() { return fn(); } }), watch: (_, fn) => watches.push(fn), onMounted: fn => mounted.push(fn), onBeforeUnmount: fn => unmounted.push(fn),
@@ -83,7 +83,7 @@ test('secondary pointer, Escape, blur and capture failure safely stop interactio
   for (const mode of ['extra', 'escape', 'blur', 'capture']) {
     const h = harness(); h.start(); if (mode === 'capture') h.surface.setPointerCapture = () => { throw new Error('capture'); }; h.move();
     if (mode === 'extra') h.state.additionalPointer(h.pointer({ pointerId: 2 }));
-    if (mode === 'escape') h.state.escape({ key: 'Escape', preventDefault() {} });
+    if (mode === 'escape') h.state.escape({ key: 'Escape', preventDefault() { } });
     if (mode === 'blur') h.state.pause();
     h.drop(); assert.equal(h.state.review.value, null); assert.equal(h.frames.size, 0); assert.equal(h.capture(), null);
   }
@@ -112,4 +112,16 @@ test('a fresh pointer press after a drop does not suppress an immediate confirma
   assert.equal(stopped, 0);
   h.state.confirm(h.state.reviewMoves.value[0].key);
   assert.equal(h.events.filter(([kind]) => kind === 'action').length, 1);
+});
+
+test('implicit touch capture may transfer from the handle without cancelling the live drag', () => {
+  const h = harness(); h.start(); h.move();
+  h.state.lostCapture(h.pointer({ target: { id: 'touch-handle' } }));
+  assert.ok(h.state.gesture.value); assert.equal(h.capture(), 1);
+  h.state.lostCapture(h.pointer({ target: h.surface }));
+  assert.ok(h.state.gesture.value); // A still-held or pending capture is not lost.
+  h.surface.releasePointerCapture(1);
+  h.state.lostCapture(h.pointer({ target: h.surface }));
+  assert.equal(h.state.gesture.value, null); assert.equal(h.frames.size, 0);
+  assert.equal(h.events.filter(([kind]) => kind === 'action').length, 0);
 });

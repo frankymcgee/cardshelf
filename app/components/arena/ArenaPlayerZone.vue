@@ -7,13 +7,15 @@ const props = defineProps<{ player: any; alias: string; seat: number; self: bool
 const emit = defineEmits<{ select: [unit: any]; discard: [seat: number] }>()
 // DOM order and visual order agree. Do not mutate/reverse the server's Bench array.
 const zones = computed<('active' | 'bench')[]>(() => props.self ? ['active', 'bench'] : ['bench', 'active'])
+// Replace old text immediately; do not show multiple counts during rapid updates.
+function removePreviousCount(_element: Element, done: () => void) { done() }
 </script>
 <template>
   <section class="arena-field arena-table-side" :class="{ 'is-opponent': !self, 'is-your-turn': turn }" :data-side="self ? 'self' : 'opponent'" :aria-label="alias + ' play area'">
     <div class="arena-player-strip">
       <span class="arena-avatar" aria-hidden="true">{{ alias?.slice(0, 1).toUpperCase() }}</span>
       <strong>{{ alias }} <small>{{ self ? 'YOU' : 'OPPONENT' }}</small></strong>
-      <Transition name="arena-count"><span :key="player.hand_count" class="arena-hand-count">{{ player.hand_count }} in hand</span></Transition>
+      <Transition name="arena-count" @leave="removePreviousCount"><span :key="player.hand_count" class="arena-hand-count">{{ player.hand_count }} in hand</span></Transition>
       <span v-if="turn" class="arena-turn-chip">TURN {{ turnNumber }}</span>
       <span v-else-if="setup" class="arena-turn-chip">{{ player.ready ? 'READY' : 'PREPARING' }}</span>
     </div>

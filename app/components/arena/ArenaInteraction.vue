@@ -98,6 +98,10 @@ function swallowClick(event: MouseEvent) {
 }
 function escape(event: KeyboardEvent) { if (event.key === 'Escape' && gesture.value) { event.preventDefault(); cancel('Drag cancelled. Nothing was played.') } }
 function interrupted(event: PointerEvent) { if (gesture.value && event.pointerId === gesture.value.pointer) cancel('Drag cancelled. Nothing was played.') }
+function lostCapture(event: PointerEvent) {
+  // Touch starts with implicit capture on the handle; its handover to this surface is not cancellation.
+  if (event.target === surface.value && !surface.value?.hasPointerCapture(event.pointerId)) interrupted(event)
+}
 function additionalPointer(event: PointerEvent) {
   if (gesture.value && event.pointerId !== gesture.value.pointer) cancel('Drag cancelled. Nothing was played.')
   // A fresh press is deliberate input, not the synthetic click following a drop.
@@ -123,7 +127,7 @@ onBeforeUnmount(() => {
 })
 </script>
 <template>
-  <div ref="surface" class="arena-play-surface" :class="{ 'is-arena-dragging': !!dragUnit }" @click.capture="swallowClick" @lostpointercapture="interrupted">
+  <div ref="surface" class="arena-play-surface" :class="{ 'is-arena-dragging': !!dragUnit }" @click.capture="swallowClick" @lostpointercapture="lostCapture">
     <slot v-bind="{ playable, targets, over, beginDrag, chooseTargets }" />
     <p class="arena-play-status" role="status" aria-live="polite">{{ hint || 'Highlighted hand cards have a server-provided move. Select first; confirm before playing.' }}</p>
     <div v-if="dragUnit" class="arena-drag-ghost" :style="ghostStyle" aria-hidden="true"><ArenaCard :unit="dragUnit" :tabindex="-1" /><span>{{ over ? 'Release to review' : 'Choose a highlighted target' }}</span></div>

@@ -1,3 +1,10 @@
+## 0.23.1 — Arena counter and touch-capture validation
+
+- Remove outgoing count text immediately so rapid public-count updates render exactly one current value, including with reduced motion. Retain the incoming highlight rather than weakening browser assertions.
+- Distinguish implicit touch-capture transfer from genuine capture loss so the dedicated touch handle can continue its drag safely.
+- Add rapid-counter and capture-transfer regressions plus a Chromium touch-input drag/confirmation check. Keep the existing Chromium/WebKit cases, strict typecheck and full-stack gates.
+- Correct the synthetic Energy fixture, capture the mobile confirmation at its real viewport size and synchronise release stamps. No rules-engine, server or database changes.
+
 ## 0.23.0 — Arena UI refresh, Phase 3
 
 - Highlight playable hand cards and their exact public destinations using only the current server-provided legal moves, for both retained rules versions and both seats.

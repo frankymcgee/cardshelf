@@ -8,7 +8,7 @@ async function prepare(page, seat = 0, { legacy = false, kind = 'bench' } = {}) 
     own.bench = own.bench.slice(0, 1);
     const unit = own.hand[0];
     if (kind === 'stadium') unit.card.program = { kind: 'stadium' };
-    if (kind === 'energy') unit.card.kind = 'energy';
+    if (kind === 'energy') unit.card = { id: 'training:grass-energy', name: 'Training Grass Energy', kind: 'energy', type: 'Grass', basic_energy: true };
     const action = kind === 'bench' ? { type: 'bench', card: unit.id }
       : kind === 'energy' ? { type: 'energy', card: unit.id, target: own.active.id }
       : { type: 'trainer', card: unit.id };
@@ -84,9 +84,20 @@ test('Escape stops a live drag, removes its ghost and leaves all actions untouch
   await page.keyboard.press('Escape'); await page.mouse.up(); await expect(page.locator('.arena-drag-ghost')).toHaveCount(0);
   expect(await actions(page)).toEqual([]);
 });
-test('public count changes pulse without decorative replay; reduced motion disables the effect', async ({ page }) => {
+test('public count replacements stay singular, with no initial replay and no reduced-motion effect', async ({ page }) => {
   await prepare(page);
-  await page.evaluate(() => { window.arenaFixture.props.table.players[0].deck_count = 39; });
+  const counter = page.locator('[data-side="self"] .arena-deck-stack b');
+  await expect(counter).not.toHaveClass(/arena-count-enter/);
+  const transitions = await page.evaluate(async () => {
+    const seen = [];
+    for (const count of [40, 39, 38, 39]) {
+      window.arenaFixture.props.table.players[0].deck_count = count;
+      await Promise.resolve();
+      seen.push([...document.querySelectorAll('[data-side="self"] .arena-deck-stack b')].map(n => n.textContent));
+    }
+    return seen;
+  });
+  expect(transitions).toEqual([['40'], ['39'], ['38'], ['39']]);
   await expect(page.getByRole('img', { name: 'North player deck: 39 face-down cards', exact: true })).toBeVisible();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.evaluate(() => { window.arenaFixture.props.table.players[0].deck_count = 38; });
@@ -104,7 +115,7 @@ test.describe('touch and narrow screens', () => {
     expect(await page.locator('.arena-drag-handle').evaluate(node => getComputedStyle(node).touchAction)).toBe('none');
     expect(await card.evaluate(node => getComputedStyle(node).touchAction)).not.toBe('none');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-    await page.screenshot({ path: 'test-results/arena-table/phase3-mobile-confirmation.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/arena-table/phase3-mobile-confirmation.png', fullPage: false });
   });
 });
 test('desktop playable-target evidence', async ({ page }) => {
