@@ -24,19 +24,21 @@ for (const width of widths) for (const seat of [0, 1]) test(`${width}px, seat ${
   expect(boxes.discard.width).toBeGreaterThanOrEqual(44);
   expect(boxes.discard.height).toBeGreaterThanOrEqual(44);
   await expect(page.locator('body')).not.toContainText('SECRET');
-  await page.getByRole('button', { name: `Active-${seat}, 100 of 100 HP`, exact: true }).click();
+  await page.locator('.arena-board').getByRole('button', { name: `Active-${seat}, 100 of 100 HP`, exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.arenaFixture.events.at(-1))).toEqual(['select', 'Active-' + seat]);
   const discard = page.getByRole('button', { name: `Inspect ${seat === 0 ? 'North' : 'South'} player discard: 1 cards` });
   await discard.focus(); await page.keyboard.press('Enter');
   await expect.poll(() => page.evaluate(() => window.arenaFixture.events.at(-1))).toEqual(['discard', seat]);
+  await page.getByRole('dialog', { name: 'Discard pile', exact: true }).getByRole('button', { name: 'Close', exact: true }).click();
   const hand = page.getByRole('region', { name: 'Your hand cards; scroll horizontally for more' });
   await hand.focus(); await page.keyboard.press('End');
-  await page.getByRole('button', { name: 'Hand-29, 100 of 100 HP', exact: true }).focus();
+  await expect(hand.locator('[data-hand-index="29"]')).toBeFocused();
   await page.keyboard.press('Enter');
   await expect.poll(() => page.evaluate(() => window.arenaFixture.events.at(-1))).toEqual(['select', 'Hand-29']);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(errors).toEqual([]);
   if (seat === 0 && [390, 1440].includes(width)) {
-    await page.evaluate(() => { window.arenaFixture.props.selected = ''; document.querySelector('.arena-hand-fan').scrollLeft = 0; });
+    await page.evaluate(() => { window.arenaFixture.clearSelection(); document.querySelector('.arena-hand-fan').scrollLeft = 0; });
     await page.screenshot({ path: info.outputPath(`table-${width}px.png`), fullPage: true });
   }
 });
@@ -58,11 +60,115 @@ test('Core snapshots, setup and exhausted piles retain safe readable layouts', a
   await expect(page.locator('.arena-deck-stack.is-empty')).toHaveCount(2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
-test('reduced motion removes new depth and inherited card animation', async ({ page }) => {
+test('reduced motion removes new depth, fan transforms and inherited card animation', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' }); await page.goto('/');
   await expect(page.locator('.arena-table')).toBeVisible();
   const styles = await page.evaluate(() => ({ surface: getComputedStyle(document.querySelector('.arena-table'), '::before').transform,
     animation: getComputedStyle(document.querySelector('.arena-card')).animationName,
-    transition: getComputedStyle(document.querySelector('.arena-card')).transitionDuration }));
-  expect(styles).toEqual({ surface: 'none', animation: 'none', transition: '0s' });
+    transition: getComputedStyle(document.querySelector('.arena-card')).transitionDuration,
+    fan: getComputedStyle(document.querySelector('[data-hand-index="0"]')).transform }));
+  expect(styles).toEqual({ surface: 'none', animation: 'none', transition: '0s', fan: 'none' });
+});
+test('hover and keyboard navigation lift cards without submitting a move', async ({ page }) => {
+  await page.goto('/');
+  const hand = page.locator('.arena-hand-interactive'), card = hand.locator('[data-hand-index="0"]');
+  await card.hover(); await expect(card).not.toHaveAttribute('aria-pressed', 'true');
+  expect(await page.evaluate(() => window.arenaFixture.events)).toEqual([]);
+  await hand.focus(); await page.keyboard.press('End');
+  await expect(hand.locator('[data-hand-index="6"]')).toBeFocused();
+  expect(await page.evaluate(() => window.arenaFixture.events)).toEqual([]);
+  await page.keyboard.press('Home'); await page.keyboard.press('Enter');
+  await expect(card).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.evaluate(() => window.arenaFixture.events)).toEqual([['select', 'Hand-0']]);
+});
+test('action tray permits explicit legal actions, pauses safely and still allows inspection', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('[data-hand-index="0"]').click();
+  const tray = page.getByRole('region', { name: 'Selected card actions', exact: true });
+  await tray.getByRole('button', { name: 'Play Hand-0', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.arenaFixture.events.at(-1))).toEqual(['action', { type: 'bench', card: 'Hand-0' }]);
+  await page.evaluate(() => { window.arenaFixture.props.locked = true; });
+  await expect(tray.getByRole('button', { name: 'Play Hand-0', exact: true })).toBeDisabled();
+  await tray.getByRole('button', { name: 'Inspect', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Card preview', exact: true })).toBeVisible();
+});
+test('preview traps focus, closes with Escape and restores the initiating control', async ({ page }) => {
+  await page.goto('/'); await page.locator('[data-hand-index="0"]').click();
+  const inspect = page.getByRole('region', { name: 'Selected card actions', exact: true }).getByRole('button', { name: 'Inspect', exact: true });
+  await inspect.click();
+  const dialog = page.getByRole('dialog', { name: 'Card preview', exact: true });
+  await expect(dialog).toBeVisible();
+  for (let i = 0; i < 8; i++) { await page.keyboard.press('Tab'); expect(await page.evaluate(() => !!document.activeElement?.closest('dialog[open]') || document.activeElement === document.body)).toBe(true); }
+  await page.keyboard.press('Escape'); await expect(dialog).not.toBeVisible(); await expect(inspect).toBeFocused();
+});
+test('prompt minimization keeps selections; polling preserves them; a new decision revision resets them', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => window.arenaFixture.setPrompt({ kind: 'prize', title: 'Choose two Prizes', min: 2, max: 2, options: [0,1,2].map(i => ({ id: String(i), label: 'Prize ' + (i + 1), hidden: true, card: { card: { image_url: '/SECRET.png' } } })) }));
+  const dialog = page.getByRole('dialog', { name: 'Required game decision', exact: true });
+  await expect(dialog).toBeVisible(); await expect(dialog.locator('img')).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Prize 1', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Back to table', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  expect(await page.evaluate(() => window.arenaFixture.events)).toEqual([]);
+  await page.getByRole('button', { name: 'Resume decision', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: 'Prize 1', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.evaluate(() => { window.arenaFixture.props.table.prompt = JSON.parse(JSON.stringify(window.arenaFixture.props.table.prompt)); });
+  await expect(dialog.getByRole('button', { name: 'Prize 1', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.getByRole('button', { name: 'Take 1 Prize card', exact: true })).toBeDisabled();
+  await dialog.getByRole('button', { name: 'Prize 2', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Take 2 Prize cards', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.arenaFixture.events.at(-1))).toEqual(['choose', ['0', '1']]);
+  await page.evaluate(() => window.arenaFixture.setPrompt(JSON.parse(JSON.stringify(window.arenaFixture.props.table.prompt))));
+  await expect(dialog.getByRole('button', { name: 'Take 0 Prize cards', exact: true })).toBeDisabled();
+});
+test('long search prompts scroll inside the modal with an accessible close control and valid zero-choice path', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 }); await page.goto('/');
+  await page.evaluate(() => window.arenaFixture.setPrompt({ kind: 'search', title: 'Search your deck', min: 0, max: 1, options: Array.from({ length: 60 }, (_, i) => ({ id: String(i), label: 'Choice ' + i })) }));
+  const dialog = page.getByRole('dialog', { name: 'Required game decision', exact: true });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Choice 59', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: 'Back to table', exact: true })).toBeInViewport();
+  await dialog.getByRole('button', { name: 'Choice 59', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Confirm no selection', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.arenaFixture.events.at(-1))).toEqual(['choose', []]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+test('mobile touch selects without jumping, uses a visible dock, and allows native page/hand scrolling', async ({ browser }) => {
+  const context = await browser.newContext({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+  try {
+    const page = await context.newPage(); await page.goto('http://127.0.0.1:4179/?longHand');
+    const hand = page.locator('.arena-hand-interactive'); await hand.scrollIntoViewIfNeeded();
+    const y = await page.evaluate(() => scrollY);
+    await hand.locator('[data-hand-index="0"]').tap();
+    await expect(page.getByRole('region', { name: 'Selected card actions', exact: true })).toBeInViewport();
+    expect(Math.abs((await page.evaluate(() => scrollY)) - y)).toBeLessThanOrEqual(4);
+    expect(await page.evaluate(() => window.arenaFixture.events)).toEqual([['select', 'Hand-0']]);
+    const dimensions = await hand.evaluate(element => ({ width: element.clientWidth, scroll: element.scrollWidth, touch: getComputedStyle(element).touchAction }));
+    expect(dimensions.scroll).toBeGreaterThan(dimensions.width); expect(dimensions.touch).toBe('auto');
+    // Native scroll container remains scrollable; browser tap emulation is not a physical swipe test.
+    await hand.evaluate(element => { element.scrollLeft = element.scrollWidth; });
+    expect(await hand.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+    await page.getByRole('button', { name: 'Inspect', exact: true }).tap();
+    await expect(page.getByRole('dialog', { name: 'Card preview', exact: true })).toBeVisible();
+    await page.getByRole('dialog', { name: 'Card preview', exact: true }).getByRole('button', { name: 'Close', exact: true }).tap();
+    await page.getByRole('button', { name: 'Clear card selection', exact: true }).tap();
+    await expect(page.getByRole('region', { name: 'Selected card actions', exact: true })).toHaveCount(0);
+  } finally { await context.close(); }
+});
+test('shrinking a focused hand retains a usable focus target instead of losing keyboard access', async ({ page }) => {
+  await page.goto('/?longHand');
+  const hand = page.locator('.arena-hand-interactive'); await hand.focus(); await page.keyboard.press('End');
+  await expect(hand.locator('[data-hand-index="29"]')).toBeFocused();
+  await page.evaluate(() => { const p = window.arenaFixture.props.table.players[0]; p.hand = p.hand.slice(0, 2); p.hand_count = 2; });
+  await expect(hand.locator('[data-hand-index="1"]')).toBeFocused();
+  await page.evaluate(() => { const p = window.arenaFixture.props.table.players[0]; p.hand = []; p.hand_count = 0; });
+  await expect(hand).toBeFocused(); await expect(page.getByText('Your hand is empty.')).toBeVisible();
+});
+test('discard dialog selects only public cards and opens their preview', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Inspect South player discard: 1 cards' }).click();
+  await page.getByRole('dialog', { name: 'Discard pile', exact: true }).getByRole('button', { name: 'Discard-1, 100 of 100 HP', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Card preview', exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Card preview', exact: true }).getByRole('heading', { name: 'Discard-1', exact: true })).toBeVisible();
+  await expect(page.locator('body')).not.toContainText('SECRET');
 });

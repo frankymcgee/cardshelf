@@ -2,17 +2,18 @@
 import ArenaAudioControls from '../../../components/arena/ArenaAudioControls.vue'
 import ArenaShell from '../../../components/arena/ArenaShell.vue'
 import ArenaCard from '../../../components/arena/ArenaCard.vue'
-import ArenaCardFacts from '../../../components/arena/ArenaCardFacts.vue'
-import ArenaAttachments from '../../../components/arena/ArenaAttachments.vue'
+import ArenaCardPreview from '../../../components/arena/ArenaCardPreview.vue'
+import ArenaActionTray from '../../../components/arena/ArenaActionTray.vue'
+import ArenaModal from '../../../components/arena/ArenaModal.vue'
 import ArenaBoard from '../../../components/arena/ArenaBoard.vue'
-import ArenaDecision from '../../../components/arena/ArenaDecision.vue'
+import ArenaPromptModal from '../../../components/arena/ArenaPromptModal.vue'
 import ArenaCoach from '../../../components/arena/ArenaCoach.vue'
-import { energySymbol, arenaConflict, arenaMoneylessResult } from '../../../../shared/arena.mjs'
+import { arenaConflict, arenaMoneylessResult } from '../../../../shared/arena.mjs'
 definePageMeta({ layout: false, key: (to: { path: string }) => to.path })
 useSeoMeta({ title: 'Battle arena · CardShelf', robots: 'noindex, nofollow' })
 const api = useApi(), route = useRoute(), auth = useAuth()
 const data = ref<any>(null), error = ref(''), connected = ref(false), busy = ref(false), pending = ref<any>(null)
-const selected = ref(''), invitation = ref(''), showLog = ref(false), discardSeat = ref<number | null>(null)
+const selected = ref(''), invitation = ref(''), showLog = ref(false), discardSeat = ref<number | null>(null), previewOpen = ref(false)
 const autoplay = ref(false), focusZone = ref(''), flash = ref<any>(null), showHelp = ref(false)
 const table = computed<any>(() => data.value?.table), seat = computed(() => data.value?.seat ?? 0)
 const aliases = computed(() => [data.value?.host_alias || 'Player one', data.value?.guest_alias || 'Player two'])
@@ -20,7 +21,7 @@ const finished = computed(() => ['finished', 'cancelled'].includes(data.value?.s
 const locked = computed(() => busy.value || !!pending.value || !connected.value || finished.value)
 // Inspect only units already disclosed by the server; hidden setup cards have no children.
 function publicCards(units: any[]): any[] { return units.filter(unit => unit && !unit.hidden && unit.card).flatMap(unit => [unit, ...publicCards([...(unit.tools || []), ...(unit.energy || []), ...(unit.under || [])])]) }
-const cards = computed<any[]>(() => table.value ? publicCards([...table.value.players.flatMap((p: any) => [...p.hand, p.active, ...p.bench, ...p.discard, ...(p.resolving || [])]), table.value.stadium?.unit]) : [])
+const cards = computed<any[]>(() => table.value ? publicCards([...table.value.players.flatMap((p: any, index: number) => [...(index === seat.value ? p.hand : []), p.active, ...p.bench, ...p.discard, ...(p.resolving || [])]), table.value.stadium?.unit]) : [])
 const current = computed<any>(() => cards.value.find((c: any) => c.id === selected.value))
 const attachmentParent = computed<any>(() => cards.value.find((unit: any) => [...(unit.tools || []), ...(unit.energy || []), ...(unit.under || [])].some((child: any) => child.id === selected.value)))
 const stadiumMoves = computed<any[]>(() => (table.value?.legal || []).filter((move: any) => move.action?.type === 'stadium'))
@@ -29,12 +30,18 @@ const globalMoves = computed<any[]>(() => (table.value?.legal || []).filter((m: 
 const own = computed<any>(() => table.value?.players[seat.value])
 const pendingForOther = computed(() => table.value?.waiting_for !== null && table.value?.waiting_for !== undefined && table.value.waiting_for !== seat.value)
 const lostReply = computed(() => !!pending.value && !busy.value)
+const noMoveHint = computed(() => table.value?.prompt ? 'Complete the required decision first.' : table.value?.turn !== seat.value && table.value?.phase !== 'setup' ? 'Wait for your turn.' : 'This card has no available move right now.')
 let alive = true, reading = false, epoch = 0, lastEvent = -1, timer: ReturnType<typeof setInterval> | undefined, flashTimer: ReturnType<typeof setTimeout> | undefined
 const key = () => 'cardshelf-arena-action:' + auth.state.value.user?.id + ':' + String(route.params.id)
 function store() { try { if (pending.value) sessionStorage.setItem(key(), JSON.stringify(pending.value)); else sessionStorage.removeItem(key()) } catch { /* Idempotency still applies while this page remains open. */ } }
+function clearSelection() { selected.value = ''; previewOpen.value = false }
 function accept(next: any) {
   if (!alive || next.id !== String(route.params.id) || data.value && next.revision < data.value.revision) return
+  const newDecision = next.table?.prompt && next.revision !== data.value?.revision
   data.value = next; connected.value = true
+  // Never keep a preview of a card that has left this player's disclosed view.
+  if (selected.value && !current.value) clearSelection()
+  if (newDecision || !next.table) { previewOpen.value = false; discardSeat.value = null }
   if (next.invite_code) invitation.value = next.invite_code
   if (next.status !== 'waiting') invitation.value = ''
   const events = next.table?.events || [], recent = events.filter((e: any) => e.n > lastEvent)
@@ -46,7 +53,7 @@ async function load() {
   if (!alive || reading || busy.value || document.hidden) return
   reading = true; const stamp = epoch
   try { const next = await api('/api/arena/matches/' + encodeURIComponent(String(route.params.id))); if (alive && stamp === epoch) accept(next) }
-  catch (e: any) { if (alive && stamp === epoch) { error.value = errorMessage(e); connected.value = false; autoplay.value = false; if ([401, 403, 404].includes(e?.statusCode || e?.status)) { data.value = null; selected.value = ''; pending.value = null; store() } } }
+  catch (e: any) { if (alive && stamp === epoch) { error.value = errorMessage(e); connected.value = false; autoplay.value = false; if ([401, 403, 404].includes(e?.statusCode || e?.status)) { data.value = null; clearSelection(); discardSeat.value = null; pending.value = null; store() } } }
   finally { reading = false }
 }
 async function send() {
@@ -61,7 +68,7 @@ async function send() {
   } catch (e: any) {
     if (!alive || stamp !== epoch) return
     error.value = errorMessage(e); connected.value = false; autoplay.value = false
-    if (arenaConflict(e) || [400, 401, 403, 404, 422].includes(e?.statusCode || e?.status)) { pending.value = null; store(); if ([401, 403, 404].includes(e?.statusCode || e?.status)) data.value = null }
+    if (arenaConflict(e) || [400, 401, 403, 404, 422].includes(e?.statusCode || e?.status)) { pending.value = null; store(); if ([401, 403, 404].includes(e?.statusCode || e?.status)) { data.value = null; clearSelection(); discardSeat.value = null } }
     else error.value += ' The result is uncertain. Retry this same action instead of repeating it.'
   } finally { busy.value = false }
 }
@@ -69,12 +76,15 @@ async function act(action: any) {
   if (locked.value || !data.value) return
   pending.value = { id: data.value.id, body: { revision: data.value.revision, request_id: crypto.randomUUID(), action } }; store(); await send()
 }
-function focusControls() {
-  if (typeof window.matchMedia !== 'function' || !window.matchMedia('(max-width: 850px)').matches) return
-  setTimeout(() => { if (alive) document.querySelector('.arena-inspector')?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }) }, 0)
+function select(unit: any) {
+  if (!unit || unit.hidden || !cards.value.some(card => card.id === unit.id)) return
+  selected.value = unit.id; discardSeat.value = null
 }
-function select(unit: any) { selected.value = unit.id; discardSeat.value = null; focusControls() }
-watch(() => table.value?.prompt ? JSON.stringify([table.value.prompt.kind, table.value.prompt.options.map((o: any) => o.id)]) : '', value => { if (value) focusControls() })
+function inspectDiscard(unit: any) { select(unit); previewOpen.value = !!current.value }
+function openDiscard(index: number) {
+  if (!table.value || ![0, 1].includes(index)) return
+  previewOpen.value = false; discardSeat.value = index
+}
 function concede() { if (window.confirm('Concede this game? Your collection and subscription will not change.')) void act({ type: 'concede' }) }
 async function copyCode() { try { await navigator.clipboard.writeText(invitation.value) } catch { error.value = 'Select and copy the invitation manually.' } }
 async function tick() {
@@ -90,14 +100,15 @@ onMounted(async () => {
   try { const saved = JSON.parse(sessionStorage.getItem(key()) || 'null'); if (saved?.id === String(route.params.id) && typeof saved.body?.request_id === 'string' && saved.body?.action && Number.isInteger(saved.body.revision)) pending.value = saved } catch { /* Ignore damaged local retry metadata. */ }
   await load(); timer = setInterval(() => { void tick() }, 2000); window.addEventListener('focus', focus); document.addEventListener('visibilitychange', focus)
 })
-onBeforeUnmount(() => { alive = false; epoch++; clearInterval(timer); clearTimeout(flashTimer); window.removeEventListener('focus', focus); document.removeEventListener('visibilitychange', focus); data.value = null })
+onBeforeUnmount(() => { alive = false; epoch++; clearInterval(timer); clearTimeout(flashTimer); window.removeEventListener('focus', focus); document.removeEventListener('visibilitychange', focus); data.value = null; clearSelection(); discardSeat.value = null })
 </script>
 <template>
   <ArenaShell :title="data ? aliases.join(' VS ') : 'PRIVATE TABLE'">
+    <div class="arena-match-view" :class="{ 'arena-match-has-selection': !!current }">
     <div class="arena-table-top"><div><span class="arena-kicker">{{ data?.mode === 'pvp' ? 'PRIVATE MATCH' : data?.mode === 'tutorial' ? 'GUIDED TRAINING' : 'COMPUTER PRACTICE' }}</span><h1>{{ data ? aliases.join(' vs ') : 'Opening your table…' }}</h1><span class="arena-connection" :class="{ online: connected }">{{ connected ? 'Connected · server-checked actions' : 'Reconnecting · actions paused' }}</span></div><details class="arena-table-tools"><summary class="arena-button quiet">Table tools</summary><div class="arena-tools-panel"><div class="arena-toolbar"><button class="arena-button quiet" @click="showHelp = !showHelp">How to play</button><button class="arena-button quiet" @click="showLog = !showLog">History</button><button class="arena-button quiet" :disabled="busy" @click="load">Refresh</button></div><ArenaAudioControls :events="table?.events" :match-id="String(route.params.id)" :result="table?.result" :seat="seat" :available="!!data && connected" :selected="selected" /></div></details></div>
     <div v-if="error" role="alert" class="arena-alert error">{{ error }} <NuxtLink v-if="!data" to="/membership">Membership</NuxtLink></div>
     <div v-if="lostReply" class="arena-alert"><strong>Confirm the previous action first.</strong> Its request ID is saved in this tab; retrying cannot play the action twice.<button class="arena-button primary" @click="send">Retry same action</button></div>
-    <section v-if="showHelp" class="arena-panel arena-help"><h2>Choose cards. Let the game resolve the rules.</h2><p>Select a card in your hand or on either field to inspect it. Inspect attached Energy, Tools and the evolution stack below the selected Pokémon. Available moves, including supported Abilities and Stadium effects, appear in the action panel. Attack buttons calculate Energy, Weakness, Resistance, supported effects and Knock Outs on the server. An attack normally ends the turn automatically.</p><p>Complete highlighted decisions for Prize cards, searches, costs and replacement Pokémon. The game never exposes the opponent's hand or draw order. This automated format accepts only cards whose entire effect is implemented; it is not a tournament legality certificate.</p><p v-if="data?.mode !== 'pvp'">Auto play lets the same rule-based computer control your decisions in practice. Turn it off to take over. It is disabled in human-versus-human matches.</p></section>
+    <section v-if="showHelp" class="arena-panel arena-help"><h2>Choose cards. Let the game resolve the rules.</h2><p>Tap a card in your hand or on either field to select it. Selection does not play it. Choose Inspect for a larger preview, including attacks, Abilities, attached Energy, Tools and evolution cards. Available moves appear in the action tray. Attack buttons calculate Energy, Weakness, Resistance, supported effects and Knock Outs on the server. An attack normally ends the turn automatically.</p><p>Complete required decisions for Prize cards, searches, costs and replacement Pokémon. Back to table lets you inspect the field without confirming or cancelling a pending decision; choose Resume decision to continue. The game never exposes the opponent's hand or draw order. This automated format accepts only cards whose entire effect is implemented; it is not a tournament legality certificate.</p><p v-if="data?.mode !== 'pvp'">Auto play lets the same rule-based computer control your decisions in practice. Turn it off to take over. It is disabled in human-versus-human matches.</p></section>
     <template v-if="data">
       <section v-if="!table" class="arena-panel arena-lobby"><span class="arena-kicker">{{ data.status }}</span><h2>Your private table</h2><p>Your deck: <strong>{{ data.own_deck.title }}</strong>. Your opponent does not receive your deck list.</p>
         <template v-if="data.status === 'waiting' && seat === 0"><p>Generate a one-day invitation and send it privately to another Collector, Collector Plus or Complimentary member.</p><div v-if="invitation" class="arena-invite"><code>{{ invitation }}</code><button class="arena-button" @click="copyCode">Copy</button></div><button class="arena-button primary" :disabled="locked" @click="act({ type: 'invite' })">{{ invitation ? 'Replace invitation' : 'Generate invitation' }}</button><p class="arena-muted">A new code invalidates the previous one. Codes are shown only when generated, not after a reload or lost-response retry.</p></template>
@@ -110,15 +121,21 @@ onBeforeUnmount(() => { alive = false; epoch++; clearInterval(timer); clearTimeo
         <p v-if="data.mode === 'practice' && data.opponent_deck" class="arena-opponent-note"><strong>CPU deck: {{ data.opponent_deck.title }}</strong><span>{{ data.opponent_deck.reason }}</span><small v-if="data.opponent_deck.training">Original teaching cards · training practice</small></p>
         <section v-if="finished" class="arena-result"><span class="arena-result-medal" aria-hidden="true">{{ table.result === seat ? 'V' : 'CS' }}</span><div><span class="arena-kicker">MATCH COMPLETE</span><h2>{{ arenaMoneylessResult(table.result, seat) }}</h2><p>{{ table.result_reason }}</p><NuxtLink to="/arena" class="arena-button primary">Play again</NuxtLink></div></section>
         <div class="arena-turn-bar" data-zone="turn"><div><span class="arena-kicker">{{ table.phase === 'setup' ? 'OPENING SETUP' : 'TURN ' + table.turn_number }}</span><strong>{{ table.phase === 'setup' ? aliases[table.toss] + ' won the toss' : pendingForOther ? 'Opponent is choosing…' : table.prompt ? 'Your decision is needed' : table.turn === seat ? 'Your move' : aliases[table.turn] + ' is playing' }}</strong></div><div class="arena-actions"><button v-for="move in globalMoves" :key="JSON.stringify(move.action)" class="arena-button" :class="move.action.type === 'ready' ? 'primary' : ''" :disabled="locked" @click="act(move.action)">{{ move.label }}</button><label v-if="data.mode !== 'pvp' && !finished" class="arena-auto"><input v-model="autoplay" type="checkbox" :disabled="busy || !!pending || !connected">Auto play my turns</label><button v-if="!finished" class="arena-link danger" :disabled="locked" @click="concede">Concede</button></div></div>
-        <div class="arena-play-layout"><div class="arena-board-wrap"><ArenaBoard :table="table" :stadium-moves="stadiumMoves" :locked="locked" @action="act" :aliases="aliases" :selected="selected" :hit="flash?.target" :focus-zone="focusZone" @select="select" @discard="discardSeat = $event"/><Transition name="arena-flash"><div v-if="flash" :key="flash.n" class="arena-event-flash" aria-live="polite"><strong>{{ flash.kind === 'attack' ? flash.attack : flash.kind === 'knockout' ? 'KNOCK OUT' : flash.kind === 'coin' ? (flash.heads ? 'HEADS' : 'TAILS') : 'MATCH COMPLETE' }}</strong><span>{{ flash.kind === 'attack' ? flash.damage + ' DAMAGE' : flash.text }}</span></div></Transition></div>
-          <aside class="arena-inspector" aria-label="Selected card and legal actions"><p v-if="pendingForOther" class="arena-resolution-note" role="status">Waiting for your opponent to complete a required decision. The game will continue after it resolves.</p><ArenaDecision v-if="table.prompt" :prompt="table.prompt" :locked="locked" @choose="act({ type: 'choose', choices: $event })"/>
-            <section v-if="discardSeat !== null" class="arena-panel"><div class="arena-zone-caption"><h2>{{ aliases[discardSeat] }} · Discard</h2><button class="arena-link" @click="discardSeat = null">Close</button></div><div class="arena-discard-grid"><ArenaCard v-for="unit in table.players[discardSeat].discard" :key="unit.id" :unit="unit" @select="select"/></div><p v-if="!table.players[discardSeat].discard.length">No discarded cards.</p></section>
-            <section v-else-if="current" class="arena-panel arena-card-inspector"><span class="arena-kicker">SELECTED CARD</span><h2>{{ current.card.name }}</h2><ArenaCard :unit="current" disabled/><p class="arena-muted">{{ current.card.set_name }} · {{ current.card.number }}</p><ArenaCardFacts :unit="current"/><button v-if="attachmentParent" class="arena-link arena-parent-link" @click="select(attachmentParent)">← Back to {{ attachmentParent.card.name }}</button><div v-for="(attack, index) in current.card.attacks || []" :key="index" class="arena-attack-info"><div><strong>{{ attack.name }}</strong><b>{{ attack.printed || attack.damage }}</b></div><small>{{ attack.cost.length ? attack.cost.map(energySymbol).join(' · ') : 'No Energy cost' }}</small><p v-if="attack.text">{{ attack.text }}</p><p v-if="own?.active?.id === current.id && table.attack_blocks?.[index]?.reason" class="arena-muted">{{ table.attack_blocks[index].reason }}</p></div><ArenaAttachments :unit="current" :selected="selected" @select="select"/><div class="arena-legal-moves"><button v-for="move in moves" :key="JSON.stringify(move.action)" class="arena-button" :class="move.action.type === 'attack' ? 'attack' : 'primary'" :disabled="locked" @click="act(move.action)">{{ move.label }}</button></div><p v-if="!moves.length && !finished" class="arena-muted">{{ table.prompt ? 'Complete the decision above first.' : table.turn !== seat && table.phase !== 'setup' ? 'Wait for your turn.' : 'This card has no available move right now.' }}</p></section>
-            <section v-else class="arena-panel arena-inspector-empty"><span class="arena-empty-reticle" aria-hidden="true">+</span><h2>Select a card</h2><p>Your legal moves appear here. Choose a Pokémon to see its attacks, Abilities and attached cards, a hand card to play it, or the shared Stadium to inspect its effect.</p><p v-if="table.phase === 'setup'">Place a Basic Active and optional Bench Pokémon, then confirm Ready. The toss winner also chooses who goes first.</p></section>
-          </aside></div>
+        <ArenaPromptModal v-if="!finished" :prompt="table.prompt" :revision="data.revision" :locked="locked" @choose="act({ type: 'choose', choices: $event })" />
+        <div class="arena-play-layout"><div class="arena-board-wrap"><ArenaBoard :table="table" :stadium-moves="stadiumMoves" :locked="locked" @action="act" :aliases="aliases" :selected="selected" :hit="flash?.target" :focus-zone="focusZone" @select="select" @discard="openDiscard"/><Transition name="arena-flash"><div v-if="flash" :key="flash.n" class="arena-event-flash" aria-live="polite"><strong>{{ flash.kind === 'attack' ? flash.attack : flash.kind === 'knockout' ? 'KNOCK OUT' : flash.kind === 'coin' ? (flash.heads ? 'HEADS' : 'TAILS') : 'MATCH COMPLETE' }}</strong><span>{{ flash.kind === 'attack' ? flash.damage + ' DAMAGE' : flash.text }}</span></div></Transition></div>
+          <aside class="arena-inspector" aria-label="Selected card and legal actions">
+            <p v-if="pendingForOther" class="arena-resolution-note" role="status">Waiting for your opponent to complete a required decision. The game will continue after it resolves.</p>
+            <ArenaActionTray v-if="current" :unit="current" :moves="moves" :locked="locked" :hint="noMoveHint" @action="act" @inspect="previewOpen = true" @clear="clearSelection" />
+            <div v-if="current" class="arena-panel arena-desktop-preview"><ArenaCardPreview :unit="current" :parent="attachmentParent" :selected="selected" :attack-blocks="own?.active?.id === current.id ? table.attack_blocks : undefined" @select="select" /></div>
+            <section v-else class="arena-panel arena-inspector-empty"><span class="arena-empty-reticle" aria-hidden="true">+</span><h2>Select a card</h2><p>Tap a hand or field card to see its available moves. Choose Inspect for a larger preview. Hand cards also support Left/Right and Home/End keys, with Enter to select.</p><p v-if="table.phase === 'setup'">Place a Basic Active and optional Bench Pokémon, then confirm Ready. The toss winner also chooses who goes first.</p></section>
+          </aside>
+        </div>
+        <ArenaModal :open="previewOpen && !!current" label="Card preview" @close="previewOpen = false"><ArenaCardPreview v-if="current" :unit="current" :parent="attachmentParent" :selected="selected" :attack-blocks="own?.active?.id === current.id ? table.attack_blocks : undefined" @select="select" /></ArenaModal>
+        <ArenaModal :open="discardSeat !== null" :label="(aliases[discardSeat ?? 0] || 'Player') + ' · Discard'" @close="discardSeat = null"><template v-if="discardSeat !== null"><h2>{{ aliases[discardSeat] }} · Discard</h2><div class="arena-discard-grid"><ArenaCard v-for="unit in table.players[discardSeat].discard" :key="unit.id" :unit="unit" @select="inspectDiscard" /></div><p v-if="!table.players[discardSeat].discard.length">No discarded cards.</p></template></ArenaModal>
         <section v-if="showLog" class="arena-panel arena-history"><h2>Match history</h2><ol><li v-for="event in table.events" :key="event.n"><small>{{ event.seat === null ? 'TABLE' : aliases[event.seat] }}</small><span>{{ event.text }}</span><details v-if="event.revealed?.length"><summary>Revealed cards</summary><span v-for="(card, i) in event.revealed" :key="i">{{ card.name }} · </span></details></li></ol></section>
       </template>
     </template>
+    </div>
   </ArenaShell>
 </template>
 
