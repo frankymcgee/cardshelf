@@ -1,3 +1,12 @@
+## 0.24.0 — Arena UI refresh, Phase 4
+
+- Add a bounded effects layer for acknowledged card movement, attacks, exact server damage, conditions, healing, coin results, Stadium changes, turns and match results. The real board updates immediately and remains interactive.
+- Animate faces only for surviving disclosed card IDs. Draw and Prize movement uses anonymous backs; rekeyed discards and removed targets are never matched by card name or assigned to replacement Pokémon.
+- Replace the old latest-event flash with a compact battle activity recap. Suppress duplicate polls, stale views and historical replay; coalesce long event bursts rather than queueing animations.
+- Add a per-table Battle effects toggle and OS reduced-motion text feedback. Clear decoration and listeners on connection loss, viewport interruption, hidden tabs, changed tables and unmount.
+- Retain the existing rules, private views, action/retry idempotency, audio and all previous validation gates. Add pure privacy/routing, actual component-script, real Core/Expanded engine-view and Chromium/WebKit effect regressions.
+- Synchronise release stamps. No new dependency, server/API/database change, migration, service, browser persistence or production deployment is introduced. See docs/ARENA_UI_PHASE4.md for exact coverage and acceptance boundaries.
+
 ## 0.23.1 — Arena counter and touch-capture validation
 
 - Remove outgoing count text immediately so rapid public-count updates render exactly one current value, including with reduced motion. Retain the incoming highlight rather than weakening browser assertions.

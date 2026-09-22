@@ -6,6 +6,7 @@ import ArenaCardPreview from '../../../components/arena/ArenaCardPreview.vue'
 import ArenaActionTray from '../../../components/arena/ArenaActionTray.vue'
 import ArenaModal from '../../../components/arena/ArenaModal.vue'
 import ArenaBoard from '../../../components/arena/ArenaBoard.vue'
+import ArenaEffects from '../../../components/arena/ArenaEffects.vue'
 import ArenaPromptModal from '../../../components/arena/ArenaPromptModal.vue'
 import ArenaCoach from '../../../components/arena/ArenaCoach.vue'
 import { arenaConflict, arenaMoneylessResult } from '../../../../shared/arena.mjs'
@@ -14,7 +15,7 @@ useSeoMeta({ title: 'Battle arena · CardShelf', robots: 'noindex, nofollow' })
 const api = useApi(), route = useRoute(), auth = useAuth()
 const data = ref<any>(null), error = ref(''), connected = ref(false), busy = ref(false), pending = ref<any>(null)
 const selected = ref(''), invitation = ref(''), showLog = ref(false), discardSeat = ref<number | null>(null), previewOpen = ref(false)
-const autoplay = ref(false), focusZone = ref(''), flash = ref<any>(null), showHelp = ref(false)
+const autoplay = ref(false), focusZone = ref(''), showHelp = ref(false)
 const table = computed<any>(() => data.value?.table), seat = computed(() => data.value?.seat ?? 0)
 const aliases = computed(() => [data.value?.host_alias || 'Player one', data.value?.guest_alias || 'Player two'])
 const finished = computed(() => ['finished', 'cancelled'].includes(data.value?.status))
@@ -31,7 +32,7 @@ const own = computed<any>(() => table.value?.players[seat.value])
 const pendingForOther = computed(() => table.value?.waiting_for !== null && table.value?.waiting_for !== undefined && table.value.waiting_for !== seat.value)
 const lostReply = computed(() => !!pending.value && !busy.value)
 const noMoveHint = computed(() => table.value?.prompt ? 'Complete the required decision first.' : table.value?.turn !== seat.value && table.value?.phase !== 'setup' ? 'Wait for your turn.' : 'This card has no available move right now.')
-let alive = true, reading = false, epoch = 0, lastEvent = -1, timer: ReturnType<typeof setInterval> | undefined, flashTimer: ReturnType<typeof setTimeout> | undefined
+let alive = true, reading = false, epoch = 0, timer: ReturnType<typeof setInterval> | undefined
 const key = () => 'cardshelf-arena-action:' + auth.state.value.user?.id + ':' + String(route.params.id)
 function store() { try { if (pending.value) sessionStorage.setItem(key(), JSON.stringify(pending.value)); else sessionStorage.removeItem(key()) } catch { /* Idempotency still applies while this page remains open. */ } }
 function clearSelection() { selected.value = ''; previewOpen.value = false }
@@ -44,9 +45,6 @@ function accept(next: any) {
   if (newDecision || !next.table) { previewOpen.value = false; discardSeat.value = null }
   if (next.invite_code) invitation.value = next.invite_code
   if (next.status !== 'waiting') invitation.value = ''
-  const events = next.table?.events || [], recent = events.filter((e: any) => e.n > lastEvent)
-  if (lastEvent >= 0) { const hit = [...recent].reverse().find((e: any) => ['attack', 'knockout', 'result', 'coin'].includes(e.kind)); if (hit) { flash.value = hit; clearTimeout(flashTimer); flashTimer = setTimeout(() => { flash.value = null }, 1700) } }
-  lastEvent = events.at(-1)?.n ?? lastEvent
   if (finished.value) autoplay.value = false
 }
 async function load() {
@@ -100,7 +98,7 @@ onMounted(async () => {
   try { const saved = JSON.parse(sessionStorage.getItem(key()) || 'null'); if (saved?.id === String(route.params.id) && typeof saved.body?.request_id === 'string' && saved.body?.action && Number.isInteger(saved.body.revision)) pending.value = saved } catch { /* Ignore damaged local retry metadata. */ }
   await load(); timer = setInterval(() => { void tick() }, 2000); window.addEventListener('focus', focus); document.addEventListener('visibilitychange', focus)
 })
-onBeforeUnmount(() => { alive = false; epoch++; clearInterval(timer); clearTimeout(flashTimer); window.removeEventListener('focus', focus); document.removeEventListener('visibilitychange', focus); data.value = null; clearSelection(); discardSeat.value = null })
+onBeforeUnmount(() => { alive = false; epoch++; clearInterval(timer); window.removeEventListener('focus', focus); document.removeEventListener('visibilitychange', focus); data.value = null; clearSelection(); discardSeat.value = null })
 </script>
 <template>
   <ArenaShell :title="data ? aliases.join(' VS ') : 'PRIVATE TABLE'">
@@ -122,7 +120,7 @@ onBeforeUnmount(() => { alive = false; epoch++; clearInterval(timer); clearTimeo
         <section v-if="finished" class="arena-result"><span class="arena-result-medal" aria-hidden="true">{{ table.result === seat ? 'V' : 'CS' }}</span><div><span class="arena-kicker">MATCH COMPLETE</span><h2>{{ arenaMoneylessResult(table.result, seat) }}</h2><p>{{ table.result_reason }}</p><NuxtLink to="/arena" class="arena-button primary">Play again</NuxtLink></div></section>
         <div class="arena-turn-bar" data-zone="turn"><div><span class="arena-kicker">{{ table.phase === 'setup' ? 'OPENING SETUP' : 'TURN ' + table.turn_number }}</span><strong>{{ table.phase === 'setup' ? aliases[table.toss] + ' won the toss' : pendingForOther ? 'Opponent is choosing…' : table.prompt ? 'Your decision is needed' : table.turn === seat ? 'Your move' : aliases[table.turn] + ' is playing' }}</strong></div><div class="arena-actions"><button v-for="move in globalMoves" :key="JSON.stringify(move.action)" class="arena-button" :class="move.action.type === 'ready' ? 'primary' : ''" :disabled="locked" @click="act(move.action)">{{ move.label }}</button><label v-if="data.mode !== 'pvp' && !finished" class="arena-auto"><input v-model="autoplay" type="checkbox" :disabled="busy || !!pending || !connected">Auto play my turns</label><button v-if="!finished" class="arena-link danger" :disabled="locked" @click="concede">Concede</button></div></div>
         <ArenaPromptModal v-if="!finished" :prompt="table.prompt" :revision="data.revision" :locked="locked" @choose="act({ type: 'choose', choices: $event })" />
-        <div class="arena-play-layout"><div class="arena-board-wrap"><ArenaBoard :table="table" :stadium-moves="stadiumMoves" :locked="locked" @action="act" :aliases="aliases" :selected="selected" :hit="flash?.target" :focus-zone="focusZone" @select="select" @discard="openDiscard"/><Transition name="arena-flash"><div v-if="flash" :key="flash.n" class="arena-event-flash" aria-live="polite"><strong>{{ flash.kind === 'attack' ? flash.attack : flash.kind === 'knockout' ? 'KNOCK OUT' : flash.kind === 'coin' ? (flash.heads ? 'HEADS' : 'TAILS') : 'MATCH COMPLETE' }}</strong><span>{{ flash.kind === 'attack' ? flash.damage + ' DAMAGE' : flash.text }}</span></div></Transition></div>
+        <div class="arena-play-layout"><div class="arena-board-wrap"><ArenaEffects :table="table" :match-id="data.id" :revision="data.revision" :available="connected"><ArenaBoard :table="table" :stadium-moves="stadiumMoves" :locked="locked" @action="act" :aliases="aliases" :selected="selected" :focus-zone="focusZone" @select="select" @discard="openDiscard"/></ArenaEffects></div>
           <aside class="arena-inspector" aria-label="Selected card and legal actions">
             <p v-if="pendingForOther" class="arena-resolution-note" role="status">Waiting for your opponent to complete a required decision. The game will continue after it resolves.</p>
             <ArenaActionTray v-if="current" :unit="current" :moves="moves" :locked="locked" :hint="noMoveHint" @action="act" @inspect="previewOpen = true" @clear="clearSelection" />

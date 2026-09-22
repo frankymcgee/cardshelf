@@ -1,9 +1,9 @@
 name: Validate Arena table UI
 on:
   push:
-    paths: ['app/components/arena/**', 'app/pages/arena/matches/**', 'app/assets/css/**', 'shared/arena.mjs', 'tests/browser/**', 'tests/helpers/arena-table-fixtures.mjs', 'package*.json', '.github/workflows/arena-table-ui.yml']
+    paths: ['app/components/arena/**', 'app/pages/arena/matches/**', 'app/assets/css/**', 'shared/arena.mjs', 'shared/arena-effects.mjs', 'tests/browser/**', 'tests/helpers/arena-table-fixtures.mjs', 'package*.json', '.github/workflows/arena-table-ui.yml']
   pull_request:
-    paths: ['app/components/arena/**', 'app/pages/arena/matches/**', 'app/assets/css/**', 'shared/arena.mjs', 'tests/browser/**', 'tests/helpers/arena-table-fixtures.mjs', 'package*.json', '.github/workflows/arena-table-ui.yml']
+    paths: ['app/components/arena/**', 'app/pages/arena/matches/**', 'app/assets/css/**', 'shared/arena.mjs', 'shared/arena-effects.mjs', 'tests/browser/**', 'tests/helpers/arena-table-fixtures.mjs', 'package*.json', '.github/workflows/arena-table-ui.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,6 +23,8 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
       - name: Check actual Arena components in Chromium and WebKit
         run: npm run test:arena-ui
+      - name: Check confirmed battle effects in Chromium and WebKit
+        run: npm run test:arena-effects
       - name: Upload browser results and table previews
         if: always()
         uses: actions/upload-artifact@v4
@@ -31,3 +33,5 @@ jobs:
           path: |
             test-results/arena-table
             playwright-report/arena-table
+            test-results/arena-effects
+            playwright-report/arena-effects
