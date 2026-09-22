@@ -27,7 +27,9 @@ function changedPreference() {
   // A preference change is not a new game baseline. A delayed change event must
   // not consume an acknowledged update or cancel an effect already using it.
 }
-function visibility() { if (document.hidden) interrupt(); else baseline() }
+// Hidden-tab polling stops in the match page. Wait for a NEW response after
+// visibility/focus returns; the old in-memory table is not a fresh baseline.
+function visibility() { interrupt() }
 // Ignore offscreen/clipped anchors rather than flying artwork across the page or moving the user's viewport.
 function rectangle(element: Element | null): any {
   if (!element) return null
@@ -105,13 +107,13 @@ onMounted(() => {
   mounted = true; preference = window.matchMedia('(prefers-reduced-motion: reduce)'); reduced.value = preference.matches
   preference.addEventListener('change', changedPreference)
   window.addEventListener('resize', baseline); window.addEventListener('scroll', interrupt, true)
-  window.addEventListener('blur', interrupt); window.addEventListener('focus', baseline)
+  window.addEventListener('blur', interrupt); window.addEventListener('focus', interrupt)
   document.addEventListener('visibilitychange', visibility); baseline()
 })
 onBeforeUnmount(() => {
   mounted = false; interrupt(); preference?.removeEventListener('change', changedPreference); preference = null
   window.removeEventListener('resize', baseline); window.removeEventListener('scroll', interrupt, true)
-  window.removeEventListener('blur', interrupt); window.removeEventListener('focus', baseline)
+  window.removeEventListener('blur', interrupt); window.removeEventListener('focus', interrupt)
   document.removeEventListener('visibilitychange', visibility)
 })
 </script>

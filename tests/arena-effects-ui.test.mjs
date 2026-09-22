@@ -7,7 +7,7 @@ import * as effects from '../shared/arena-effects.mjs';
 const source = fs.readFileSync(new URL('../app/components/arena/ArenaEffects.vue', import.meta.url), 'utf8');
 function harness() {
   const unit = id => ({ id, card: { name: id }, damage: 0, conditions: {}, energy: [], tools: [] });
-  const t = { version: 'pokemon-expanded-v2', seat: 0, round: 1, turn: 0, turn_number: 1, phase: 'playing',
+  const t = { version: 'pokemon-expanded-v2', seat: 0, turn: 0, turn_number: 1, phase: 'playing',
     players: [0, 1].map(i => ({ active: unit('a' + i), bench: [], hand: [unit('h' + i)], discard: [], hand_count: 1, deck_count: 40, prize_count: 6 })), events: [{ n: 1, kind: 'setup' }] };
   const props = { table: t, revision: 1, matchId: 'm', available: true }, mounts = [], unmounts = [], watchers = [], timers = new Map(), listeners = new Map();
   let now = 1000, timer = 0;
@@ -97,4 +97,16 @@ test('missing effect metadata cancels active decoration instead of reading a nul
   const h = harness(); h.change(); await h.state.update();
   h.props.table = null; h.props.revision++; await h.state.update();
   assert.equal(h.state.impacts.value.length, 0); assert.equal(h.timers.size, 0);
+});
+
+test('returning to a hidden or blurred table waits for a fresh acknowledged baseline', async () => {
+  for (const mode of ['focus', 'visibility']) {
+    const h = harness();
+    if (mode === 'focus') { h.listeners.get('blur')(); h.listeners.get('focus')(); }
+    else { h.document.hidden = true; h.state.visibility(); h.document.hidden = false; h.state.visibility(); }
+    // Real match polling is paused while hidden: the first new response arrives AFTER return.
+    h.change(); await h.state.update();
+    assert.equal(h.state.cues.value.length, 0); assert.equal(h.state.impacts.value.length, 0);
+    h.change(); await h.state.update(); assert.equal(h.state.impacts.value[0].amount, 30);
+  }
 });
