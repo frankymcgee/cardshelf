@@ -3,6 +3,7 @@ import ArenaCard from './ArenaCard.vue'
 import ArenaTable from './ArenaTable.vue'
 import ArenaPlayerZone from './ArenaPlayerZone.vue'
 import ArenaHandFan from './ArenaHandFan.vue'
+import ArenaInteraction from './ArenaInteraction.vue'
 const props = defineProps<{ table: any; aliases: string[]; selected?: string; hit?: string; focusZone?: string; stadiumMoves?: any[]; locked?: boolean }>()
 const emit = defineEmits<{ select: [unit: any]; discard: [seat: number]; action: [action: any] }>()
 const self = computed(() => props.table.seat), other = computed(() => self.value === 0 ? 1 : 0)
@@ -24,12 +25,13 @@ const turnLabel = computed(() => {
 })
 </script>
 <template>
+  <ArenaInteraction v-slot="interaction" :table="table" :selected="selected" :locked="locked" @select="emit('select', $event)" @action="emit('action', $event)">
   <ArenaTable :focus-zone="focusZone">
     <template v-for="seat in sides" :key="seat">
-      <ArenaPlayerZone :player="publicPlayer(seat)" :alias="alias(seat)" :seat="seat" :self="seat === self" :turn="table.turn === seat && table.phase === 'playing'" :setup="table.phase === 'setup'" :turn-number="table.turn_number" :selected="selected" :hit="hit" @select="emit('select', $event)" @discard="emit('discard', $event)" />
+      <ArenaPlayerZone :player="publicPlayer(seat)" :alias="alias(seat)" :seat="seat" :self="seat === self" :turn="table.turn === seat && table.phase === 'playing'" :setup="table.phase === 'setup'" :turn-number="table.turn_number" :selected="selected" :hit="hit" :targets="interaction.targets" :over="interaction.over" @select="emit('select', $event)" @discard="emit('discard', $event)" />
       <section v-if="seat !== self" class="arena-table-centre" aria-label="Battlefield">
         <div class="arena-table-status"><span class="arena-kicker">BATTLEFIELD</span><strong>{{ turnLabel }}</strong><small v-if="table.phase === 'playing'">Turn {{ table.turn_number }}</small></div>
-        <section v-if="table.stadium !== undefined" class="arena-stadium-slot" aria-label="Shared Stadium">
+        <section v-if="table.stadium !== undefined" class="arena-stadium-slot" data-arena-drop="stadium" :class="{ 'is-arena-target': interaction.targets.includes('stadium'), 'is-arena-over': interaction.over === 'stadium' }" aria-label="Shared Stadium">
           <template v-if="table.stadium?.unit && !table.stadium.unit.hidden">
             <ArenaCard :unit="table.stadium.unit" :selected="selected === table.stadium.unit.id" :label="'Inspect Stadium: ' + table.stadium.unit.card.name" @select="emit('select', $event)" />
             <div><span class="arena-kicker">SHARED STADIUM</span><button type="button" class="arena-link" @click="emit('select', table.stadium.unit)">{{ table.stadium.unit.card.name }}</button><small>Played by {{ alias(table.stadium.seat) }} · affects both fields as written</small><button v-for="move in stadiumMoves || []" :key="JSON.stringify(move.action)" type="button" class="arena-button" :disabled="locked" @click="emit('action', move.action)">{{ move.label }}</button></div>
@@ -37,8 +39,10 @@ const turnLabel = computed(() => {
           <div v-else><span class="arena-kicker">SHARED STADIUM</span><p>No Stadium in play.</p><small>Play a supported Stadium from your hand.</small></div>
         </section>
         <div v-else class="arena-table-core-mark" aria-hidden="true">CS</div>
+        <div class="arena-trainer-target" data-arena-drop="trainer" :class="{ 'is-arena-target': interaction.targets.includes('trainer'), 'is-arena-over': interaction.over === 'trainer' }"><span class="arena-kicker">TRAINER PLAY AREA</span><small>Drop a highlighted Trainer here to review its move.</small></div>
       </section>
     </template>
-    <ArenaHandFan :cards="player(self).hand" :selected="selected" @select="emit('select', $event)" />
+    <ArenaHandFan :cards="player(self).hand" :selected="selected" :playable="interaction.playable" @drag="interaction.beginDrag" @choose="interaction.chooseTargets" @select="emit('select', $event)" />
   </ArenaTable>
+  </ArenaInteraction>
 </template>

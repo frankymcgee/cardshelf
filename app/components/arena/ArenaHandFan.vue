@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 import ArenaCard from './ArenaCard.vue'
-const props = defineProps<{ cards: any[]; selected?: string }>()
-const emit = defineEmits<{ select: [unit: any] }>()
+const props = defineProps<{ cards: any[]; selected?: string; playable?: string[] }>()
+const emit = defineEmits<{ select: [unit: any]; drag: [unit: any, event: PointerEvent]; choose: [unit: any] }>()
 const scroller = ref<HTMLElement | null>(null), focusedIndex = ref(0)
+const movableSelection = computed(() => props.cards.find(unit => unit && !unit.hidden && unit.card && unit.id === props.selected && props.playable?.includes(unit.id)))
+function pointerDown(event: PointerEvent, unit: any) {
+  // Card-face touch gestures remain native scrolling/tapping. Only the dedicated handle captures touch.
+  if (event.pointerType === 'mouse' && !unit.hidden && unit.card && props.playable?.includes(unit.id)) emit('drag', unit, event)
+}
 function fanStyle(index: number) {
   const offset = index - (props.cards.length - 1) / 2
   // A bounded fan for ordinary hands; a straight scrollable row for unusually large hands.
@@ -38,10 +43,15 @@ watch(() => props.cards.map(card => card.id).join('|'), async () => {
 <template>
   <section class="arena-hand-area" data-zone="hand" aria-label="Your private hand">
     <div class="arena-zone-caption"><strong>Your hand</strong><span>{{ cards.length }} cards · only you can see these</span></div>
-    <p class="arena-hand-hint">Tap a card to select · use Inspect for a closer look</p>
+    <p class="arena-hand-hint">Tap a card to select · use Inspect for a closer look<span v-if="playable?.length"> · {{ playable.length }} playable</span></p>
     <div ref="scroller" class="arena-hand-fan arena-hand-interactive" tabindex="0" role="region" aria-label="Your hand cards; scroll horizontally for more" @keydown="onKey">
-      <ArenaCard v-for="(unit, index) in cards" :key="unit.id" :unit="unit" :selected="selected === unit.id" :data-hand-index="index" :tabindex="index === focusedIndex ? 0 : -1" :style="fanStyle(index)" @focus="focusedIndex = index" @select="selectCard" />
+      <ArenaCard v-for="(unit, index) in cards" :key="unit.id" :unit="unit" :selected="selected === unit.id" :data-hand-index="index" :data-hand-id="unit.hidden ? undefined : unit.id" :class="{ 'is-arena-playable': !unit.hidden && playable?.includes(unit.id) }" :aria-description="!unit.hidden && playable?.includes(unit.id) ? 'Playable now. Select to choose a move.' : undefined" @pointerdown="pointerDown($event, unit)" @dragstart.prevent :tabindex="index === focusedIndex ? 0 : -1" :style="fanStyle(index)" @focus="focusedIndex = index" @select="selectCard" />
       <p v-if="!cards.length" class="arena-muted">Your hand is empty.</p>
+    </div>
+    <div v-if="movableSelection" class="arena-hand-play-controls">
+      <button type="button" class="arena-button arena-drag-handle" @pointerdown="emit('drag', movableSelection, $event)" @click="emit('choose', movableSelection)">Drag selected card</button>
+      <button type="button" class="arena-button" @click="emit('choose', movableSelection)">Choose target</button>
+      <small>Mouse: drag a playable card. Touch: use the handle. Both routes ask for confirmation.</small>
     </div>
   </section>
 </template>

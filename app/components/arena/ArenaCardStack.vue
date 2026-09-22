@@ -10,10 +10,10 @@ const visibleBacks = (count: number, limit: number) => Number.isSafeInteger(coun
     <span v-if="!count" class="arena-table-empty-note" aria-hidden="true">No cards in hand</span>
   </div>
   <div v-else-if="kind === 'deck'" class="arena-deck-stack" :class="{ 'is-empty': !count }" role="img" :aria-label="alias + ' deck: ' + count + ' face-down cards'">
-    <span class="arena-stack-mark" aria-hidden="true">CS</span><b aria-hidden="true">{{ count }}</b><small aria-hidden="true">DECK</small>
+    <span class="arena-stack-mark" aria-hidden="true">CS</span><Transition name="arena-count"><b :key="count" aria-hidden="true">{{ count }}</b></Transition><small aria-hidden="true">DECK</small>
   </div>
   <section v-else class="arena-prize-area arena-table-prizes" data-zone="prizes" :aria-label="alias + ' Prize cards: ' + count + ' remaining'">
-    <strong>{{ count }} <small>PRIZES</small></strong>
+    <strong><Transition name="arena-count"><span :key="count">{{ count }}</span></Transition> <small>PRIZES</small></strong>
     <div class="arena-prize-pips" aria-hidden="true"><i v-for="i in visibleBacks(count, 6)" :key="i" /></div>
     <small>{{ !count ? 'No Prize cards' : self ? 'Choose when prompted' : 'Face down' }}</small>
   </section>

@@ -38,3 +38,63 @@ export function arenaMoneylessResult(result, seat) { return result === null ? ''
 export function energySymbol(type) {
   return ({ Grass:'G', Fire:'F', Water:'W', Lightning:'L', Psychic:'P', Fighting:'R', Darkness:'D', Metal:'M', Fairy:'Y', Dragon:'N', Colorless:'C' })[type] || '?';
 }
+
+// Presentation routing only: every option retains an exact server-issued action.
+// This does not determine game legality, calculate costs or mutate a player view.
+export function arenaActionKey(action) {
+  if (!action || typeof action !== 'object' || Array.isArray(action)) return '';
+  const entries = Object.entries(action);
+  if (entries.some(([, value]) => !['string', 'number'].includes(typeof value))) return '';
+  return JSON.stringify(entries.sort(([a], [b]) => a.localeCompare(b)));
+}
+export function arenaHandOptions(table, locked = false) {
+  if (locked || !ARENA_VERSIONS.includes(table?.version) || ![0, 1].includes(table?.seat)
+    || !Array.isArray(table.players) || table.players.length !== 2 || !Array.isArray(table.legal)
+    || table.prompt || table.waiting_for != null || !['setup', 'playing'].includes(table.phase)
+    || table.phase === 'playing' && table.turn !== table.seat) return [];
+  const own = table.players[table.seat];
+  if (!Array.isArray(own?.hand)) return [];
+  const visible = unit => unit && !unit.hidden && typeof unit.id === 'string' && !!unit.card;
+  const hand = new Map(own.hand.filter(visible).map(unit => [unit.id, unit]));
+  const fields = table.players.flatMap((p, seat) => [p?.active, ...(p?.bench || [])].filter(visible).map(unit => ({ unit, seat })));
+  const fieldsById = new Map(fields.map(value => [value.unit.id, value]));
+  const allowed = { setup: ['type', 'card', 'zone'], bench: ['type', 'card'], energy: ['type', 'card', 'target'], evolve: ['type', 'card', 'target'], trainer: ['type', 'card', 'target'] };
+  const seen = new Set(), result = [];
+  for (const move of table.legal) {
+    const action = move?.action, unit = hand.get(move?.card);
+    if (!unit || action?.card !== unit.id || !Object.hasOwn(allowed, action?.type)
+      || Object.keys(action).some(key => !allowed[action.type].includes(key))
+      || typeof move.label !== 'string' || !move.label.trim()) continue;
+    let target = '', targetLabel = '';
+    if (action.type === 'setup' && ['active', 'bench'].includes(action.zone)) {
+      target = `zone:${table.seat}:${action.zone}`; targetLabel = action.zone === 'active' ? 'Your Active spot' : 'Your Bench';
+    } else if (action.type === 'bench') {
+      target = `zone:${table.seat}:bench`; targetLabel = 'Your Bench';
+    } else if (['energy', 'evolve', 'trainer'].includes(action.type) && typeof action.target === 'string') {
+      const field = fieldsById.get(action.target);
+      if (!field || action.type !== 'trainer' && field.seat !== table.seat) continue;
+      target = 'card:' + field.unit.id;
+      targetLabel = `${field.seat === table.seat ? 'Your' : 'Opponent'} ${field.unit.card.name}`;
+    } else if (action.type === 'trainer' && action.target === undefined) {
+      const stadium = unit.card.program?.kind === 'stadium';
+      if (stadium && table.stadium === undefined) continue;
+      target = stadium ? 'stadium' : 'trainer'; targetLabel = stadium ? 'Shared Stadium' : 'Trainer play area';
+    }
+    const key = arenaActionKey(action);
+    if (target && key && !seen.has(key)) { seen.add(key); result.push({ key, card: unit.id, target, targetLabel, label: move.label, action }); }
+  }
+  return result;
+}
+// The match revision and server writer remain authoritative. This local stamp
+// cancels gestures/reviews on a changed disclosed table, not identical polling.
+// Never traverse an opponent hand, a deck/prize list, or a face-down unit's fields.
+export function arenaInteractionStamp(table) {
+  if (!table || ![0, 1].includes(table.seat)) return '';
+  const unit = value => !value ? null : value.hidden ? 'hidden' : [value.id, value.damage, value.effective_hp,
+    value.conditions, (value.energy || []).map(c => c.hidden ? 'hidden' : c.id), (value.tools || []).map(c => c.hidden ? 'hidden' : c.id), (value.under || []).map(c => c.hidden ? 'hidden' : c.id)];
+  return JSON.stringify([table.version, table.seat, table.round, table.phase, table.turn, table.turn_number,
+    table.waiting_for, !!table.prompt, table.events?.at(-1)?.n, table.result,
+    table.players?.map((p, seat) => [p?.ready, p?.hand_count, p?.deck_count, p?.prize_count, p?.discard?.length,
+      unit(p?.active), p?.bench?.map(unit), seat === table.seat ? p?.hand?.map(unit) : null]),
+    unit(table.stadium?.unit), table.legal?.map(move => arenaActionKey(move.action))]);
+}
