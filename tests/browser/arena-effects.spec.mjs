@@ -72,7 +72,9 @@ test('OS reduced motion uses textual feedback only, including a preference chang
   await page.emulateMedia({ reducedMotion: 'reduce' }); await start(page); await advance(page, 'attack');
   await expect(page.locator('.arena-motion-layer')).toHaveCount(0);
   await expect(page.locator('[data-cue="attack"]')).toContainText('30 damage');
-  await page.emulateMedia({ reducedMotion: 'no-preference' }); await advance(page, 'coin');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(page.locator('.arena-effects-preference')).toHaveCount(0);
+  await advance(page, 'coin');
   await expect(page.locator('[data-impact="coin"]')).toBeVisible();
   await page.emulateMedia({ reducedMotion: 'reduce' }); await expect(page.locator('.arena-motion-layer')).toHaveCount(0);
 });
@@ -111,7 +113,10 @@ test.describe('mobile effects', () => {
   test('narrow touch viewport keeps controls accessible and adds no horizontal overflow', async ({ page }, info) => {
     await start(page);
     await page.locator('.arena-table-centre').scrollIntoViewIfNeeded();
-    await advance(page, 'coin'); // The first post-scroll snapshot establishes a fresh baseline.
+    // Scrolling may dispatch its event on the next rendering frame. Establish
+    // the acknowledged baseline only after the browser has processed that input.
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.evaluate(() => window.effectsFixture.poll());
     await advance(page, 'coin');
     await expect(page.locator('[data-impact="coin"]')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);

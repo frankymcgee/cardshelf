@@ -83,3 +83,18 @@ test('live flight faces disappear as soon as their current disclosed identity is
   const h = harness(); h.state.flights.value = [{ id: 'h0', kind: 'card' }]; assert.equal(h.state.liveFlights.value.length, 1);
   h.props.table.players[0].hand = []; assert.equal(h.state.liveFlights.value.length, 0);
 });
+
+test('a delayed preference-change event cannot consume or cancel an already-correct new effect', async () => {
+  const h = harness(); h.preference.matches = true; h.state.changedPreference();
+  h.change(); await h.state.update(); assert.equal(h.state.impacts.value.length, 0);
+  // Browser media state can update before its asynchronous change listener fires.
+  h.preference.matches = false; h.change(); await h.state.update();
+  const active = h.state.impacts.value; assert.equal(active[0].amount, 30);
+  const ids = [...h.timers.keys()]; h.state.changedPreference();
+  assert.equal(h.state.impacts.value, active); assert.deepEqual([...h.timers.keys()], ids);
+});
+test('missing effect metadata cancels active decoration instead of reading a null frame', async () => {
+  const h = harness(); h.change(); await h.state.update();
+  h.props.table = null; h.props.revision++; await h.state.update();
+  assert.equal(h.state.impacts.value.length, 0); assert.equal(h.timers.size, 0);
+});

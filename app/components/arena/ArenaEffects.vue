@@ -20,7 +20,13 @@ function baseline() {
 }
 function interrupt() { clearEffects(); previous = null }
 function toggle() { enabled.value = !enabled.value; baseline() }
-function changedPreference() { reduced.value = !!preference?.matches; baseline() }
+function changedPreference() {
+  const value = !!preference?.matches
+  if (value === reduced.value) return
+  reduced.value = value; clearEffects()
+  // A preference change is not a new game baseline. A delayed change event must
+  // not consume an acknowledged update or cancel an effect already using it.
+}
 function visibility() { if (document.hidden) interrupt(); else baseline() }
 // Ignore offscreen/clipped anchors rather than flying artwork across the page or moving the user's viewport.
 function rectangle(element: Element | null): any {
@@ -53,9 +59,10 @@ function positions(): Map<string, any> {
 }
 async function update() {
   if (!mounted) return
+  if (preference && reduced.value !== preference.matches) changedPreference()
   if (!props.available || document.hidden || !enabled.value) { baseline(); return }
   const after = arenaEffectFrame(props.table, props.matchId, props.revision), before = previous
-  if (before && after?.key === before.key && after.revision <= before.revision) {
+  if (before && after && after.key === before.key && after.revision <= before.revision) {
     if (after.revision === before.revision) observedAt = Date.now() // A current poll keeps a slow turn fresh without replaying it.
     return
   }
