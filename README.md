@@ -1,4 +1,4 @@
-# CardShelf 0.23.1
+# CardShelf 0.24.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -20,6 +20,12 @@ for installation, domain authentication, certificates and acceptance checks.
 See [v0.20 validation](docs/POSTAL_VALIDATION.md) for executed checks and their limits.
 
 ## Arena
+
+[Phase 4](docs/ARENA_UI_PHASE4.md) adds bounded feedback for confirmed card movement,
+attacks, damage, conditions, coin results, Stadiums and turns. Draw/Prize travel uses
+anonymous backs; visible card travel uses surviving disclosed identities only.
+Battle effects can be turned off, and reduced-motion preferences retain text feedback.
+No additional game requests, dependencies, database storage or server service is added.
 
 [Phase 3](docs/ARENA_UI_PHASE3.md) adds playable-hand indicators, public legal-target
 highlighting, mouse dragging, a dedicated touch drag handle and keyboard/tap target
