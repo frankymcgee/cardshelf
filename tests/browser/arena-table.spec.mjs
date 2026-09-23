@@ -1,5 +1,42 @@
 import { test, expect } from './arena-fixtures.mjs';
 const widths = [320, 390, 768, 1024, 1440];
+for (const seat of [0, 1]) test(`perspective seat ${seat}: nearer cards enlarge, projected targets remain clickable, hand and actions stay flat`, async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1500 });
+  await page.goto('/?seat=' + seat);
+  await expect(page.locator('[data-view="first-person"]')).toBeVisible();
+  const geometry = await page.evaluate(() => {
+    const plane = document.querySelector('.arena-table-plane');
+    const near = document.querySelector('[data-side="self"] .arena-active-spot');
+    const far = document.querySelector('[data-side="opponent"] .arena-active-spot');
+    const targets = [...document.querySelectorAll('.arena-table-plane .arena-card:not(:disabled)')];
+    return { transform: getComputedStyle(plane).transform, near: near.getBoundingClientRect().width, far: far.getBoundingClientRect().width,
+      handFlat: !document.querySelector('.arena-hand-area').closest('.arena-table-plane'),
+      actionsFlat: !document.querySelector('.arena-table-actions').closest('.arena-table-plane'),
+      targetsHit: targets.every(target => { const r = target.getBoundingClientRect(); return target.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)); }) };
+  });
+  expect(geometry.transform).not.toBe('none');
+  expect(geometry.near).toBeGreaterThan(geometry.far);
+  expect(geometry.handFlat).toBe(true); expect(geometry.actionsFlat).toBe(true); expect(geometry.targetsHit).toBe(true);
+  await page.locator('[data-side="opponent"] .arena-bench-spot .arena-card').first().click();
+  await expect.poll(() => page.evaluate(() => window.arenaFixture.events.at(-1))).toEqual(['select', `Bench-${1 - seat}-0`]);
+  await expect(page.getByRole('region', { name: 'Selected card actions', exact: true })).toBeVisible();
+  expect(await page.locator('.arena-action-tray').evaluate(e => !e.closest('.arena-table-plane'))).toBe(true);
+});
+test('reduced motion and narrow containers keep a flat field; public discard artwork remains inspectable', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1500 }); await page.goto('/');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(() => page.locator('.arena-table-plane').evaluate(e => getComputedStyle(e).transform)).toBe('none');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.locator('.arena-board-wrap').evaluate(e => { e.style.maxWidth = '700px'; });
+  await expect.poll(() => page.locator('.arena-table-plane').evaluate(e => getComputedStyle(e).transform)).toBe('none');
+  await page.evaluate(() => { window.arenaFixture.props.table.players[0].discard[0].card.image_url = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="63" height="88" fill="teal"/></svg>'; });
+  const pile = page.locator('[data-side="self"] .arena-table-discard');
+  await expect(pile.locator('img')).toBeVisible(); await pile.click();
+  await expect(page.getByRole('dialog', { name: 'Discard pile', exact: true })).toBeVisible();
+  await page.getByRole('dialog', { name: 'Discard pile', exact: true }).getByRole('button', { name: 'Close', exact: true }).click();
+  await page.evaluate(() => { window.arenaFixture.props.table.players[0].discard = []; });
+  await expect(pile.locator('img')).toHaveCount(0); await expect(pile).toHaveAttribute('aria-label', 'Inspect North player discard: 0 cards');
+});
 for (const width of widths) for (const seat of [0, 1]) test(`${width}px, seat ${seat}: opposite table, usable zones and no page overflow`, async ({ page }, info) => {
   await page.setViewportSize({ width, height: 1000 });
   const errors = []; page.on('pageerror', error => errors.push(error.message));

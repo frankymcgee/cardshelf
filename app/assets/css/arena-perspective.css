@@ -1,0 +1,164 @@
+/* First-person tabletop. Only the field is projected; hand, dialogs, drag ghosts,
+   action controls and confirmed-effect overlays remain in screen coordinates. */
+.arena-match-view .arena-play-layout { grid-template-columns: minmax(0, 1fr); }
+.arena-board.arena-table {
+  container: arena-table / inline-size;
+  padding: 16px 12px 0;
+  border-color: #657c965c;
+  background: radial-gradient(ellipse at 50% 30%, #213b5266, transparent 70%), #090f1b;
+  box-shadow: 0 24px 65px #0006;
+}
+.arena-board.arena-table::before { content: none; transform: none; }
+.arena-table-perspective { min-width: 0; padding: 8px 0 28px; }
+.arena-table-plane {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 8px;
+  border: 7px solid #514338;
+  border-radius: 28px;
+  background: repeating-linear-gradient(125deg, #ffffff03 0 1px, transparent 1px 4px), radial-gradient(ellipse at 50% 48%, #233c50, #142636 65%, #10202e);
+  box-shadow: inset 0 0 0 2px #608fb94d, inset 0 0 70px #0004, 0 8px 0 #302a27, 0 14px 0 #19191d, 0 24px 35px #0008;
+}
+.arena-table-plane::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 50%; top: 50%;
+  width: 29%; aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 12px double #9bb8d015;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.arena-table .arena-table-side,
+.arena-table .arena-table-side.is-opponent {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  padding: 10px 8px;
+  gap: 10px;
+}
+.arena-table .arena-table-side { --field-line: #d8ad644d; }
+.arena-table .arena-table-side.is-opponent { --field-line: #72bbeb55; }
+.arena-table .arena-player-strip { border: 0; }
+.arena-table .arena-player-strip strong small { letter-spacing: .1em; }
+.arena-table .arena-turn-chip { background: #eabb64; color: #211a10; }
+.arena-table .arena-table-lanes {
+  grid-template-columns: minmax(80px, 1fr) minmax(0, 3.4fr) minmax(80px, 1fr);
+  grid-template-areas: 'prizes field reserve';
+  gap: 16px;
+}
+.arena-table .arena-table-battle-line { gap: 12px; }
+.arena-table .arena-table-bench { padding: 10px; border: 1px solid var(--field-line); border-radius: 12px; }
+.arena-table .arena-table-zone-label { color: #b4cedf; margin-bottom: 8px; }
+.arena-table .arena-bench-row { max-width: 450px; gap: 10px; }
+.arena-table .arena-active-spot { width: 104px; }
+.arena-table .arena-active-spot::before { border-color: var(--field-line); }
+.arena-table .arena-empty-slot { border: 1px solid #7ca9ca55; background: #07162455; }
+.arena-table-plane .arena-card { box-shadow: 2px 3px 0 #ddd2b54d, 3px 6px 0 #0b142c, 0 10px 18px #0007; }
+.arena-table-plane .arena-card.is-selected { outline: 3px solid #ffd17e; outline-offset: 4px; }
+.arena-table .arena-table-reserve { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 16px; }
+.arena-table .arena-deck-stack { width: 62px; height: 87px; border-color: #7798bc; background: repeating-linear-gradient(135deg, #ffffff05 0 1px, transparent 1px 5px), #203754; box-shadow: 2px 3px 0 #738396, 4px 6px 0 #182638, 6px 9px 0 #738396, 8px 12px 0 #182638, 0 16px 20px #0007; }
+.arena-table .arena-table-discard { position: relative; width: 62px; min-height: 87px; padding: 0; overflow: visible; border-radius: 6px; box-shadow: 2px 3px 0 #617386, 4px 6px 0 #182638, 0 10px 16px #0006; }
+.arena-discard-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 5px; }
+.arena-discard-face { position: absolute; inset: 4px; display: grid; place-items: center; padding: 3px; border: 1px solid #e2d4a366; border-radius: 3px; color: #efe9d7; background: radial-gradient(circle at 45% 35%, #53828b, #243e50 70%); font-size: 9px; overflow: hidden; }
+.arena-table .arena-table-discard b { position: relative; z-index: 1; display: grid; place-items: center; min-width: 28px; height: 28px; padding: 0 5px; border: 1px solid #90b5d1; border-radius: 50%; color: #fff; background: #0b172beb; font-size: 14px; }
+.arena-table .arena-discard-caption { position: absolute; top: calc(100% + 9px); left: -10px; right: -10px; color: #c9e3f7; font-size: 9px; text-align: center; }
+.arena-table .arena-table-prizes { padding: 8px 0; }
+.arena-table .arena-prize-area > strong { font-size: 18px; }
+.arena-table .arena-prize-area > strong small { display: inline; margin-left: 4px; }
+.arena-table .arena-prize-pips { grid-template-columns: repeat(3, 24px); gap: 6px; }
+.arena-table .arena-prize-pips > i { width: 24px; height: 34px; border: 1px solid #7a9bbd; border-radius: 3px; background: radial-gradient(circle, #80b4d54d 0 20%, transparent 24%), repeating-linear-gradient(135deg, #ffffff06 0 1px, transparent 1px 6px), #233c5b; box-shadow: 1px 2px 0 #0a1425, 0 5px 9px #0005; }
+.arena-table .arena-opponent-hand { min-height: 44px; padding-bottom: 8px; }
+.arena-table .arena-opponent-back { flex-basis: 32px; height: 44px; background: radial-gradient(circle, #80b4d54d 0 18%, transparent 22%), #213b5a; box-shadow: 1px 2px 0 #101e33, 0 5px 8px #0006; }
+.arena-table .arena-table-centre { grid-template-columns: minmax(100px, .8fr) minmax(0, 1.6fr) minmax(90px, .7fr); gap: 16px; padding: 16px 10px; margin: 0; border-block: 1px solid #8cafc51c; }
+.arena-table .arena-table-status { border: 1px solid #c6a26680; border-radius: 12px; padding: 12px; background: #181e26bb; }
+.arena-table .arena-table-status strong { font-size: 13px; }
+.arena-table .arena-table-status .arena-kicker { font-size: 8px; color: #dab678; }
+.arena-table .arena-stadium-slot { border-color: #8da9bf50; background: #11243466; }
+.arena-table .arena-trainer-target { background: #10212e66; }
+.arena-hand-dock { position: relative; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 16px; }
+.arena-table .arena-hand-area { min-width: 0; margin: 0; padding: 12px 4px 0; border: 0; background: transparent; }
+.arena-table .arena-hand-fan.arena-hand-interactive { min-height: 226px; padding: 30px 16px 32px; }
+.arena-table .arena-hand-interactive > .arena-card { width: 126px; flex-basis: 126px; margin-left: -44px; }
+.arena-table .arena-hand-interactive > .arena-card:first-child { margin-left: 0; }
+.arena-table .arena-hand-interactive > .arena-card.is-selected { outline: 3px solid #ffd17e; outline-offset: 2px; box-shadow: 0 0 24px #ffc66844, 0 18px 28px #0008; }
+.arena-table .arena-table-actions { position: static; top: auto; display: block; min-width: 0; max-height: none; overflow: visible; padding: 12px 0; }
+.arena-table-actions .arena-action-tray { margin: 0; background: #102031f5; border-color: #709bb466; }
+.arena-table-instructions { padding: 18px; border: 1px solid #7895b533; border-radius: 16px; background: #10203188; }
+.arena-table-instructions strong { display: block; font-size: 15px; margin-top: 8px; }
+.arena-table-instructions p { margin: 8px 0 0; color: #adc3d3; font-size: 12px; }
+/* Container width, rather than viewport width, protects embedded/narrow tables. */
+@container arena-table (min-width: 760px) {
+  .arena-table-perspective { padding-top: 0; padding-bottom: 44px; }
+  .arena-table-plane { width: 92%; margin: 0 auto; transform: perspective(1800px) rotateX(18deg); transform-origin: 50% 50%; }
+  .arena-hand-dock:has(.arena-table-actions) { grid-template-columns: minmax(0, 1fr) 260px; }
+  .arena-table-actions { align-self: center; }
+  .arena-table .arena-table-side { gap: 8px; }
+  .arena-table .arena-bench-row { max-width: 360px; }
+  .arena-table .arena-active-spot { width: 94px; margin-bottom: 2px; }
+  .arena-table .arena-table-bench { padding: 6px; }
+  .arena-table .arena-table-battle-line { gap: 8px; }
+  .arena-table .arena-table-zone-label { margin-bottom: 5px; font-size: 8px; }
+  .arena-table .arena-table-centre { padding-block: 8px; }
+  .arena-table .arena-stadium-slot { padding: 8px; }
+  .arena-table .arena-stadium-slot > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 8px; flex: 1; }
+  .arena-table .arena-stadium-slot .arena-kicker, .arena-table .arena-stadium-slot .arena-link { grid-column: 1; }
+  .arena-table .arena-stadium-slot .arena-button { grid-column: 2; grid-row: 1 / 3; max-width: 140px; white-space: normal; }
+  .arena-table .arena-stadium-slot small { display: none; }
+  .arena-table .arena-hand-interactive { justify-content: safe center; }
+}
+@container arena-table (min-width: 1000px) {
+  .arena-table .arena-player-strip { position: absolute; top: 12px; left: 10px; right: 10px; border: 0; }
+  .arena-table [data-side="self"] .arena-player-strip { top: auto; bottom: 10px; }
+  .arena-table .arena-player-strip .arena-hand-count { display: none; }
+  .arena-table .arena-player-strip .arena-turn-chip { margin-left: auto; }
+  .arena-table [data-side="self"] { padding-bottom: 46px; }
+}
+@container arena-table (min-width: 1100px) {
+  .arena-table .arena-table-lanes { grid-template-columns: minmax(100px, 1fr) minmax(0, 3fr) minmax(150px, 1fr); }
+  .arena-table .arena-prize-pips { grid-template-columns: repeat(3, 32px); gap: 8px; }
+  .arena-table .arena-prize-pips > i { width: 32px; height: 45px; }
+  .arena-table .arena-deck-stack, .arena-table .arena-table-discard { width: 72px; min-height: 101px; }
+  .arena-table .arena-deck-stack { height: 101px; }
+  .arena-table .arena-hand-interactive > .arena-card { width: 146px; flex-basis: 146px; margin-left: -50px; }
+  .arena-table .arena-hand-interactive > .arena-card:first-child { margin-left: 0; }
+  .arena-table .arena-hand-fan.arena-hand-interactive { min-height: 255px; }
+}
+@container arena-table (max-width: 759px) {
+  .arena-table-perspective { padding-bottom: 12px; }
+  .arena-table-plane { border-width: 4px; border-radius: 18px; padding: 4px; }
+  .arena-table .arena-table-lanes { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: 'field field' 'prizes reserve'; gap: 14px 8px; }
+  .arena-table .arena-table-bench { padding: 8px 0; border-inline: 0; }
+  .arena-table .arena-bench-row { gap: 5px; }
+  .arena-table .arena-table-side { padding-inline: 0; }
+  .arena-table .arena-table-reserve { flex-direction: row; padding-bottom: 18px; gap: 12px; }
+  .arena-table .arena-deck-stack, .arena-table .arena-table-discard { width: 48px; min-height: 67px; }
+  .arena-table .arena-deck-stack { height: 67px; }
+  .arena-table .arena-table-prizes { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 8px; max-width: 150px; padding: 0; }
+  .arena-table .arena-table-prizes > strong small { display: block; margin-left: 0; }
+  .arena-table .arena-table-prizes > small { grid-column: 1 / -1; margin: 0; }
+  .arena-table .arena-prize-pips { grid-template-columns: repeat(3, 20px); margin: 0; gap: 4px; }
+  .arena-table .arena-prize-pips > i { width: 20px; height: 28px; }
+  .arena-table .arena-table-centre { grid-template-columns: minmax(0, 1fr); padding: 12px 0; gap: 10px; }
+  .arena-table .arena-table-status { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px; }
+  .arena-table .arena-hand-area { padding-top: 8px; }
+  .arena-table .arena-hand-interactive > .arena-card { width: 96px; flex-basis: 96px; margin-left: -34px; }
+  .arena-table .arena-hand-interactive > .arena-card:first-child { margin-left: 0; }
+  .arena-table .arena-hand-fan.arena-hand-interactive { min-height: 178px; padding-block: 20px; }
+  .arena-table-instructions { padding: 12px; }
+}
+@media (max-width: 600px) {
+  .arena-board.arena-table { padding: 10px 6px 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arena-table-plane { transform: none; }
+}
+@media (forced-colors: active) {
+  .arena-table-plane, .arena-table .arena-table-bench, .arena-table .arena-table-status { border-color: CanvasText; }
+  .arena-table-plane { transform: none; box-shadow: none; }
+  .arena-table .arena-card.is-selected { outline-color: Highlight; }
+}

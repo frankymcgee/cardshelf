@@ -11,7 +11,7 @@ const files = new Map([
   ['/vue.js', path.join(path.dirname(require.resolve('vue/package.json')), 'dist/vue.esm-browser.prod.js')],
   ...[...fs.readdirSync(path.join(root, 'app/components/arena')).filter(n => n.endsWith('.vue')).map(n => 'app/components/arena/' + n),
     'shared/arena.mjs', 'shared/arena-effects.mjs', 'tests/helpers/arena-table-fixtures.mjs', 'tests/browser/arena-effects-app.mjs',
-    ...['main', 'arena', 'arena-table', 'arena-interactions', 'arena-effects'].map(n => 'app/assets/css/' + n + '.css')].map(file => ['/' + file, path.join(root, file)])
+    ...['main', 'arena', 'arena-table', 'arena-interactions', 'arena-effects', 'arena-perspective'].map(n => 'app/assets/css/' + n + '.css')].map(file => ['/' + file, path.join(root, file)])
 ]);
 const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Arena effects fixture</title>'
   + [...files.keys()].filter(n => n.endsWith('.css')).map(n => `<link rel="stylesheet" href="${n}">`).join('')

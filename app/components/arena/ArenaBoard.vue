@@ -14,7 +14,8 @@ const alias = (seat: number): string => props.aliases[seat] || `Player ${seat + 
 // Give field/pile components only public values. Hidden-zone contents are never props.
 function publicPlayer(seat: number) {
   const p = player(seat)
-  return { active: p.active, bench: p.bench, hand_count: p.hand_count, deck_count: p.deck_count, prize_count: p.prize_count, discard_count: p.discard.length, ready: p.ready }
+  const top = p.discard[p.discard.length - 1]
+  return { active: p.active, bench: p.bench, hand_count: p.hand_count, deck_count: p.deck_count, prize_count: p.prize_count, discard_count: p.discard.length, discardTop: top && !top.hidden ? top.card : undefined, ready: p.ready }
 }
 const turnLabel = computed(() => {
   if (props.table.phase === 'setup') return 'Opening setup'
@@ -42,7 +43,8 @@ const turnLabel = computed(() => {
         <div class="arena-trainer-target" data-arena-drop="trainer" :class="{ 'is-arena-target': interaction.targets.includes('trainer'), 'is-arena-over': interaction.over === 'trainer' }"><span class="arena-kicker">TRAINER PLAY AREA</span><small>Drop a highlighted Trainer here to review its move.</small></div>
       </section>
     </template>
-    <ArenaHandFan :cards="player(self).hand" :selected="selected" :playable="interaction.playable" @drag="interaction.beginDrag" @choose="interaction.chooseTargets" @select="emit('select', $event)" />
+    <template #hand><ArenaHandFan :cards="player(self).hand" :selected="selected" :playable="interaction.playable" @drag="interaction.beginDrag" @choose="interaction.chooseTargets" @select="emit('select', $event)" /></template>
+    <template #actions><slot name="actions" /></template>
   </ArenaTable>
   </ArenaInteraction>
 </template>
