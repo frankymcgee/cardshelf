@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import ArenaCardStack from './ArenaCardStack.vue'
 import ArenaFieldZone from './ArenaFieldZone.vue'
 import ArenaDiscardPile from './ArenaDiscardPile.vue'
-const props = defineProps<{ player: any; alias: string; seat: number; self: boolean; turn: boolean; setup: boolean; turnNumber: number; selected?: string; hit?: string; targets?: string[]; over?: string }>()
+const props = defineProps<{ player: any; alias: string; seat: number; self: boolean; turn: boolean; setup: boolean; turnNumber: number; selected?: string; hit?: string; targets?: string[]; over?: string; spectator?: boolean }>()
 const emit = defineEmits<{ select: [unit: any]; discard: [seat: number] }>()
 // DOM order and visual order agree. Do not mutate/reverse the server's Bench array.
 const zones = computed<('active' | 'bench')[]>(() => props.self ? ['active', 'bench'] : ['bench', 'active'])
@@ -14,7 +14,7 @@ function removePreviousCount(_element: Element, done: () => void) { done() }
   <section class="arena-field arena-table-side" :class="{ 'is-opponent': !self, 'is-your-turn': turn }" :data-side="self ? 'self' : 'opponent'" :aria-label="alias + ' play area'">
     <div class="arena-player-strip">
       <span class="arena-avatar" aria-hidden="true">{{ alias?.slice(0, 1).toUpperCase() }}</span>
-      <strong>{{ alias }} <small>{{ self ? 'YOU' : 'OPPONENT' }}</small></strong>
+      <strong>{{ alias }} <small>{{ spectator ? 'PLAYER ' + (seat + 1) : self ? 'YOU' : 'OPPONENT' }}</small></strong>
       <Transition name="arena-count" @leave="removePreviousCount"><span :key="player.hand_count" class="arena-hand-count">{{ player.hand_count }} in hand</span></Transition>
       <span v-if="turn" class="arena-turn-chip">TURN {{ turnNumber }}</span>
       <span v-else-if="setup" class="arena-turn-chip">{{ player.ready ? 'READY' : 'PREPARING' }}</span>
@@ -28,7 +28,7 @@ function removePreviousCount(_element: Element, done: () => void) { done() }
         <ArenaCardStack kind="deck" :count="player.deck_count" :alias="alias" />
         <ArenaDiscardPile :count="player.discard_count" :top="player.discardTop" :alias="alias" @inspect="emit('discard', seat)" />
       </div>
-      <ArenaCardStack kind="prizes" :count="player.prize_count" :alias="alias" :self="self" />
+      <ArenaCardStack kind="prizes" :count="player.prize_count" :alias="alias" :self="self && !spectator" />
     </div>
   </section>
 </template>

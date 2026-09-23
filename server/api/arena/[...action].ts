@@ -7,6 +7,7 @@ import { arenaAccess } from '../../../lib/arena/access.mjs'
 import { arenaCatalogue, arenaDeckList, arenaDeckView, saveArenaDeck, deleteArenaDeck, legacyArenaDeck } from '../../../lib/arena/decks.mjs'
 import { arenaCatalogueFilters, previewArenaImport } from '../../../lib/arena/workshop.mjs'
 import { arenaMatchList, getArenaMatch, createArenaMatch, joinArenaMatch, actArenaMatch } from '../../../lib/arena/matches.mjs'
+import { arenaTournamentList, getArenaTournament, createArenaTournament, actArenaTournament, spectateArenaTournament } from '../../../lib/arena/tournaments.mjs'
 export default defineEventHandler(event => {
   setHeader(event, 'Cache-Control', 'private, no-store')
   setHeader(event, 'Vary', 'Cookie')
@@ -17,6 +18,14 @@ export default defineEventHandler(event => {
   // Existing rateLimit windows are fifteen minutes. Visible table polling uses ~450 reads.
   await rateLimit('arena-' + (method === 'GET' ? 'read:' : 'write:') + user.id, method === 'GET' ? 5000 : 2000)
   if (path === 'status' && method === 'GET') return arenaAccess(user.id)
+  if (path === 'tournaments' && method === 'GET') return arenaTournamentList(user.id)
+  if (path === 'tournaments' && method === 'POST') return createArenaTournament(user.id, await platformBody(event))
+  if (parts[0] === 'tournaments' && parts.length === 2 && method === 'GET') return getArenaTournament(user.id, parts[1])
+  if (parts[0] === 'tournaments' && parts.length === 3 && parts[2] === 'actions' && method === 'POST') {
+    await rateLimit('arena-tournament:' + user.id, 300)
+    return actArenaTournament(user.id, parts[1], await platformBody(event))
+  }
+  if (parts[0] === 'tournaments' && parts.length === 4 && parts[2] === 'spectate' && method === 'GET') return spectateArenaTournament(user.id, parts[1], parts[3])
   if (path === 'catalogue' && method === 'GET') return arenaCatalogue(user.id, getQuery(event))
   if (path === 'catalogue/filters' && method === 'GET') return arenaCatalogueFilters(user.id)
   if (path === 'decks/preview-import' && method === 'POST') {

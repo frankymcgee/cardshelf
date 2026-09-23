@@ -1,6 +1,6 @@
 name: cardshelf
 x-app: &app
-  image: cardshelf:${APP_VERSION:-0.29.2}
+  image: cardshelf:${APP_VERSION:-0.30.0}
   build:
     context: .
     target: runtime

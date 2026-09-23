@@ -5,7 +5,7 @@ if (!baseURL || !['localhost', '127.0.0.1'].includes(new URL(baseURL).hostname)
   throw Error('Arena match tests require explicit disposable-localhost test settings.');
 }
 export default defineConfig({
-  testDir: '.', testMatch: ['arena-match.spec.mjs', 'arena-workshop.spec.mjs'], workers: 1, fullyParallel: false, retries: 0,
+  testDir: '.', testMatch: ['arena-match.spec.mjs', 'arena-workshop.spec.mjs', 'arena-tournaments.spec.mjs'], workers: 1, fullyParallel: false, retries: 0,
   timeout: 30_000, expect: { timeout: 5_000 },
   outputDir: '../../test-results/arena-match',
   reporter: [['list'], ['html', { outputFolder: 'playwright-report/arena-match', open: 'never' }]],

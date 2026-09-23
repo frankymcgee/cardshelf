@@ -1,4 +1,4 @@
-# CardShelf 0.29.2
+# CardShelf 0.30.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -20,6 +20,10 @@ for installation, domain authentication, certificates and acceptance checks.
 See [v0.20 validation](docs/POSTAL_VALIDATION.md) for executed checks and their limits.
 
 ## Arena
+
+Private [tournaments](docs/ARENA_TOURNAMENTS.md) now support invited entrants, random
+seeds, byes, automatic single-elimination advancement and administrator commentary
+with both hands kept private. Open **Arena → Tournaments** to organise or join an event.
 
 The [lobby and deck workshop](docs/ARENA_WORKSHOP.md) add illustrated deck shelves,
 quick return to an open table, catalogue-wide supported-card filtering, import review

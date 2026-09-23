@@ -1,3 +1,11 @@
+## 0.30.0 — Invited tournaments and live commentary
+
+- Add private 2–64-player single-elimination events with in-app invitations, registered deck snapshots, random seeds, byes and automatic winner advancement.
+- Support draw rematches, recorded administrator forfeits and event cancellation with transactional revision/idempotency checks.
+- Add responsive event/bracket screens and an administrator commentary view using the illustrated tabletop, public scoreboard, card inspection and stream layout.
+- Keep both hands, opening setup, face-down Prize identities, deck order and private decisions out of the spectator API. Existing private matches stay private.
+- Add the additive tournament migration, unit/privacy coverage, real database progression tests and signed-in browser workflows.
+
 ## 0.29.2 — Workshop browser validation
 
 - Locate catalogue dropdowns by their accessible combobox names in the signed-in browser tests. Await the lobby table response before checking the rendered continuation link.
