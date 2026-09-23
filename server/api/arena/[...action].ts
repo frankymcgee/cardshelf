@@ -5,6 +5,7 @@ import { rateLimit } from '../../../lib/auth.mjs'
 import { AppError } from '../../../lib/errors.mjs'
 import { arenaAccess } from '../../../lib/arena/access.mjs'
 import { arenaCatalogue, arenaDeckList, arenaDeckView, saveArenaDeck, deleteArenaDeck, legacyArenaDeck } from '../../../lib/arena/decks.mjs'
+import { arenaCatalogueFilters, previewArenaImport } from '../../../lib/arena/workshop.mjs'
 import { arenaMatchList, getArenaMatch, createArenaMatch, joinArenaMatch, actArenaMatch } from '../../../lib/arena/matches.mjs'
 export default defineEventHandler(event => {
   setHeader(event, 'Cache-Control', 'private, no-store')
@@ -17,6 +18,11 @@ export default defineEventHandler(event => {
   await rateLimit('arena-' + (method === 'GET' ? 'read:' : 'write:') + user.id, method === 'GET' ? 5000 : 2000)
   if (path === 'status' && method === 'GET') return arenaAccess(user.id)
   if (path === 'catalogue' && method === 'GET') return arenaCatalogue(user.id, getQuery(event))
+  if (path === 'catalogue/filters' && method === 'GET') return arenaCatalogueFilters(user.id)
+  if (path === 'decks/preview-import' && method === 'POST') {
+    await rateLimit('arena-import:' + user.id, 100)
+    return previewArenaImport(user.id, await platformBody(event, 65536))
+  }
   if (path === 'decks' && method === 'GET') return arenaDeckList(user.id)
   if (path === 'decks' && method === 'POST') return saveArenaDeck(user.id, null, await platformBody(event))
   if (parts[0] === 'decks' && parts.length === 2) {

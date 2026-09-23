@@ -20,9 +20,9 @@ function harness(file,api,props={},path='/arena/matches/11111111-1111-4111-8111-
   const document={hidden:false,addEventListener(){},removeEventListener(){}};
   const auth={state:{value:{user:{id:'test-user',role:'user',name:'Collector'}}}};
   const scope={...contract,console,structuredClone,Date,Math,JSON,Number,String,Promise,URL,Blob,
-    ref:value=>({value}),reactive:value=>value,computed:fn=>({get value(){return fn();}}),watch:(a,b)=>watches.push({a,b}),
+    nextTick:fn=>fn(),ref:value=>({value}),reactive:value=>value,computed:fn=>({get value(){return fn();}}),watch:(a,b)=>watches.push({a,b}),
     onMounted:fn=>mounts.push(fn),onBeforeUnmount:fn=>unmounts.push(fn),defineProps:()=>props,defineEmits:()=>(...args)=>events.push(args),
-    useApi:()=>api,useAuth:()=>auth,useRoute:()=>route,definePageMeta(){},useSeoMeta(){},errorMessage:e=>e.message||'Request failed',
+    useApi:()=>api,useAuth:()=>auth,useRoute:()=>route,definePageMeta(){},onBeforeRouteLeave(){},onBeforeRouteUpdate(){},useSeoMeta(){},errorMessage:e=>e.message||'Request failed',
     navigateTo:async(to)=>{navigation.push(to)},crypto:{randomUUID},document,
     window:{confirm:()=>true,addEventListener(){},removeEventListener(){}},
     sessionStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
@@ -60,3 +60,24 @@ test('deck workshop caps the total and keeps physical collection unchanged',()=>
 test('an older catalogue search cannot replace a later workshop result',async()=>{const a=deferred(),b=deferred();let n=0;const h=harness('app/pages/arena/decks/[id].vue',async()=>++n===1?a.promise:b.promise,{},'/arena/decks/new');const first=h.search(),second=h.search();b.resolve({items:[{card:{name:'Latest'}}]});await second;a.resolve({items:[]});await first;assert.equal(h.catalogue.value.items[0].card.name,'Latest');});
 test('card component does not expose a face for hidden cards and reports HP as remaining health',()=>{const props={unit:{hidden:true}},h=harness('app/components/arena/ArenaCard.vue',async()=>{},props);assert.equal(h.hidden.value,true);assert.equal(h.name.value,'Face-down card');props.unit={id:'a',card:{name:'Demo',hp:100},damage:30};assert.equal(h.hp.value,70);assert.equal(h.name.value,'Demo, 70 of 100 HP');});
 test('all arena pages declare noindex and tabletop routes avoid third-party ad components',()=>{for(const p of ['app/pages/arena/index.vue','app/pages/arena/decks/[id].vue',page]){const s=source(p);assert.match(s,/noindex, nofollow/);assert.ok(!/AdSense|SponsorSlot|googlesyndication/.test(s));}});
+
+test('workshop sends catalogue filters to the server rather than filtering the page',async()=>{
+ let sent;const h=harness('app/pages/arena/decks/[id].vue',async(p,o)=>{sent=o.query;return {items:[],has_more:false}},{},'/arena/decks/new');
+ h.supportedOnly.value=true;h.kind.value='pokemon';h.energyType.value='Fire';h.set.value='en:demo';h.stage.value='Basic';h.owned.value=true;await h.search();
+ assert.deepEqual(plain(sent),{q:'',page:1,owned:'1',supported:'1',kind:'pokemon',type:'Fire',set:'en:demo',stage:'Basic'});
+});
+test('uncertain new-deck saves retain a frozen request and block edits until retry',async()=>{
+ const calls=[];const h=harness('app/pages/arena/decks/[id].vue',async(p,o)=>{calls.push(plain(o.body));if(calls.length===1)throw Error('Lost reply');return {id:'saved',title:'Draft',revision:1,cards:[],validation:{playable:false,errors:[]}}},{},'/arena/decks/new');
+ h.ready.value=true;h.title.value='Draft';h.rows.value=[{card:{id:'en:demo-1'},quantity:2}];await h.save();assert.equal(h.locked.value,true);
+ h.amount({id:'en:demo-1'},1);assert.equal(h.total.value,2);h.title.value='Forced local edit';await h.save();assert.deepEqual(calls[1],calls[0]);assert.equal(h.pendingSave.value,null);
+});
+test('explicit save rejection retains editable draft rather than indefinite retry',async()=>{
+ const h=harness('app/pages/arena/decks/[id].vue',async()=>{throw {statusCode:422,message:'Unavailable card'}},{},'/arena/decks/new');h.ready.value=true;h.title.value='Draft';h.rows.value=[{card:{id:'en:demo-1'},quantity:2}];await h.save();assert.equal(h.pendingSave.value,null);assert.equal(h.locked.value,false);assert.equal(h.total.value,2);
+});
+test('duplicate opens a separate unsaved draft with revision zero and no mutation',async()=>{
+ const calls=[],h=harness('app/pages/arena/decks/[id].vue',async(p,o)=>{calls.push({p,o});if(p.endsWith('/status'))return {allowed:true};if(p==='/api/arena/decks/source')return {title:'Original',revision:7,cards:[{card:{id:'en:demo-1'},quantity:4}],validation:{playable:false}};if(p.endsWith('/decks'))return {legacy:[]};return {sets:[],types:[],items:[],has_more:false}},{},'/arena/decks/new');
+ h.route.query.copy='source';await h.mounts[0]();assert.equal(h.title.value,'Original (copy)');assert.equal(h.revision.value,0);assert.equal(h.dirty.value,true);assert.ok(calls.every(c=>!c.o?.method));
+});
+test('draft import preserves an existing deck title and never writes automatically',()=>{
+ const h=harness('app/pages/arena/decks/[id].vue',async()=>{throw Error('unexpected write')},{},'/arena/decks/123');h.ready.value=true;h.title.value='Keep my name';h.applyImport({complete:true,title:'Imported name',cards:[{card:{id:'en:demo-1'},quantity:2}],validation:{playable:false}});assert.equal(h.title.value,'Keep my name');assert.equal(h.total.value,2);assert.equal(h.dirty.value,true);
+});
