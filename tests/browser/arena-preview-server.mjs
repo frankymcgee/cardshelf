@@ -38,7 +38,7 @@ if (query.has('art')) {
   });
 }
 props.table.legal = props.table.players[props.table.seat].hand.map(unit => ({ card: unit.id, label: 'Play ' + unit.card.name, action: { type: 'bench', card: unit.id } }));
-if (query.has('art')) { props.table.version = 2; props.table.legal.push({ label: 'End turn', action: { type: 'end_turn' } }); }
+if (query.has('art')) { props.table.version = 'pokemon-expanded-v2'; props.table.legal.push({ label: 'End turn', action: { type: 'end_turn' } }); }
 function publicCards(units) { return units.filter(unit => unit && !unit.hidden && unit.card).flatMap(unit => [unit, ...publicCards([...(unit.tools || []), ...(unit.energy || []), ...(unit.under || [])])]); }
 const cards = computed(() => publicCards([...props.table.players.flatMap((p, seat) => [...(seat === props.table.seat ? p.hand : []), p.active, ...p.bench, ...p.discard]), props.table.stadium?.unit]));
 const current = computed(() => cards.value.find(unit => unit.id === props.selected));

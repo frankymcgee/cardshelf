@@ -56,7 +56,7 @@
 .arena-room-mode .arena-brand { font-size: 21px; }
 .arena-room-mode .arena-brand small, .arena-room-mode .arena-brand-mark { display: none; }
 .arena-room-mode .arena-brand span > b { color: #50bbf1; font-size: 20px; letter-spacing: .04em; margin-left: 18px; }
-.arena-room-mode .arena-main { max-width: none; padding: 0 0 20px; }
+.arena-root.arena-room-mode:has(.arena-board) .arena-main { max-width: none; padding: 0 0 20px; }
 .arena-room-mode .arena-table-top { margin: 0; padding: 10px 22px; background: #0b1421; gap: 14px; }
 .arena-room-mode .arena-table-top h1 { display: inline; margin-right: 15px; font-size: 15px; }
 .arena-room-mode .arena-table-top > div > .arena-kicker { display: none; }
@@ -113,6 +113,16 @@
   .arena-table .arena-hand-fan.arena-hand-interactive { min-height: 240px; padding: 24px 20px 18px; }
   .arena-table .arena-hand-interactive > .arena-card { width: clamp(122px, 12cqw, 186px); flex-basis: clamp(122px, 12cqw, 186px); margin-left: -50px; }
   .arena-table .arena-table-actions { align-self: center; }
+  .arena-table-actions .arena-action-tray { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; padding: 14px; }
+  .arena-table-actions .arena-tray-heading { display: contents; }
+  .arena-table-actions .arena-tray-heading > div { grid-column: 1 / -1; padding-right: 35px; }
+  .arena-table-actions .arena-tray-heading .arena-kicker { font-size: 8px; letter-spacing: .1em; }
+  .arena-table-actions .arena-tray-heading strong { font-size: 14px; }
+  .arena-table-actions .arena-tray-clear { position: absolute; right: 5px; top: 5px; }
+  .arena-table-actions .arena-tray-heading > .arena-button { align-self: start; min-height: 44px; }
+  .arena-table-actions .arena-legal-moves { margin: 0; gap: 6px; }
+  .arena-table-actions .arena-legal-moves .arena-button { font-size: 11px; padding: 8px; }
+  .arena-table-actions .arena-action-tray > p { grid-column: 1 / -1; margin: 0; }
   .arena-table .arena-hand-interactive .arena-original-top { font-size: 10px; }
   .arena-table .arena-hand-interactive .arena-original-top small { font-size: 7px; }
   .arena-table .arena-hand-interactive .arena-original-rules { font-size: 8px; }
