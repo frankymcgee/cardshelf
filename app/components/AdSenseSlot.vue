@@ -6,7 +6,7 @@ const props = defineProps<{ contentReady: boolean; autoOnly?: boolean; marketpla
 const api = useApi(), route = useRoute(), auth = useAuth()
 const placement = ref<Placement | null>(null), unit = ref<HTMLElement | null>(null), failed = ref(false), unsupported = ref(false), unfilled = ref(false), manualRetired = ref(false)
 const adminPreview = computed(() => auth.state.value.user?.role === 'admin' && auth.state.value.admin_placement_view === 'preview')
-const placeholder = computed(() => (adminPreview.value || placement.value?.placeholder === true) && props.contentReady && (!props.marketplace || props.manualAllowed !== false) && !!adsensePageKind(path()))
+const placeholder = computed(() => (adminPreview.value || placement.value?.placeholder === true) && props.contentReady && !!adsensePageKind(path()))
 const manual = computed(() => !props.autoOnly && props.manualAllowed !== false && !unsupported.value && !manualRetired.value && !!placement.value?.slot_id)
 const path = () => route.fullPath.split('#')[0] || '/'
 const browser = () => window as Window & { __cardshelfAdSenseLoaded?: boolean; __cardshelfAdSenseBlocked?: boolean }
@@ -115,11 +115,7 @@ onBeforeUnmount(() => {
 })
 </script>
 <template>
-  <aside v-if="placeholder" id="cardshelf-placement-preview" :class="[adminPreview ? 'placement-preview' : 'ad-placeholder', marketplace ? 'market-card' : 'placement-banner']" aria-label="Advertisement placeholder" data-testid="ad-placeholder">
-    <small class="placement-caption">ADVERTISEMENT · PLACEHOLDER</small>
-    <div class="placeholder-space"><span aria-hidden="true">▧</span><strong>Space for advertising</strong><p>Advertising helps support free accounts.</p></div>
-    <small v-if="auth.state.value.user?.role === 'admin'">Placement preview only. Google Auto ads may use different positions and sizes.</small>
-  </aside>
+  <AutoPlacementPreview v-if="placeholder" :key="route.path" :path="path()" :administrator="adminPreview" :marketplace="marketplace" />
   <aside v-else-if="placement?.eligible && contentReady && manual && !failed && !unfilled" :class="marketplace ? 'market-card marketplace-ad' : 'adsense-slot'" aria-label="Advertisements">
     <template v-if="marketplace">
       <div class="market-card-photo market-ad-photo"><div class="market-ad-space" style="position:relative;aspect-ratio:5/7;width:100%;min-width:0">
@@ -132,11 +128,6 @@ onBeforeUnmount(() => {
   </aside>
 </template>
 <style scoped>
-.placement-preview,.ad-placeholder{box-sizing:border-box;border:1px dashed var(--line,#dcdfe7);border-radius:16px;padding:20px;background:var(--surface-soft,#f3f4f7);text-align:center;color:var(--muted,#6c7280);min-width:0}
-.placeholder-space{min-height:150px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px}.placeholder-space>span{font-size:32px}.placeholder-space p{margin:0;font-size:13px}.placement-preview.market-card .placeholder-space,.ad-placeholder.market-card .placeholder-space{aspect-ratio:5/7}.placement-preview small,.ad-placeholder small{font-size:11px}
-.placement-banner{margin:32px auto;max-width:1200px;width:100%}.placement-caption{display:block;font-weight:600;letter-spacing:.06em;margin-bottom:10px}
-@media(max-width:600px){.placeholder-space{min-height:120px}}
-
 .adsense-slot{margin:32px 0;padding:16px 0;min-width:0;width:100%;border-top:1px solid var(--line,#dcdfe7)}
 .ad-disclosure{display:block;margin-bottom:10px;font-size:11px;letter-spacing:.06em;color:var(--muted,#6c7280);font-weight:600}
 .adsbygoogle{min-width:0;width:100%}

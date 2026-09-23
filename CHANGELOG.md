@@ -1,3 +1,9 @@
+## 0.35.0 — Responsive Google Auto ads previews
+
+- Replace generic placeholders with page-appropriate Auto banner sizes, responsive Multiplex grids, dismissible anchors and desktop side rails. All placeholders represent Auto ads; none require manual unit IDs.
+- Use compact mobile layouts, protect workspace navigation, hide rails when there is insufficient space and preserve the administrator preview bypass of advertising requests.
+- Document the Google-side format controls and distinguish illustrative sizes from live Auto ads decisions. Live loading and private-page exclusions remain unchanged.
+
 ## 0.34.1 — Reliable administrator placement previews
 
 - Render the opted-in administrator layout preview from the authenticated session without depending on Google/ad eligibility requests or live-ad CSS classes.
