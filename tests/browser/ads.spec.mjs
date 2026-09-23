@@ -11,6 +11,12 @@ async function fixtures(page,{blocked=false,rejectPreference=false}={}){
     else if(path==='/api/ads/adsense')data=mode==='preview'?{eligible:false,placeholder:true,page_kind:'marketing',revision:1}:{eligible:false};
     else if(path==='/api/admin/adsense')data={enabled:false,verification_enabled:false,placeholders_enabled:true,publisher_id:'',slot_id:'',marketplace_slot_id:'',auto_ads_enabled:false,marketplace_enabled:false,revision:1,admin_view:mode};
     else if(path==='/api/admin/adsense/view'){if(!rejectPreference)mode=route.request().postDataJSON().mode;data={mode};}
+    else if(path==='/api/public/catalogue')data={items:[{id:'en:demo-1',game:'pokemon',language:'en',name:'Test card',set_name:'Test set',local_id:'1'}],total:1,limit:24};
+    else if(path==='/api/public/catalogue/sets')data=[];
+    else if(path==='/api/catalogue')data={items:[{id:'en:demo-1',game:'pokemon',language:'en',name:'Test card',set_name:'Test set',local_id:'1',quantity:0,printings:[]}],total:1,limit:30};
+    else if(path==='/api/marketplace/listings')data={items:[{id:'test-sale',photos:[{url:'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E'}],card_name:'Test card',set_name:'Test set',local_id:'1',printing_label:'Normal',condition:'NM',language:'en',status:'available',price_minor:100,seller_alias:'Test',region:'Test'}],total:1};
+    else if(path==='/api/marketplace/access')data={can_sell:false,can_enquire:false};
+    else if(path==='/api/catalogue/facets')data={sets:[],rarities:[]};
     else if(path==='/api/ads/sponsor')data={eligible:false};
     await route.fulfill({json:data});
   });
@@ -52,4 +58,35 @@ test('a rejected preference shows a recoverable error instead of silently reload
   await page.getByRole('button',{name:'Apply my ad view'}).click();
   await expect(page.getByRole('alert')).toContainText('did not retain the preview setting');
   await expect(page.getByRole('button',{name:'Apply my ad view'})).toBeEnabled();
+});
+
+test('Auto formats adapt across relevant pages without overflow or live requests',async({page})=>{
+  const {requests,errors}=await fixtures(page,{blocked:true});
+  for(const [path,format] of [['/','billboard'],['/features','multiplex'],['/pricing','rectangle'],['/explore','leaderboard'],['/cards','leaderboard'],['/marketplace','rectangle']]){
+    await page.goto(path);const placement=page.getByTestId('ad-placeholder');
+    await expect(placement).toHaveAttribute('data-format',format);await expect(placement).toBeVisible();
+    const box=await placement.boundingBox();expect(box.width).toBeLessThanOrEqual(page.viewportSize().width);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    if(path==='/features'){
+      expect(await page.locator('.multiplex-grid').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(page.viewportSize().width<768?2:4);
+      await placement.scrollIntoViewIfNeeded();await page.screenshot({path:`test-results/ads/multiplex-${test.info().project.name}.png`});
+    }
+    if(path==='/cards' && page.viewportSize().width<768){
+      const anchor=await page.getByTestId('placement-anchor').boundingBox(),nav=await page.locator('.mobile-nav').boundingBox();expect(anchor.y+anchor.height).toBeLessThanOrEqual(nav.y);
+    }
+    if(['/', '/features', '/cards'].includes(path)){
+      await page.getByRole('button',{name:'Dismiss anchor preview'}).click();await expect(page.getByTestId('placement-anchor')).toHaveCount(0);
+    }
+  }
+  await page.goto('/admin/adsense');await expect(page.getByTestId('placement-anchor')).toHaveCount(0);await expect(page.getByTestId('ad-placeholder')).toHaveCount(0);
+  expect(requests).toEqual([]);expect(errors).toEqual([]);
+});
+test('side rail uses only the unused widescreen margin and can be dismissed',async({page})=>{
+  await fixtures(page,{blocked:true});await page.setViewportSize({width:1920,height:1080});await page.goto('/features');
+  const rail=page.getByTestId('placement-rail');await expect(rail).toBeVisible();
+  const box=await rail.boundingBox();expect(box.width).toBe(160);expect(box.height).toBe(600);
+  const content=await page.locator('.m-feature-details').boundingBox();expect(box.x).toBeGreaterThanOrEqual(content.x+content.width);
+  await page.screenshot({path:`test-results/ads/rail-${test.info().project.name}.png`});
+  await page.getByRole('button',{name:'Dismiss side rail preview'}).click();await expect(rail).toHaveCount(0);
+  await page.goto('/');await page.setViewportSize({width:1024,height:768});await expect(page.getByTestId('placement-rail')).toBeHidden();
 });

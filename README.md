@@ -1,4 +1,4 @@
-# CardShelf 0.34.1
+# CardShelf 0.35.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -17,6 +17,32 @@ preview, and Live ads. Apply the choice, then follow a preview link. The choice 
 for your account in that browser; live ads still require enabled, approved site
 settings. Previews use local illustrative placements, not Google's predicted Auto
 ads layout. Private routes and paid/protected member exclusions are preserved.
+
+### Auto ads placeholder formats
+
+All placeholders represent Google Auto ads, with no manual unit ID required.
+They illustrate possible formats, not Google's placement predictions or reserved sizes.
+
+| Page | In-page preview | Overlay preview |
+| --- | --- | --- |
+| Homepage | Large banner, 970 × 250; compact on phones | Dismissible anchor and widescreen side rail |
+| Features | Multiplex grid, four columns or two on phones | Dismissible anchor and widescreen side rail |
+| Pricing and public card detail | Responsive 300 × 250 rectangle | None |
+| Catalogue browsing | Horizontal 728 × 90 banner; compact on phones | None |
+| Cards and collection overview | Horizontal banner | Dismissible anchor above mobile navigation |
+| Marketplace browsing | Responsive rectangle in the grid | None |
+
+The 160 × 600 rail preview requires a viewport at least 1800px wide and 800px tall.
+Overlay close buttons affect the local preview only. Empty/error content and private
+pages remain excluded. Real Auto ads are still selected and served by Google; enable
+Banner/Multiplex and Anchor/Side rail in the Google site's Auto ads settings as desired.
+Vignettes and ad intents are interaction-driven and are not simulated here.
+
+Sources: [Auto ads formats](https://support.google.com/adsense/answer/9261805),
+[settings](https://support.google.com/adsense/answer/9305577),
+[anchors](https://support.google.com/adsense/answer/15484692),
+[side rails](https://support.google.com/adsense/answer/16531757),
+[Multiplex](https://support.google.com/adsense/answer/16532969).
 
 ## Card photo scanning
 
