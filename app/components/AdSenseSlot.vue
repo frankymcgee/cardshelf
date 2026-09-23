@@ -5,7 +5,8 @@ interface Placement { eligible: boolean; placeholder?: boolean; publisher_id?: s
 const props = defineProps<{ contentReady: boolean; autoOnly?: boolean; marketplace?: boolean; manualAllowed?: boolean; adFreeUrl?: string }>()
 const api = useApi(), route = useRoute(), auth = useAuth()
 const placement = ref<Placement | null>(null), unit = ref<HTMLElement | null>(null), failed = ref(false), unsupported = ref(false), unfilled = ref(false), manualRetired = ref(false)
-const placeholder = computed(() => placement.value?.placeholder === true && props.contentReady && (!props.marketplace || props.manualAllowed !== false) && !!adsensePageKind(path()))
+const adminPreview = computed(() => auth.state.value.user?.role === 'admin' && auth.state.value.admin_placement_view === 'preview')
+const placeholder = computed(() => (adminPreview.value || placement.value?.placeholder === true) && props.contentReady && (!props.marketplace || props.manualAllowed !== false) && !!adsensePageKind(path()))
 const manual = computed(() => !props.autoOnly && props.manualAllowed !== false && !unsupported.value && !manualRetired.value && !!placement.value?.slot_id)
 const path = () => route.fullPath.split('#')[0] || '/'
 const browser = () => window as Window & { __cardshelfAdSenseLoaded?: boolean; __cardshelfAdSenseBlocked?: boolean }
@@ -42,7 +43,7 @@ function requestAd() {
   }
 }
 async function check() {
-  if (!alive || checking || !adsensePageKind(path()) || browser().__cardshelfAdSenseBlocked) return
+  if (!alive || checking || !adsensePageKind(path())) return
   checking = true; const request = ++sequence, requestedPath = path()
   let checkedUser: string | null = auth.state.value.user?.id || null
   try {
@@ -52,6 +53,12 @@ async function check() {
     if (!auth.state.value.loaded) await auth.refresh()
     if (!alive || request !== sequence) return
     checkedUser = auth.state.value.user?.id || null
+    // Local administrator layout preview must not depend on an advertising request.
+    if (adminPreview.value) {
+      if (requested) freshDocument()
+      return
+    }
+    if (browser().__cardshelfAdSenseBlocked) return
     const value = await api<Placement>('/api/ads/adsense', { query: { path: requestedPath } })
     if (!alive || request !== sequence) return
     if (requestedPath !== path() || checkedUser !== (auth.state.value.user?.id || null)) return
@@ -78,6 +85,11 @@ async function check() {
     if (requested) freshDocument()
   } finally { checking = false; if (alive && (requestedPath !== path() || checkedUser !== (auth.state.value.user?.id || null))) check() }
 }
+watch(() => placeholder.value, async visible => {
+  if (!visible || typeof document === 'undefined' || route.hash !== '#cardshelf-placement-preview') return
+  await nextTick()
+  document.getElementById('cardshelf-placement-preview')?.scrollIntoView({ block: 'center' })
+})
 function visibleCheck() { if (document.visibilityState === 'visible') check() }
 function restored(event: PageTransitionEvent) { if (event.persisted && requested) freshDocument() }
 watch(() => props.manualAllowed, value => { if (value === false && requested) manualRetired.value = true })
@@ -103,8 +115,8 @@ onBeforeUnmount(() => {
 })
 </script>
 <template>
-  <aside v-if="placeholder" :class="['ad-placeholder', marketplace ? 'market-card' : 'adsense-slot']" aria-label="Advertisement placeholder" data-testid="ad-placeholder">
-    <small class="ad-disclosure">ADVERTISEMENT · PLACEHOLDER</small>
+  <aside v-if="placeholder" id="cardshelf-placement-preview" :class="[adminPreview ? 'placement-preview' : 'ad-placeholder', marketplace ? 'market-card' : 'placement-banner']" aria-label="Advertisement placeholder" data-testid="ad-placeholder">
+    <small class="placement-caption">ADVERTISEMENT · PLACEHOLDER</small>
     <div class="placeholder-space"><span aria-hidden="true">▧</span><strong>Space for advertising</strong><p>Advertising helps support free accounts.</p></div>
     <small v-if="auth.state.value.user?.role === 'admin'">Placement preview only. Google Auto ads may use different positions and sizes.</small>
   </aside>
@@ -120,8 +132,9 @@ onBeforeUnmount(() => {
   </aside>
 </template>
 <style scoped>
-.ad-placeholder{box-sizing:border-box;border:1px dashed var(--line,#dcdfe7);border-radius:16px;padding:20px;background:var(--surface-soft,#f3f4f7);text-align:center;color:var(--muted,#6c7280);min-width:0}
-.placeholder-space{min-height:150px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px}.placeholder-space>span{font-size:32px}.placeholder-space p{margin:0;font-size:13px}.ad-placeholder.market-card .placeholder-space{aspect-ratio:5/7}.ad-placeholder small{font-size:11px}
+.placement-preview,.ad-placeholder{box-sizing:border-box;border:1px dashed var(--line,#dcdfe7);border-radius:16px;padding:20px;background:var(--surface-soft,#f3f4f7);text-align:center;color:var(--muted,#6c7280);min-width:0}
+.placeholder-space{min-height:150px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px}.placeholder-space>span{font-size:32px}.placeholder-space p{margin:0;font-size:13px}.placement-preview.market-card .placeholder-space,.ad-placeholder.market-card .placeholder-space{aspect-ratio:5/7}.placement-preview small,.ad-placeholder small{font-size:11px}
+.placement-banner{margin:32px auto;max-width:1200px;width:100%}.placement-caption{display:block;font-weight:600;letter-spacing:.06em;margin-bottom:10px}
 @media(max-width:600px){.placeholder-space{min-height:120px}}
 
 .adsense-slot{margin:32px 0;padding:16px 0;min-width:0;width:100%;border-top:1px solid var(--line,#dcdfe7)}
