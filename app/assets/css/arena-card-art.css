@@ -1,0 +1,16 @@
+/* Printed faces use real catalogue images or the named original teaching art.
+   Text, HP and move values always come from the current card, never a bitmap. */
+.arena-original-card { background: linear-gradient(125deg, hsl(var(--card-hue) 78% 81%), hsl(var(--card-hue) 67% 58%) 55%, hsl(var(--card-hue) 71% 73%)); }
+.arena-original-card.has-illustration { padding: 4%; }
+.arena-original-card .arena-original-top { min-height: 12%; }
+.arena-original-art.is-illustrated { height: 49%; flex-shrink: 0; background-size: 400% 300%; border: 2px solid #e6d9a9; box-shadow: 0 1px 2px #48371488; }
+.arena-original-card .arena-original-rules { background: linear-gradient(120deg, #ffffffa8, #ffffff30); padding: 6% 3%; }
+.arena-original-card.is-energy .arena-original-art { height: 68%; border: 0; background: radial-gradient(circle, #fff 0, #fff7 25%, transparent 61%); }
+.arena-original-card.is-energy .arena-original-art > span { font-size: clamp(24px, 5vw, 78px); color: #152334; text-shadow: 0 1px 0 #fff; }
+.arena-original-card.is-energy .arena-original-art > i { inset: 12%; transform: none; border: 2px solid #ffffffe0; box-shadow: 0 0 16px #fff9, inset 0 0 20px #fff7; }
+.arena-original-card.is-energy .arena-original-art > i:last-child { display: none; }
+.arena-card.arena-card-back { background: #123266 url('/arena/card-back.webp') center / 100% 100% !important; border-color: #a2b5cf !important; }
+.arena-card-back .arena-back-orbit, .arena-card-back .arena-back-word { visibility: hidden; }
+@media (forced-colors: active) {
+  .arena-card-back .arena-back-orbit, .arena-card-back .arena-back-word { visibility: visible; }
+}

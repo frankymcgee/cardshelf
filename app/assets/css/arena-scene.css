@@ -1,0 +1,178 @@
+/* Room, wood and fabric are independent assets. All cards and hit targets remain
+   live DOM; the artwork contains no game state or baked-in controls. */
+.arena-board.arena-table {
+  padding: 38px 12px 0;
+  border: 0;
+  border-radius: 0;
+  background: #080e17 url('/arena/collector-room.webp') center top / 100% auto no-repeat;
+  box-shadow: none;
+}
+.arena-table-plane {
+  border: 20px solid transparent;
+  border-bottom-width: 32px;
+  border-radius: 42px;
+  background: linear-gradient(#08172769, #08172769) padding-box,
+    url('/arena/navy-fabric.webp') center / 220px padding-box,
+    url('/arena/walnut.webp') center / 600px border-box;
+  box-shadow: inset 0 0 0 2px #5499c65e, inset 0 0 50px #010813a6,
+    0 2px 0 #d9b27b99, 0 8px 0 #3b2a20, 0 16px 0 #251c18, 0 28px 34px #000a;
+}
+.arena-table-plane::before { content: none; }
+.arena-table-perspective { pointer-events: none; }
+.arena-table-plane { pointer-events: auto; }
+.arena-mat-emblem { position: absolute; z-index: -1; pointer-events: none; left: 50%; top: 48%; width: 29%; aspect-ratio: 1; transform: translate(-50%, -50%); border: 10px solid #7693b21c; border-radius: 50%; background: linear-gradient(transparent calc(50% - 5px), #7693b21c calc(50% - 5px) calc(50% + 5px), transparent calc(50% + 5px)); }
+.arena-mat-emblem::after { content: ''; position: absolute; inset: 32%; border: 9px solid #7693b21c; border-radius: 50%; background: #172b40; }
+.arena-table .arena-table-side { --field-line: #4aacf26b; }
+.arena-table .arena-table-zone-label, .arena-table .arena-discard-caption { color: #65baff; text-shadow: 0 1px 2px #000; font-weight: 700; }
+.arena-table .arena-table-bench { position: relative; border-color: #439ce15e; border-radius: 7px; background: #0c233122; }
+.arena-table .arena-empty-slot { color: #7394ad; background: #07162933; border: 1px solid #72b9ec8c; border-radius: 4px; }
+.arena-table .arena-active-spot::before { border: 0; box-shadow: none; }
+.arena-table-plane .arena-card { border-color: #cbd2d7 !important; border-radius: 5px !important; box-shadow: 1px 2px 0 #d7d8ce, 2px 4px 0 #273143, 0 7px 10px #0009; }
+.arena-table .is-your-turn .arena-table-active .arena-card { border-color: #ffdb71 !important; box-shadow: 0 0 0 2px #ffdf7199, 0 0 18px #ffca4b75, 0 8px 14px #0009; }
+.arena-table .arena-card.is-selected { outline-color: #ffce55; box-shadow: 0 0 22px #ffd25499, 0 10px 18px #0009; }
+.arena-table .arena-deck-stack:not(.is-empty), .arena-table .arena-opponent-back, .arena-table .arena-prize-pips > i { background: #17356a url('/arena/card-back.webp') center / 100% 100%; border: 1px solid #a2b3c8; }
+.arena-table .arena-opponent-back { color: transparent; }
+.arena-table .arena-deck-stack .arena-stack-mark { visibility: hidden; }
+.arena-discard-face.has-illustration { display: flex; flex-direction: column; gap: 4px; padding: 4px; background: linear-gradient(135deg, #c6dce7, #9caeba); color: #152234; font-size: 7px; }
+.arena-discard-illustration { display: block; width: 100%; height: 62%; flex: 0 0 62%; background-size: 400% 300%; border: 1px solid #eee2c4; }
+.arena-table .arena-deck-stack b { position: absolute; right: -8px; bottom: -8px; display: grid; place-items: center; min-width: 26px; height: 26px; padding: 0 4px; border: 1px solid #7794ba; border-radius: 50%; color: #fff; background: #101d32ed; font-size: 12px; }
+.arena-table .arena-deck-stack > small { position: absolute; top: calc(100% + 15px); left: -10px; right: -10px; text-align: center; color: #65baff; font-weight: 700; font-size: 10px; }
+.arena-table .arena-table-prizes { display: flex; flex-direction: column; }
+.arena-table .arena-table-prizes > strong { order: 2; margin-top: 9px; color: #65baff; font-size: 12px; }
+.arena-table .arena-table-prizes > strong small { font-size: 10px; }
+.arena-table .arena-table-prizes > small { display: none; }
+.arena-table .arena-avatar { color: transparent; background: radial-gradient(circle, #f4f6f7 0 19%, #101b2b 20% 29%, transparent 30%), linear-gradient(#b82b2f 0 44%, #102034 44% 57%, #d8dde1 57%); border: 2px solid #697d94; box-shadow: 0 0 0 3px #101b2b, inset 0 0 6px #0008; }
+.arena-table .arena-table-status { background: linear-gradient(135deg, #4c3825e6, #15171eed); border: 2px solid #f5b746; box-shadow: 0 0 15px #ffb3365c, inset 0 0 15px #ffd35b1a; text-align: center; }
+.arena-table .arena-table-status strong { color: #ffd475; }
+.arena-table .arena-table-status .arena-kicker { display: none; }
+.arena-table .arena-hand-dock { padding-inline: 12px; }
+.arena-table .arena-hand-area { background: none; }
+.arena-table .arena-hand-fan > .arena-card { border-color: #d5d4c9 !important; box-shadow: 2px 3px 0 #a5a596, 0 12px 20px #000b; }
+.arena-table .arena-hand-fan > .arena-card.is-selected { border-color: #ffdc62 !important; }
+.arena-table-actions .arena-action-tray, .arena-table-instructions { background: linear-gradient(140deg, #152233f5, #080e18f5); border: 1px solid #6483aa88; border-radius: 13px; box-shadow: 0 8px 20px #0005; }
+.arena-table-actions .arena-button.primary, .arena-hand-play-controls .arena-button { background: linear-gradient(#ffe28a, #efb52d); color: #182030; border: 1px solid #ffe18b; box-shadow: 0 0 12px #fcbf3833; }
+.arena-room-mode.arena-root { padding: 0; }
+.arena-room-mode .arena-header { max-width: none; padding: 10px 22px; min-height: 54px; background: #0a1322; border-color: #57729488; }
+.arena-room-mode .arena-brand { font-size: 21px; }
+.arena-room-mode .arena-brand small, .arena-room-mode .arena-brand-mark { display: none; }
+.arena-room-mode .arena-brand span > b { color: #50bbf1; font-size: 20px; letter-spacing: .04em; margin-left: 18px; }
+.arena-root.arena-room-mode:has(.arena-board) .arena-main { max-width: none; padding: 0 0 20px; }
+.arena-room-mode .arena-table-top { margin: 0; padding: 10px 22px; background: #0b1421; gap: 14px; }
+.arena-room-mode .arena-table-top h1 { display: inline; margin-right: 15px; font-size: 15px; }
+.arena-room-mode .arena-table-top > div > .arena-kicker { display: none; }
+.arena-room-mode .arena-match-toolbar { gap: 6px; }
+.arena-room-mode .arena-match-status { border-radius: 0; padding: 8px 22px; border-width: 0 0 1px; background: #0c1929; gap: 10px; }
+.arena-room-mode .arena-match-guidance { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; }
+.arena-room-mode .arena-match-guidance strong { font-size: 13px; }
+.arena-room-mode .arena-match-guidance p { margin: 0; font-size: 11px; }
+.arena-room-mode .arena-prize-score { gap: 15px; }
+.arena-room-mode .arena-prize-score > div { display: flex; align-items: center; gap: 8px; }
+.arena-room-mode .arena-prize-score dt { font-size: 10px; max-width: none; }
+.arena-room-mode .arena-prize-score dd { font-size: 17px; margin: 0; }
+.arena-table-actions .arena-match-controls { margin: 0 0 16px; padding: 0; border: 0; background: none; }
+.arena-table-actions .arena-match-controls > .arena-actions { width: 100%; }
+.arena-table-actions .arena-turn-actions { flex: 1 0 100%; }
+.arena-table-actions .arena-turn-actions > .arena-button { width: 100%; background: linear-gradient(#278cc2, #12598d); border: 1px solid #91d8ff; box-shadow: 0 0 0 4px #071521, 0 0 0 5px #36617c, inset 0 0 10px #71d5ff40; font-size: 16px; }
+.arena-table-actions .arena-auto { font-size: 10px; }
+.arena-table-actions .arena-link.danger { margin-left: auto; font-size: 10px; }
+.arena-room-mode .arena-opponent-note { margin: 0; padding: 8px 22px; background: #112030; font-size: 11px; }
+.arena-room-mode .arena-tutorial-wrap { margin: 12px 22px; }
+@container arena-table (min-width: 760px) {
+  .arena-table-perspective { padding-bottom: 8px; }
+  .arena-table-plane { width: 93%; transform: perspective(1600px) rotateX(28deg); transform-origin: 50% 50%; }
+  .arena-table .arena-table-side { padding: 8px; gap: 6px; }
+  .arena-table .arena-table-lanes { grid-template-columns: minmax(90px, 1fr) minmax(0, 3fr) minmax(100px, 1fr); gap: 18px; }
+  .arena-table .arena-bench-row { max-width: 580px; gap: 12px; }
+  .arena-table .arena-table-active { position: relative; }
+  .arena-table .arena-table-active > .arena-table-zone-label { position: absolute; top: 46%; left: calc(50% + 66px); white-space: nowrap; font-size: 10px; }
+  .arena-table .arena-active-spot { width: clamp(86px, 8.4cqw, 125px); margin-bottom: 4px; }
+  .arena-table .arena-table-bench { padding: 8px 10px 20px; }
+  .arena-table .arena-table-bench > .arena-table-zone-label { position: absolute; bottom: -1px; left: 0; right: 0; font-size: 10px; }
+  .arena-table .arena-table-centre { position: relative; z-index: 2; min-height: 18px; padding: 0; border: 0; }
+  .arena-table .arena-table-status { position: absolute; left: 0; top: -20px; width: 16%; padding: 10px 6px; }
+  .arena-table .arena-table-status strong { font-size: 16px; }
+  .arena-table .arena-stadium-slot { position: absolute; right: 16%; top: -70px; width: 15%; max-width: 165px; padding: 6px; gap: 5px; flex-direction: column; background: #11243444; }
+  .arena-table .arena-stadium-slot > .arena-card { width: 66px; flex-basis: auto; }
+  .arena-table .arena-stadium-slot > div { display: flex; flex-direction: column; }
+  .arena-table .arena-stadium-slot .arena-kicker { font-size: 8px; color: #65baff; }
+  .arena-table .arena-stadium-slot .arena-link { min-height: 24px; padding: 2px; text-align: center; font-size: 9px; }
+  .arena-table .arena-stadium-slot .arena-button { font-size: 9px; min-height: 44px; padding: 4px 6px; margin: 0; }
+  .arena-table .arena-stadium-slot p { font-size: 10px; }
+  .arena-table .arena-trainer-target { position: absolute; top: -6px; right: 0; width: 15%; min-height: 44px; padding: 8px; opacity: .65; }
+  .arena-table .arena-trainer-target small { display: none; }
+  .arena-table .arena-trainer-target.is-arena-target { opacity: 1; }
+  .arena-table .arena-table-core-mark { visibility: hidden; height: 0; }
+  .arena-table .arena-opponent-hand { height: 45px; min-height: 45px; margin-top: -40px; padding: 0 0 6px; }
+  .arena-table .arena-opponent-back { flex-basis: 46px; height: 64px; margin-left: -9px; }
+  .arena-table .arena-opponent-back:nth-child(2n) { transform: translateY(3px) rotate(-4deg); }
+  .arena-table .arena-opponent-back:nth-child(2n + 1) { transform: rotate(4deg); }
+  .arena-table .arena-hand-dock { grid-template-columns: minmax(0, 1fr) 240px; gap: 8px; }
+  .arena-table .arena-hand-area { padding-top: 0; }
+  .arena-table .arena-zone-caption { margin: 0 0 0 16px; }
+  .arena-table .arena-hand-hint { margin: 4px 0 0 16px; font-size: 10px; }
+  .arena-table .arena-hand-fan.arena-hand-interactive { min-height: 240px; padding: 24px 20px 18px; }
+  .arena-table .arena-hand-interactive > .arena-card { width: clamp(122px, 12cqw, 186px); flex-basis: clamp(122px, 12cqw, 186px); margin-left: -50px; }
+  .arena-table .arena-table-actions { align-self: start; }
+  .arena-table-actions .arena-action-tray { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; padding: 14px; }
+  .arena-table-actions .arena-tray-heading { display: contents; }
+  .arena-table-actions .arena-tray-heading > div { grid-column: 1 / -1; padding-right: 35px; }
+  .arena-table-actions .arena-tray-heading .arena-kicker { font-size: 8px; letter-spacing: .1em; }
+  .arena-table-actions .arena-tray-heading strong { font-size: 14px; }
+  .arena-table-actions .arena-tray-clear { position: absolute; right: 5px; top: 5px; }
+  .arena-table-actions .arena-tray-heading > .arena-button { align-self: start; min-height: 44px; }
+  .arena-table-actions .arena-legal-moves { margin: 0; gap: 6px; }
+  .arena-table-actions .arena-legal-moves .arena-button { font-size: 11px; padding: 8px; }
+  .arena-table-actions .arena-action-tray > p { grid-column: 1 / -1; margin: 0; }
+  .arena-table .arena-hand-interactive .arena-original-top { font-size: 10px; }
+  .arena-table .arena-hand-interactive .arena-original-top small { font-size: 7px; }
+  .arena-table .arena-hand-interactive .arena-original-rules { font-size: 8px; }
+  .arena-table .arena-hand-interactive .arena-original-rules small { font-size: 7px; }
+  .arena-table .arena-hand-interactive .arena-original-credit { font-size: 5px !important; }
+}
+@container arena-table (min-width: 1100px) {
+  .arena-table-perspective { margin-top: -130px; margin-bottom: -86px; }
+  .arena-table-plane { width: 85%; transform: perspective(1800px) rotateX(42deg); }
+  .arena-table .arena-bench-row { max-width: 520px; }
+  .arena-table .arena-active-spot { width: 112px; }
+  .arena-table .arena-table-battle-line { gap: 5px; }
+  .arena-table .arena-hand-interactive > .arena-card { width: 172px; flex-basis: 172px; margin-left: -49px; }
+  .arena-table .arena-hand-fan.arena-hand-interactive { min-height: 240px; padding-block: 22px 16px; }
+  .arena-table .arena-player-strip { min-height: 34px; top: -13px; left: 0; right: 0; }
+  .arena-table [data-side="opponent"] .arena-player-strip { width: 21%; }
+  .arena-table [data-side="self"] .arena-player-strip { bottom: -5px; top: auto; width: 23%; }
+  .arena-table [data-side="self"] { padding-bottom: 40px; }
+  .arena-table .arena-table-lanes { grid-template-columns: minmax(160px, 1fr) minmax(0, 3fr) minmax(185px, 1fr); }
+  .arena-table .arena-table-reserve { flex-wrap: nowrap; gap: 24px; }
+  .arena-table .arena-deck-stack, .arena-table .arena-table-discard { width: 76px; min-height: 107px; }
+  .arena-table .arena-deck-stack { height: 107px; }
+  .arena-table .arena-prize-pips { grid-template-columns: repeat(3, 48px); gap: 8px; }
+  .arena-table .arena-prize-pips > i { width: 48px; height: 67px; }
+}
+@media (min-width: 1100px) {
+  .arena-board.arena-table { padding-top: 14px; }
+  .arena-room-mode .arena-header nav { display: none; }
+  .arena-room-mode:not(.arena-focus-mode) .arena-table-top { position: relative; z-index: 3; margin-top: -54px; min-height: 54px; padding-left: 310px; background: transparent; }
+}
+@container arena-table (max-width: 759px) {
+  .arena-table-plane { border-width: 7px; border-bottom-width: 12px; border-radius: 20px; }
+  .arena-table .arena-hand-dock { padding-inline: 0; }
+  .arena-table .arena-table-prizes { display: grid; }
+  .arena-table .arena-table-prizes > strong { order: initial; margin: 0; }
+  .arena-table .arena-deck-stack > small { font-size: 8px; top: calc(100% + 6px); }
+  .arena-table .arena-table-reserve { padding-bottom: 12px; }
+  .arena-mat-emblem { border-width: 5px; }
+}
+@media (max-width: 600px) { .arena-board.arena-table { padding: 18px 6px 0; background-size: auto 500px; } }
+@media (prefers-reduced-motion: reduce) {
+  .arena-table-plane { transform: none; }
+  .arena-table-perspective { margin-block: 0; }
+}
+@media (forced-colors: active) {
+  .arena-board.arena-table, .arena-table-plane { background: Canvas; }
+  .arena-table-plane { transform: none; border-color: CanvasText; box-shadow: none; }
+  .arena-table-perspective { margin-block: 0; }
+  .arena-mat-emblem { display: none; }
+  .arena-table .arena-card.is-selected { outline-color: Highlight; }
+  .arena-table .arena-opponent-back { color: CanvasText; }
+  .arena-table .arena-deck-stack .arena-stack-mark { visibility: visible; }
+}

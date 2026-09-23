@@ -9,6 +9,7 @@ import * as Vue from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import { parse, compileScript } from '@vue/compiler-sfc';
 import * as contract from '../shared/arena.mjs';
+import * as artwork from '../shared/arena-art.mjs';
 import { tableFixture } from './helpers/arena-table-fixtures.mjs';
 const require = createRequire(import.meta.url), cache = new Map();
 function component(file) {
@@ -18,11 +19,21 @@ function component(file) {
   const compiled = compileScript(descriptor, { id: file, inlineTemplate: true });
   const js = ts.transpileModule(compiled.content, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   const output = { exports: {} };
-  const localRequire = name => name.endsWith('.vue') ? { default: component(path.posix.normalize(path.posix.join(path.posix.dirname(file), name))) } : name.endsWith('/arena.mjs') ? contract : require(name);
+  const localRequire = name => name.endsWith('.vue') ? { default: component(path.posix.normalize(path.posix.join(path.posix.dirname(file), name))) } : name.endsWith('/arena.mjs') ? contract : name.endsWith('/arena-art.mjs') ? artwork : require(name);
   vm.runInNewContext(js, { ...Vue, exports: output.exports, module: output, require: localRequire, console }, { filename: file });
   cache.set(file, output.exports.default); return output.exports.default;
 }
 const render = props => renderToString(Vue.createSSRApp(component('app/components/arena/ArenaBoard.vue'), props));
+test('illustrations belong only to disclosed original cards; catalogue images keep priority', async () => {
+  const card = { id: 'training:ember-cub', name: 'Ember Cub', kind: 'pokemon', type: 'Fire', hp: 80 };
+  const face = props => renderToString(Vue.createSSRApp(component('app/components/arena/ArenaCard.vue'), props));
+  assert.match(await face({ card }), /training-art\.webp/);
+  assert.doesNotMatch(await face({ unit: { hidden: true, card } }), /training-art\.webp|Ember Cub/);
+  const catalogue = await face({ card: { ...card, image_url: '/catalogue-card.webp' } });
+  assert.match(catalogue, /src="\/catalogue-card.webp"/);
+  assert.doesNotMatch(catalogue, /training-art\.webp/);
+  assert.doesNotMatch(await face({ card: { ...card, id: 'catalogue:unavailable' } }), /training-art\.webp/);
+});
 test('discard tops use disclosed artwork, with no faces from a hidden top or an empty pile', async () => {
   const props = tableFixture();
   props.table.players[0].discard[0].card.image_url = '/disclosed-discard.png';
