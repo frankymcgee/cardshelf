@@ -68,7 +68,9 @@ export const test = base.extend({
       const url = route.request().url();
       if (new URL(url).origin !== new URL(baseURL).origin) { external.push(url); await route.abort(); } else await route.continue();
     });
-    if (controlledClock) await page.clock.install();
+    // Start well before the test's fixed pause time. Sampling wall time again
+    // after navigation races the running browser clock, especially in WebKit.
+    if (controlledClock) await page.clock.install({ time: new Date('2026-01-01T08:00:00Z') });
     // Separate initial network/bootstrap readiness from the unchanged 5-second UI assertions.
     // Register before navigation so a fast first response cannot be missed.
     const initialResponse = page.waitForResponse(response =>

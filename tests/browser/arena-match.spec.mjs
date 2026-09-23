@@ -97,7 +97,7 @@ test.describe('complete training game', () => {
   test.use({ controlledClock: true });
 test('actual auto-play control reaches a server-declared training result in a bounded game', async ({ page, game }) => {
   test.setTimeout(120_000); // A complete game, not an increased budget for an individual UI assertion.
-  await page.clock.pauseAt(new Date());
+  await page.clock.pauseAt(new Date('2026-01-01T10:00:00Z'));
   await page.getByLabel('Auto play my turns', { exact: true }).check();
   let result = game;
   for (let n = 0; n < 100 && result.status !== 'finished'; n++) {
