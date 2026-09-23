@@ -19,6 +19,7 @@ const result={observation,input_tokens:2000,output_tokens:100,bounds_exceeded:fa
 async function account(role='user'){
   const id=randomUUID(),token=randomToken();users.push(id);
   await sql`INSERT INTO app_users(id,email,name,password_hash,role) VALUES(${id},${id+'@example.test'},'Scanner fixture',${await hashPassword(password)},${role})`;
+  await sql`DELETE FROM account_access_grants WHERE user_id=${id}`;
   await sql`INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(${digest(token)},${id},now()+interval '1 hour')`;
   await sql`INSERT INTO account_tier_overrides(user_id,tier,reason) VALUES(${id},'complimentary','Synthetic scanner access')`;
   return {id,cookie:'cardshelf_session='+token};
@@ -139,6 +140,16 @@ await test('card scanning receipts, spending limits and collection/binder writes
       await expectError(()=>analyse(upload()),403);await expectError(async()=>confirmCardScan(owner.id,b.id,await body()),403);
       assert.equal((await undoCardScan(owner.id,a.id)).status,'undone');assert.equal((await scanAvailability(owner.id)).eligible,false);
       await sql`UPDATE account_tier_overrides SET tier='complimentary' WHERE user_id=${owner.id}`;
+    });
+    await t.test('account deletion during recognition retains costs without restoring private observations',async()=>{
+      const departed=await account(),u=upload();let release,started;
+      const gate=new Promise(r=>release=r),entered=new Promise(r=>started=r);
+      const pending=analyse(u,departed,async()=>{started();await gate;return result;});
+      const rejected=expectError(()=>pending,404);
+      await entered;
+      try{await sql`DELETE FROM app_users WHERE id=${departed.id}`;}
+      finally{release();await rejected;}
+      const r=await row(u.request_id);assert.equal(r.observations,null);assert.equal(r.image_hash,'0'.repeat(64));assert.deepEqual(r.candidate_ids,[]);assert.equal(Number(r.accounted_micros),960);
     });
     await t.test('unexpected accounting boundaries pause scanning, and admin usage contains no credentials',async()=>{
       const a=await analyse(upload(),owner,async()=>({...result,observation:null,input_tokens:17000,bounds_exceeded:true}));assert.equal(a.status,'failed');

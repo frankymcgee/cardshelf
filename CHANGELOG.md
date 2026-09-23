@@ -1,3 +1,9 @@
+## 0.31.1 — Scanner validation and recovery
+
+- Preserve the scanner destination through sign-in and clear stale connection errors when a saved receipt is recovered.
+- Settle late recognition costs without restoring private details after account deletion.
+- Exercise membership loss with accounts that do not retain the protected tester grant.
+
 ## 0.31.0 — Card photo scanning
 
 - Take or upload one English or Japanese Pokémon card photo, resolve visible details against the imported catalogue, and confirm its printing, condition and quantity before adding it.

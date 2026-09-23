@@ -68,6 +68,7 @@ test('lost confirmation response recovers the saved receipt without another addi
   const {calls,errors}=await fixtures(page,{lostConfirmation:true});await start(page);await review(page);
   await page.getByRole('button',{name:'Confirm & add to collection',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Another card on your shelf.'})).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
   expect(calls.filter(c=>c.path.endsWith('/confirm'))).toHaveLength(1);expect(errors).toEqual([]);
 });
 test('no match offers a manual catalogue search',async({page})=>{

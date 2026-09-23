@@ -50,7 +50,7 @@ function schedulePoll() {
 async function checkScan() {
   const id = scan.value?.id || requestId.value
   if (!id) return
-  try { const data = await api('/api/scans/' + id); if (alive && id === (scan.value?.id || requestId.value)) applyScan(data) }
+  try { const data = await api('/api/scans/' + id); if (alive && id === (scan.value?.id || requestId.value)) { error.value = ''; applyScan(data) } }
   catch (e) { if (alive) { error.value = errorMessage(e); clearTimeout(poll) } }
 }
 async function resume(id: string) {
@@ -93,7 +93,10 @@ async function analyse() {
       error.value = errorMessage(e)
       // A lost HTTP response does not imply the provider call failed. Recover the
       // same receipt; retrying the same photo keeps the original request ID.
-      try { const data = await api('/api/scans/' + id); if (alive) applyScan(data) } catch { /* Original error stays visible. */ }
+      try {
+        const data = await api('/api/scans/' + id)
+        if (alive) { error.value = ''; applyScan(data); await router.replace({ path: '/scan', query: { ...(binderId.value ? { binder: binderId.value } : {}), scan: id } }) }
+      } catch { /* Original error stays visible. */ }
     }
   } finally { if (alive) { busy.value = false; loadAvailability().catch(() => {}) } }
 }
@@ -126,7 +129,10 @@ async function confirm() {
   } catch (e: any) {
     if (alive) {
       error.value = errorMessage(e)
-      try { const data = await api('/api/scans/' + scan.value.id); if (alive && ['added', 'undone'].includes(data.status)) applyScan(data) } catch { /* Keep retry details unchanged. */ }
+      try {
+        const data = await api('/api/scans/' + scan.value.id)
+        if (alive && ['added', 'undone'].includes(data.status)) { error.value = ''; applyScan(data); message.value = data.status === 'added' ? 'Card added to your collection.' : 'This addition was already undone.' }
+      } catch { /* Keep retry details unchanged. */ }
       const status = e?.statusCode || e?.status || e?.response?.status
       if (status && status < 500 && scan.value?.status === 'ready') {
         confirmationBody.value = null

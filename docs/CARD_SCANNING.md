@@ -1,4 +1,4 @@
-# Card photo scanning (v0.31.0)
+# Card photo scanning (v0.31.1)
 
 CardShelf can send one card-front photo to the OpenAI API, read visible identifying
 text, and suggest matching records from the imported catalogue. English and
