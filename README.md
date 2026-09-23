@@ -1,8 +1,21 @@
-# CardShelf 0.30.1
+# CardShelf 0.31.2
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
 binders, quick tracking, artwork effects, binder themes and a member marketplace.
+
+## Card photo scanning
+
+Open **Collection → Scan a card**, or start from a Pokémon Collection binder.
+Take or upload one English or Japanese card photo, review catalogue matches,
+choose its printing and condition, then confirm the copies to add. Optional binder
+placement and guarded Undo keep the collection and layout consistent.
+
+Scanning starts disabled. **More → Card scanning** lets administrators save an
+encrypted OpenAI API key, set a shared monthly budget and member allowance, and
+review usage for a future GPU hosting comparison. The existing CPU server handles
+bounded image preparation; recognition runs through the OpenAI API. See
+[scanning setup, accounting and privacy](docs/CARD_SCANNING.md).
 
 ## Emails
 

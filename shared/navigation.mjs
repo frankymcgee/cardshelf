@@ -12,6 +12,7 @@ export const PRIMARY_NAVIGATION = Object.freeze([
 /** @type {readonly NavCard[]} */
 export const COLLECTION_LINKS = Object.freeze([
   { to:'/cards', label:'Cards & wishlist', description:'Browse cards, ownership and your wishlist.', icon:'cards' },
+  { to:'/scan', label:'Scan a card', description:'Find a Pokémon card from a photo and review your addition.', icon:'search' },
   { to:'/binders', label:'Your binders', description:'Tracking, layouts and collection binders.', icon:'binder' },
   { to:'/games', label:'Card games', description:'Choose the games you collect.', icon:'grid' },
   { to:'/explore', label:'Public catalogue', description:'Explore all supported card games.', icon:'search' }
@@ -39,6 +40,7 @@ export const ADMIN_LINKS = Object.freeze([
   {to:'/admin/free-platform',label:'Free tier & sponsors',description:'Registration and first-party ads.',icon:'grid'},
   {to:'/admin/adsense',label:'Google AdSense',description:'Ad units, Auto ads and verification.',icon:'settings'},
   {to:'/admin/emails',label:'Emails',description:'Postal, delivery, DNS checks and suppressed recipients.',icon:'mail'},
+  {to:'/admin/scanning',label:'Card scanning',description:'OpenAI connection, scan allowances and costs.',icon:'search'},
   {to:'/admin/passwords',label:'Password recovery',description:'Help an account recover access.',icon:'shield'},
   {to:'/admin/arena',label:'Arena administration',description:'Availability and supported gameplay.',icon:'cards'}
 ]);
@@ -53,7 +55,7 @@ export function navigationMatches(path,root) {
 /** @param {string} path @returns {string} */
 export function activeNavigation(path) {
   if(navigationMatches(path,'/app'))return 'home';
-  if(['/cards','/binders','/games','/explore'].some(root=>navigationMatches(path,root)))return 'collection';
+  if(['/cards','/scan','/binders','/games','/explore'].some(root=>navigationMatches(path,root)))return 'collection';
   if(navigationMatches(path,'/marketplace'))return 'market';
   if(navigationMatches(path,'/arena')||navigationMatches(path,'/battle'))return 'arena';
   return 'more';

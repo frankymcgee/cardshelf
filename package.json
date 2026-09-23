@@ -1,6 +1,6 @@
 {
   "name": "cardshelf",
-  "version": "0.30.1",
+  "version": "0.31.2",
   "private": true,
   "type": "module",
   "description": "A standalone, self-hosted card collection and binder planner.",
@@ -19,7 +19,8 @@
     "test:arena-effects": "playwright test --config=tests/browser/arena-effects.config.mjs",
     "test:arena-match": "playwright test --config=tests/browser/arena-match.config.mjs",
     "migrate": "node scripts/migrate.mjs",
-    "worker": "node worker/index.mjs"
+    "worker": "node worker/index.mjs",
+    "test:scanning-ui": "playwright test --config=tests/browser/scanning.config.mjs"
   },
   "dependencies": {
     "postgres": "3.4.7",

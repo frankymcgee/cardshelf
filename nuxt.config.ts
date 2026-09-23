@@ -9,6 +9,7 @@ export default defineNuxtConfig({
     '/battle': { ssr: false }, '/battle/**': { ssr: false },
     '/login': { ssr: false }, '/cards': { ssr: false }, '/cards/**': { ssr: false },
     '/binders': { ssr: false }, '/binders/**': { ssr: false },
+    '/scan': { ssr: false },
     '/marketplace': { ssr: false }, '/marketplace/**': { ssr: false },
     '/games': { ssr: false }, '/register': { ssr: false },
     '/forgot-password': { ssr: false }, '/reset-password': { ssr: false },

@@ -8,7 +8,7 @@ for(const path of ['/app','/cards','/binders','/settings','/account','/admin/pla
  test('not a public UI route: '+path,()=>assert.equal(publicPage(path),false));
 test('public routes tolerate a trailing slash only',()=>{assert.equal(publicPage('/features/'),true);assert.equal(publicPage('/features/private'),false)});
 test('shared pages accept only the existing public share token shape',()=>{assert.ok(sharedPage('/shared/'+'a'.repeat(64)));assert.ok(!sharedPage('/shared/admin'));assert.ok(!sharedPage('/shared/'+'a'.repeat(64)+'/edit'))});
-for(const path of ['/app','/cards?set=en%3Abase1','/binders/abc','/settings#catalogue','/account','/print/abc','/admin/platform'])
+for(const path of ['/app','/scan?binder=example','/admin/scanning','/cards?set=en%3Abase1','/binders/abc','/settings#catalogue','/account','/print/abc','/admin/platform'])
  test('login returns to an internal collector route: '+path,()=>assert.equal(safeReturnTo(path),path));
 for(const path of ['https://evil.test','//evil.test','/\\evil.test','/login','/api/admin/users','/','/pricing','/app/../../login','/%2f%2fevil.test','/cards%0a','/app%252f..','javascript:alert(1)',null,['/cards']])
  test('unsafe/unwanted login return falls back: '+String(path),()=>assert.equal(safeReturnTo(path),'/app'));
