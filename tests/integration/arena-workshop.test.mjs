@@ -72,7 +72,7 @@ await test('Arena workshop catalogue, import review and duplicate drafts',async 
    await sql`UPDATE cards SET raw_data=${sql.json(unsupported)} WHERE id=${basic}`;
    const found=await catalogue('supported=1&owned=1');assert.equal(found.data.items.length,0);
    const view=await request('/api/arena/decks/'+deck.id,{user:owner});assert.equal(view.status,200);assert.equal(view.data.validation.playable,false);assert.equal(view.data.cards[0].supported,false);assert.match(view.data.cards[0].reason,/Ability/);
-   const start=await request('/api/arena/matches',{user:owner,method:'POST',body:{mode:'pvp',alias:'Tester',deck_id:deck.id,deck_revision:deck.revision,request_id:randomUUID()}});assert.equal(start.status,400);
+   const start=await request('/api/arena/matches',{user:owner,method:'POST',body:{mode:'pvp',alias:'Tester',deck_id:deck.id,deck_revision:deck.revision,request_id:randomUUID()}});assert.equal(start.status,422);
    const entry=(await sql`SELECT quantity,notes FROM collection_entries WHERE user_id=${owner.id}`)[0];assert.equal(entry.quantity,2);assert.equal(entry.notes,'Private workshop note');
   });
  }finally{if(ids.length)await sql`DELETE FROM app_users WHERE id IN ${sql(ids)}`;await sql`DELETE FROM printings WHERE card_id IN (SELECT id FROM cards WHERE set_id=${set})`;await sql`DELETE FROM cards WHERE set_id=${set}`;await sql`DELETE FROM card_sets WHERE id=${set}`;await sql`DELETE FROM arena_settings`;if(old.length)await sql`INSERT INTO arena_settings ${sql(old)}`;await sql.end();}

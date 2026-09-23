@@ -1,3 +1,7 @@
+## 0.29.1 — Retain strict match snapshot validation
+
+- Keep repairable workshop deck reads separate from strict match snapshots. Older matches continue to reject newly supported cards with their original compiler and error response.
+
 ## 0.29.0 — Arena lobby and deck workshop
 
 - Give the lobby illustrated deck covers, a prominent return to an open table, clearer play modes, and separate open/past match lists.
