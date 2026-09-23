@@ -1,11 +1,12 @@
-# Card photo scanning (v0.32.0)
+# Card photo scanning (v0.33.0)
 
 CardShelf can send one card-front photo to the OpenAI API, read visible identifying
 text, and suggest matching records from the imported catalogue. English and
 Japanese Pokémon cards are supported. The user chooses the catalogue card,
 printing/finish, condition and number of copies before any inventory changes.
-An optional Collection binder pocket can be empty or already show that printing.
-Independent tracking binders retain their separate checklist workflow.
+An optional Collection or Tracking binder pocket can be empty or already show that
+printing. Choose the binder once to keep using it while scanning further cards.
+Tracking placement also marks the chosen checklist pocket collected.
 
 ## Enable after upgrading
 
@@ -72,6 +73,42 @@ scan requests cannot override any provider controls.
 An unsupported model/parameter combination returns a generic configuration error;
 it does not retry with another model. Test a representative card after saving.
 
+## Automatic binder placement
+
+Choose **Add scanned cards to** before taking the first photo, or **Add to a binder**
+when reviewing a recognised card. Both Pokémon Collection and Tracking binders
+are listed when permitted by the member's access. The binder's **Scan a card**
+button opens the scanner with that destination selected. Scanning still requires
+collection access; a standalone checklist subscription does not gain inventory or
+paid recognition access through a Tracking binder.
+
+After choosing the exact printing, **Automatic** looks across every page for a
+pocket already displaying that printing. If none exists, it selects the first
+empty pocket. A full binder can still accept a scan when it has a matching pocket.
+Already-owned printings and already-collected checklist pockets remain selectable:
+confirmation adds the requested copies once and reuses that pocket.
+
+The destination page/pocket is shown before confirmation and on the saved receipt.
+Choose **Choose a pocket myself** to use another allowed position. Collection
+binders permit an additional placement of the same printing in an empty pocket.
+Tracking binders reuse their existing checklist entry; they do not create duplicate
+checklist rows for the same printing. A different printing is never replaced, even
+if it belongs to the same card. A full binder without a match requires a different
+binder or **Collection only**; no partial inventory addition occurs.
+
+Tracking placement marks the selected pocket collected in the same transaction as
+the inventory addition. This is an explicit action for that scan; later independent
+checklist marks do not automatically change inventory. Undo removes a pocket created
+by the scan, or restores a previously missing Tracking mark. A mark that was already
+collected stays collected. Later edits to a pocket/checklist changed by the scan
+prevent Undo from overwriting those changes.
+
+**Scan another card** retains the binder, returns to automatic placement and reloads
+its current pockets. The URL also retains the binder across page reloads. The server
+checks binder ownership, game, membership, revision and available pockets again
+under the collection lock before saving. Retrying an automatic confirmation uses
+the original receipt and cannot pick another pocket or add copies again.
+
 ## Flow and limits
 
 - The camera/file input accepts JPEG, PNG or WebP. The browser resizes to at most
@@ -92,8 +129,9 @@ it does not retry with another model. Test a representative card after saving.
   revision, binder revision or occupied pocket is rejected transactionally.
 - Every confirmed addition increases the requested condition's quantity. Existing
   notes and wishlist flags are preserved. The binder is a layout, not physical-copy
-  allocation. Undo restores the prior quantity and removes only a pocket created by
-  this scan, provided relevant ownership and binder revisions have not changed.
+  allocation. Undo restores the prior quantity, removes a newly created pocket or
+  restores a checklist mark changed by this scan, provided relevant ownership and
+  binder revisions have not changed.
 - Receipt history allows resuming after a lost connection or page reload. A scan
   is marked interrupted after its saved timeout plus 75 seconds of processing
   grace (two minutes with the default timeout). Undo remains available after
@@ -165,7 +203,8 @@ Official references, checked 2026-09-23:
 checks with synthetic data. `npm run test:integration` includes the production HTTP
 routes and real PostgreSQL transactions for admission, quotas, concurrent requests,
 replays, settings persistence, configuration/price snapshots during edits, longer
-timeouts, binder conflicts, Undo, membership and secret redaction; recognition is
+timeouts, automatic/manual binder placement, prepared Tracking marks, full-binder
+conflicts, Undo, membership and secret redaction; recognition is
 injected inside the test process and never contacts OpenAI. There are no public
 mock/provider override parameters. `npm run test:scanning-ui` exercises the built
 scan/admin screens in Chromium at desktop and phone sizes with synthetic API

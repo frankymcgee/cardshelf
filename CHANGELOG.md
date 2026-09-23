@@ -1,3 +1,10 @@
+## 0.33.0 — Automatic scan placement in binders
+
+- Choose a Pokémon Collection or Tracking binder before scanning and retain it for subsequent cards. Automatic placement reuses the exact printing's existing pocket or finds the first empty pocket across all pages.
+- Keep already-planned and already-collected pockets available, including in full binders. Allow an extra placement in a Collection binder by choosing another empty pocket manually.
+- Mark selected Tracking pockets collected when confirming a scan, with atomic inventory updates and guarded Undo that preserves prior marks and later edits.
+- Show the destination page and pocket before and after confirmation, refresh the binder between scans, and expose the scanner from eligible Tracking binders.
+
 ## 0.32.0 — Configurable card recognition
 
 - Edit the OpenAI model name, reasoning effort/mode, image detail, output allowance, timeout and recognition prompt from the scanning admin page, with a restore-default prompt action.

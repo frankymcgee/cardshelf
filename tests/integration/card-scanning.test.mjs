@@ -11,6 +11,7 @@ import {scanningAdminOverview} from '../../lib/card-scan-settings.mjs';
 import {ScanProviderError} from '../../lib/card-scan-provider.mjs';
 import {scanHash,scanReservation} from '../../lib/card-scan-logic.mjs';
 import {SCAN_DEFAULTS} from '../../shared/card-scanning.mjs';
+import {markCollected} from '../../lib/tracking-binders.mjs';
 const base=process.env.TEST_BASE_URL,url=process.env.DATABASE_URL;
 if(process.env.ALLOW_TEST_DATABASE!=='yes'||!base||!new URL(url||'http://invalid').pathname.endsWith('_test')||!/^[a-f0-9]{64}$/i.test(process.env.CARDSHELF_INTEGRATION_KEY||''))throw Error('Use a disposable _test database and a synthetic encryption key.');
 const sql=postgres(url,{max:4}),origin=process.env.APP_ORIGIN||base,users=[],scanIds=[];
@@ -41,6 +42,11 @@ await test('card scanning receipts, spending limits and collection/binder writes
   const binderState=()=>sql`SELECT * FROM binders WHERE id=${binder}`.then(r=>r[0]);
   const body=async(overrides={})=>({printing_id:printing,condition:'UNKNOWN',quantity:2,entry_revision:(await entry())?.revision??0,confirm:true,...overrides});
   const expectError=(run,status)=>assert.rejects(run,e=>e.status===status);
+  async function preparedBinder(type,slots=[]){
+    const [b]=await sql`INSERT INTO binders(user_id,title,columns,rows,page_count,binder_type) VALUES(${owner.id},'Prepared scan binder',2,2,2,${type}) RETURNING *`;
+    if(slots.length)await sql`INSERT INTO binder_slots ${sql(slots.map(s=>({binder_id:b.id,is_collected:false,...s})), 'binder_id','position','printing_id','is_collected')}`;
+    return b;
+  }
   async function changeSettings(overrides={}){
     const current=(await request('/api/admin/scanning',{user:admin})).data.settings;
     return request('/api/admin/scanning',{user:admin,method:'POST',body:{revision:current.revision,password,enabled:current.enabled,
@@ -166,16 +172,67 @@ await test('card scanning receipts, spending limits and collection/binder writes
       assert.equal((await sql`SELECT * FROM binder_slots WHERE binder_id=${binder} AND position=0`).length,0);
       assert.equal((await confirmCardScan(owner.id,scan.id,input)).status,'undone');assert.equal((await entry()).quantity,3);
     });
-    await t.test('stale ownership and occupied, foreign or independent binder pockets reject the whole addition',async()=>{
+    await t.test('stale ownership and occupied or foreign binder pockets reject the whole addition',async()=>{
       const scan=await analyse(upload()),b=await binderState(),before=(await entry()).quantity;
       await expectError(async()=>confirmCardScan(owner.id,scan.id,{...await body(),entry_revision:0}),409);
-      for(const [id,status] of [[foreign,404],[tracking,400]])await expectError(async()=>confirmCardScan(owner.id,scan.id,await body({binder:{id,revision:1,position:0}})),status);
+      await expectError(async()=>confirmCardScan(owner.id,scan.id,await body({binder:{id:foreign,revision:1,position:0}})),404);
       await sql`INSERT INTO binder_slots(binder_id,position,printing_id) VALUES(${binder},1,${otherPrinting})`;
       await expectError(async()=>confirmCardScan(owner.id,scan.id,await body({binder:{id:binder,revision:b.revision,position:1}})),409);
       assert.equal((await entry()).quantity,before);assert.equal((await row(scan.id)).status,'ready');
       await sql`INSERT INTO binder_slots(binder_id,position,printing_id) VALUES(${binder},0,${printing})`;
       await confirmCardScan(owner.id,scan.id,await body({binder:{id:binder,revision:b.revision,position:0}}));
       await undoCardScan(owner.id,scan.id);assert.equal((await sql`SELECT * FROM binder_slots WHERE binder_id=${binder} AND position=0`).length,1,'Existing placement survives undo');
+    });
+    await t.test('automatic placement reuses a full prepared binder and concurrent HTTP retries add copies once',async()=>{
+      const b=await preparedBinder('collection',Array.from({length:8},(_,position)=>({position,printing_id:position===6?printing:otherPrinting})));
+      const scan=await analyse(upload()),before=(await entry()).quantity,input=await body({binder:{id:b.id,revision:b.revision,mode:'auto'}});
+      const results=await Promise.all([1,2].map(()=>request('/api/scans/'+scan.id+'/confirm',{user:owner,method:'POST',body:input})));
+      for(const r of results){assert.equal(r.status,200,JSON.stringify(r.data));assert.equal(r.data.addition.binder.position,6);assert.equal(r.data.addition.binder.page,2);assert.equal(r.data.addition.binder.pocket,3);assert.equal(r.data.addition.binder.inserted,false);}
+      assert.equal((await entry()).quantity,before+2);assert.equal((await sql`SELECT * FROM binder_slots WHERE binder_id=${b.id}`).length,8);
+      assert.equal((await sql`SELECT revision FROM binders WHERE id=${b.id}`)[0].revision,b.revision,'Reusing a Collection pocket does not edit the layout');
+      await undoCardScan(owner.id,scan.id);assert.equal((await entry()).quantity,before);assert.equal((await sql`SELECT * FROM binder_slots WHERE binder_id=${b.id}`).length,8);
+    });
+    await t.test('automatic empty-pocket placement and an explicit duplicate Collection placement both undo safely',async()=>{
+      for(const manual of [false,true]){
+        const b=await preparedBinder('collection',Array.from({length:5},(_,position)=>({position,printing_id:manual&&position===0?printing:otherPrinting})));
+        const scan=await analyse(upload()),before=(await entry()).quantity;
+        const added=await confirmCardScan(owner.id,scan.id,await body({binder:{id:b.id,revision:b.revision,...(manual?{position:5}:{mode:'auto'})}}));
+        assert.equal(added.addition.binder.position,5);assert.equal(added.addition.binder.inserted,true);
+        assert.equal((await sql`SELECT * FROM binder_slots WHERE binder_id=${b.id}`).length,6);assert.equal((await entry()).quantity,before+2);
+        await undoCardScan(owner.id,scan.id);assert.equal((await entry()).quantity,before);assert.equal((await sql`SELECT * FROM binder_slots WHERE binder_id=${b.id}`).length,5);
+      }
+    });
+    await t.test('Tracking placement handles missing, already-collected and empty pockets while Undo preserves prior marks',async()=>{
+      assert.ok((await scanAvailability(owner.id)).binder_types.includes('tracking'));
+      for(const collected of [false,true,null]){
+        const b=await preparedBinder('tracking',collected===null?[]:[{position:5,printing_id:printing,is_collected:collected}]);
+        const scan=await analyse(upload()),before=(await entry()).quantity,input=await body({binder:{id:b.id,revision:b.revision,mode:'auto'}});
+        if(collected!==null)await expectError(async()=>confirmCardScan(owner.id,scan.id,await body({binder:{id:b.id,revision:b.revision,position:0}})),409);
+        const added=await confirmCardScan(owner.id,scan.id,input);await confirmCardScan(owner.id,scan.id,input);
+        assert.equal(added.addition.binder.binder_type,'tracking');assert.equal(added.addition.binder.position,collected===null?0:5);
+        assert.equal(added.addition.binder.marked_collected,collected!==true);assert.equal((await entry()).quantity,before+2);
+        let slots=await sql`SELECT * FROM binder_slots WHERE binder_id=${b.id}`;assert.equal(slots.length,1);assert.equal(slots[0].is_collected,true);
+        await undoCardScan(owner.id,scan.id);assert.equal((await entry()).quantity,before);
+        slots=await sql`SELECT * FROM binder_slots WHERE binder_id=${b.id}`;assert.equal(slots.length,collected===null?0:1);
+        if(collected!==null)assert.equal(slots[0].is_collected,collected);
+      }
+    });
+    await t.test('a full nonmatching binder or changed layout rejects automatic placement without adding inventory',async()=>{
+      const b=await preparedBinder('collection',Array.from({length:8},(_,position)=>({position,printing_id:otherPrinting})));
+      const scan=await analyse(upload()),before=(await entry()).quantity;
+      await expectError(async()=>confirmCardScan(owner.id,scan.id,await body({binder:{id:b.id,revision:b.revision,mode:'auto'}})),409);
+      await sql`DELETE FROM binder_slots WHERE binder_id=${b.id} AND position=0`;
+      await sql`UPDATE binders SET revision=revision+1 WHERE id=${b.id}`;
+      await expectError(async()=>confirmCardScan(owner.id,scan.id,await body({binder:{id:b.id,revision:b.revision,mode:'auto'}})),409);
+      assert.equal((await entry()).quantity,before);assert.equal((await row(scan.id)).status,'ready');
+      assert.equal((await sql`SELECT * FROM binder_slots WHERE binder_id=${b.id} AND position=0`).length,0);
+    });
+    await t.test('later checklist edits prevent scan Undo from overwriting them or partially reducing inventory',async()=>{
+      const b=await preparedBinder('tracking',[{position:0,printing_id:printing,is_collected:false}]);
+      const scan=await analyse(upload()),added=await confirmCardScan(owner.id,scan.id,await body({binder:{id:b.id,revision:b.revision,mode:'auto'}}));
+      await markCollected(owner.id,b.id,{request_id:randomUUID(),revision:added.addition.binder.revision,position:0,printing_id:printing,collected:false});
+      const before=(await entry()).quantity;await expectError(()=>undoCardScan(owner.id,scan.id),409);
+      assert.equal((await entry()).quantity,before);assert.equal((await sql`SELECT is_collected FROM binder_slots WHERE binder_id=${b.id} AND position=0`)[0].is_collected,false);
     });
     await t.test('edits after scanning prevent undo from clobbering later work',async()=>{
       const scan=await analyse(upload());await confirmCardScan(owner.id,scan.id,await body());
