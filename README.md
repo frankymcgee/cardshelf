@@ -1,4 +1,4 @@
-# CardShelf 0.31.2
+# CardShelf 0.32.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -12,8 +12,9 @@ choose its printing and condition, then confirm the copies to add. Optional bind
 placement and guarded Undo keep the collection and layout consistent.
 
 Scanning starts disabled. **More → Card scanning** lets administrators save an
-encrypted OpenAI API key, set a shared monthly budget and member allowance, and
-review usage for a future GPU hosting comparison. The existing CPU server handles
+encrypted OpenAI API key, choose the model and reasoning settings, edit the
+recognition prompt, and set model prices, a shared budget and member allowance.
+Usage reports support a future GPU hosting comparison. The existing CPU server handles
 bounded image preparation; recognition runs through the OpenAI API. See
 [scanning setup, accounting and privacy](docs/CARD_SCANNING.md).
 

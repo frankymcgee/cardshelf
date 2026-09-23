@@ -40,7 +40,7 @@ export const ADMIN_LINKS = Object.freeze([
   {to:'/admin/free-platform',label:'Free tier & sponsors',description:'Registration and first-party ads.',icon:'grid'},
   {to:'/admin/adsense',label:'Google AdSense',description:'Ad units, Auto ads and verification.',icon:'settings'},
   {to:'/admin/emails',label:'Emails',description:'Postal, delivery, DNS checks and suppressed recipients.',icon:'mail'},
-  {to:'/admin/scanning',label:'Card scanning',description:'OpenAI connection, scan allowances and costs.',icon:'search'},
+  {to:'/admin/scanning',label:'Card scanning',description:'Recognition model, prompt, scan allowances and costs.',icon:'search'},
   {to:'/admin/passwords',label:'Password recovery',description:'Help an account recover access.',icon:'shield'},
   {to:'/admin/arena',label:'Arena administration',description:'Availability and supported gameplay.',icon:'cards'}
 ]);
