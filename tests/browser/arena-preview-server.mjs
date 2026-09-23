@@ -11,7 +11,7 @@ const components = fs.readdirSync(path.join(root, 'app/components/arena')).filte
 const files = new Map([
   ['/vue.js', path.join(path.dirname(require.resolve('vue/package.json')), 'dist/vue.esm-browser.prod.js')],
   ...[...components, 'shared/arena.mjs', 'tests/helpers/arena-table-fixtures.mjs',
-    'app/assets/css/main.css', 'app/assets/css/arena.css', 'app/assets/css/arena-table.css', 'app/assets/css/arena-interactions.css']
+    'app/assets/css/main.css', 'app/assets/css/arena.css', 'app/assets/css/arena-table.css', 'app/assets/css/arena-interactions.css', 'app/assets/css/arena-perspective.css']
     .map(file => ['/' + file, path.join(root, file)])
 ]);
 const entry = `import { createApp, reactive, computed, h, ref } from '/vue.js';
@@ -39,11 +39,11 @@ createApp({ setup() { return () => h('div', { class: 'arena-root' }, h('main', {
   h(ArenaPromptModal, { prompt: props.table.prompt, revision: revision.value, locked: props.locked, onChoose: ids => events.push(['choose', ids]) }),
   h('div', { class: 'arena-play-layout' }, [
     h('div', { class: 'arena-board-wrap' }, h(ArenaBoard, { ...props, onSelect: select,
-      onDiscard: seat => { preview.value = false; discard.value = seat; events.push(['discard', seat]); }, onAction: action })),
-    h('aside', { class: 'arena-inspector' }, current.value ? [
-      h(ArenaActionTray, { unit: current.value, moves: moves.value, locked: props.locked, onAction: action, onInspect: () => { preview.value = true; }, onClear: () => { props.selected = ''; preview.value = false; } }),
-      h('div', { class: 'arena-panel arena-desktop-preview' }, h(ArenaCardPreview, { unit: current.value, parent: parent.value, selected: props.selected, onSelect: select }))
-    ] : h('section', { class: 'arena-panel arena-inspector-empty' }, [h('h2', 'Select a card'), h('p', 'Selection never plays a card. Inspect it or choose a server-provided move.')]))
+      onDiscard: seat => { preview.value = false; discard.value = seat; events.push(['discard', seat]); }, onAction: action }, {
+      actions: () => h('aside', { class: 'arena-inspector arena-table-actions' }, current.value ?
+        h(ArenaActionTray, { unit: current.value, moves: moves.value, locked: props.locked, onAction: action, onInspect: () => { preview.value = true; }, onClear: () => { props.selected = ''; preview.value = false; } })
+        : h('section', { class: 'arena-table-instructions' }, [h('strong', 'Select a card'), h('p', 'Select a hand or field card. Inspect it or choose an available move.')]))
+    }))
   ]),
   h(ArenaModal, { open: preview.value && !!current.value, label: 'Card preview', onClose: () => { preview.value = false; } }, { default: () => current.value ? h(ArenaCardPreview, { unit: current.value, parent: parent.value, selected: props.selected, onSelect: select }) : null }),
   h(ArenaModal, { open: discard.value !== null, label: 'Discard pile', onClose: () => { discard.value = null; } }, { default: () => discard.value === null ? null : h('div', { class: 'arena-discard-grid' }, props.table.players[discard.value].discard.map(unit => h(ArenaCard, { unit, onSelect: unit => { select(unit); preview.value = true; } }))) })

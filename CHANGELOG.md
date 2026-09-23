@@ -1,3 +1,15 @@
+## 0.26.1 — Mobile tabletop drag spacing
+
+- Keep the near Bench comfortably outside the auto-scroll edge when the touch drag handle is centred.
+- Strengthen the existing touch regression to require an interior drop point.
+
+## 0.26.0 — First-person Arena tabletop
+
+- A perspective playmat with a distant opponent field, a larger foreground hand, wood-edged table depth, and separate face-down Prize and deck stacks.
+- A flat hand/action dock with full-width table space, public discard-top artwork and the existing Inspect dialog for card details.
+- Container-aware narrow-screen layouts and a flat reduced-motion view retain readable cards, touch scrolling, keyboard access and legal-target confirmation.
+- Existing game rules, saved matches, privacy checks, action requests and confirmed battle effects are preserved.
+
 ## 0.25.0 — Arena UI refresh, Phase 5
 
 - Add focused table viewing without browser fullscreen, new storage or scroll locking. Keep Exit focus, action controls, inspection and required decisions accessible.

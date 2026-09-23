@@ -23,6 +23,16 @@ function component(file) {
   cache.set(file, output.exports.default); return output.exports.default;
 }
 const render = props => renderToString(Vue.createSSRApp(component('app/components/arena/ArenaBoard.vue'), props));
+test('discard tops use disclosed artwork, with no faces from a hidden top or an empty pile', async () => {
+  const props = tableFixture();
+  props.table.players[0].discard[0].card.image_url = '/disclosed-discard.png';
+  props.table.players[1].discard[0] = { hidden: true, card: { name: 'SECRET', image_url: '/SECRET.png' } };
+  const html = await render(props);
+  assert.match(html, /src="\/disclosed-discard.png"/);
+  assert.doesNotMatch(html, /SECRET/);
+  props.table.players[0].discard = [];
+  assert.doesNotMatch(await render(props), /disclosed-discard.png/);
+});
 for (const seat of [0, 1]) for (const legacy of [false, true]) test(`rendered seat ${seat}, ${legacy ? 'Core' : 'Expanded'}: table order and private zones`, async () => {
   const html = await render(tableFixture({ seat, legacy }));
   const top = html.indexOf('data-side="opponent"'), middle = html.indexOf('aria-label="Battlefield"'), bottom = html.indexOf('data-side="self"'), hand = html.indexOf('aria-label="Your private hand"');

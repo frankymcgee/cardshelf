@@ -26,7 +26,7 @@ function removePreviousCount(_element: Element, done: () => void) { done() }
       </div>
       <div class="arena-table-reserve" :aria-label="alias + ' deck and discard'">
         <ArenaCardStack kind="deck" :count="player.deck_count" :alias="alias" />
-        <ArenaDiscardPile :count="player.discard_count" :alias="alias" @inspect="emit('discard', seat)" />
+        <ArenaDiscardPile :count="player.discard_count" :top="player.discardTop" :alias="alias" @inspect="emit('discard', seat)" />
       </div>
       <ArenaCardStack kind="prizes" :count="player.prize_count" :alias="alias" :self="self" />
     </div>
