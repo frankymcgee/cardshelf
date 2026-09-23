@@ -46,7 +46,7 @@ test('Google loader stays conditional and sensitive pages never mount an ad cont
     if(path!=='app/layouts/marketing.vue')assert.ok(!source.includes('<AdSenseSlot'),path);
   }
   assert.match(await text('app/layouts/marketing.vue'), /v-if="\['\/', '\/features', '\/pricing'\]\.includes\(route\.path\)"/);
-  for(const path of ['app/pages/explore/index.vue','app/pages/explore/[id].vue','app/pages/cards.vue','app/pages/app.vue'])assert.match(await text(path),/<AdSenseSlot :content-ready=/);
+  for(const path of ['app/pages/explore/index.vue','app/pages/explore/[id].vue','app/pages/cards.vue','app/pages/app.vue'])assert.match(await text(path),/<AdSenseSlot\b[^>]*:content-ready=/);
   assert.match(await text('app/pages/marketplace/index.vue'),/:content-ready="data\.items\.length > 0 && !failure && !mine"/);
 });
 test('Google payload is issued only after effective membership and pending billing are checked',async()=>{

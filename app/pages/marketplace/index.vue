@@ -33,7 +33,7 @@ onBeforeUnmount(() => { sequence++; clearTimeout(timer) })
     <p v-if="loading && !data" class="loading-panel" role="status">Loading the market…</p>
     <div v-if="data" class="market-grid" :aria-busy="loading">
       <template v-for="row in rows" :key="row.key">
-      <AdSenseSlot v-if="row.kind === 'ad'" :content-ready="data.items.length > 0 && !failure && !mine" marketplace :manual-allowed="data.items.length >= 4" :ad-free-url="adFreeUrl" />
+      <AdSenseSlot v-if="row.kind === 'ad'" :content-ready="data.items.length > 0 && !failure && !mine" marketplace grid auto-only :manual-allowed="data.items.length >= 4" :ad-free-url="adFreeUrl" />
       <NuxtLink v-else :to="'/marketplace/' + row.item.id" class="market-card">
         <div class="market-card-photo"><img :src="row.item.photos[0].url" :alt="row.item.card_name + ' — seller’s front photo'" loading="lazy" /><span class="market-pill" :class="row.item.hidden ? 'hidden' : row.item.status">{{ row.item.hidden ? 'Hidden by moderator' : saleStateLabel(row.item.status) }}</span></div>
         <div class="market-card-copy"><h2>{{ row.item.card_name }}</h2><p>{{ row.item.set_name }} · #{{ row.item.local_id }}</p><p>{{ row.item.printing_label }} · {{ row.item.condition }} · {{ row.item.language.toUpperCase() }}</p><span class="market-card-price">{{ aud(row.item.price_minor) }}</span><p>Seller asking price · 1 card</p><div class="market-card-footer"><span>{{ row.item.seller_alias }}</span><span>{{ row.item.region }}</span></div></div>
