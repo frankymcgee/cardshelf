@@ -3,6 +3,7 @@ import { defineEventHandler, getRouterParam, getQuery, getCookie, setCookie, del
 import { configuration } from '../../lib/config.mjs'
 import { AppError, ensure } from '../../lib/errors.mjs'
 import * as v from '../../lib/validate.mjs'
+import { adminAdView } from '../../lib/adsense.mjs'
 import * as auth from '../../lib/auth.mjs'
 import * as catalogue from '../../lib/catalogue.mjs'
 import * as collection from '../../lib/collection.mjs'
@@ -36,7 +37,10 @@ export default defineEventHandler(async event => {
     const parts = (getRouterParam(event, 'path') || '').split('/').filter(Boolean).map(decodeURIComponent)
     const route = parts.join('/'), method = event.method, query = getQuery(event)
     const token = getCookie(event, COOKIE)
-    if (route === 'session' && method === 'GET') return { user: await auth.sessionUser(token), setup_required: await auth.needsSetup() }
+    if (route === 'session' && method === 'GET') {
+      const user = await auth.sessionUser(token)
+      return { user, setup_required: await auth.needsSetup(), admin_placement_view: adminAdView(user, getCookie(event, 'cardshelf_admin_ads')) }
+    }
     if ((route === 'setup' || route === 'login') && method === 'POST') {
       const ip = getRequestIP(event, { xForwardedFor: configuration().trustProxy }) || 'unknown'
       const result = await auth[route](await readJSON(event), ip)

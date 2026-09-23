@@ -1,11 +1,17 @@
 <script setup lang="ts">
-const api = useApi(), notice = useNotice()
+const api = useApi(), notice = useNotice(), auth = useAuth()
 const saved = ref<any>(null), error = ref(''), busy = ref(false), password = ref('')
 const form = reactive({ placeholders_enabled: false, enabled: false, verification_enabled: false, publisher_id: '', slot_id: '', auto_ads_enabled: false, marketplace_enabled: false, marketplace_slot_id: '', reason: '' })
 const adminView = ref('hidden'), viewBusy = ref(false)
 async function saveView() {
   viewBusy.value = true; error.value = ''
-  try { await api('/api/admin/adsense/view', { method: 'POST', body: { mode: adminView.value } }); window.location.reload() }
+  try {
+    const mode = adminView.value
+    await api('/api/admin/adsense/view', { method: 'POST', body: { mode } })
+    const session = await auth.refresh()
+    if (session.admin_placement_view !== mode) throw new Error('Your browser did not retain the preview setting. Check cookies and the site HTTPS configuration, then apply again.')
+    window.location.reload()
+  }
   catch (e) { error.value = errorMessage(e); viewBusy.value = false }
 }
 const approval = ref(false), consent = ref(false), autoOff = ref(false), autoReady = ref(false), scope = ref(false)
@@ -38,7 +44,8 @@ async function save() {
     <label>Display in this browser<select v-model="adminView" :disabled="viewBusy"><option value="hidden">Hidden — no ads or placeholders</option><option value="preview">Placeholder preview — no Google requests</option><option value="live">Live ads — when site advertising is enabled</option></select></label>
     <p class="data-note">Applies only to your administrator account in this browser. Preview works before approval. Live ads use the approved site settings and may not fill; do not click your own ads. Private screens remain excluded.</p>
     <button class="button secondary" :disabled="viewBusy" @click="saveView">{{ viewBusy ? 'Applying…' : 'Apply my ad view' }}</button>
-    <div class="button-row"><NuxtLink to="/cards">View catalogue</NuxtLink><NuxtLink to="/marketplace">View marketplace</NuxtLink><NuxtLink to="/">View homepage</NuxtLink></div>
+    <p class="data-note">Saved view: <strong>{{ saved.admin_view === 'preview' ? 'Placeholder preview' : saved.admin_view === 'live' ? 'Live ads' : 'Hidden' }}</strong>. Apply changes before following a link. Placements appear near the bottom of eligible pages; private screens stay excluded.</p>
+    <div class="button-row"><NuxtLink to="/cards#cardshelf-placement-preview">View catalogue</NuxtLink><NuxtLink to="/marketplace#cardshelf-placement-preview">View marketplace</NuxtLink><NuxtLink to="/#cardshelf-placement-preview">View homepage</NuxtLink></div>
   </section>
   <form v-if="saved" class="panel adsense-settings form-stack" @submit.prevent="save">
     <p class="alert info">Only signed-in Free accounts are eligible. Collector, Collector Pro, Complimentary users, testers and signed-out visitors receive no Google advertising loader. No Google ads are loaded on passwords, billing, account settings, administration, private messages, private card editors, binders or battles.</p>

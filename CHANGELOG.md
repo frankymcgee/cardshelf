@@ -1,3 +1,9 @@
+## 0.34.1 — Reliable administrator placement previews
+
+- Render the opted-in administrator layout preview from the authenticated session without depending on Google/ad eligibility requests or live-ad CSS classes.
+- Use the same secure-cookie configuration as sign-in, verify preference persistence before reloading, and display the saved view and placement location.
+- Preserve private-page exclusions and live-ad controls.
+
 ## 0.34.0 — Ad placeholders and administrator viewing
 
 - Show local placeholders to eligible Free accounts before AdSense approval, without Google requests.

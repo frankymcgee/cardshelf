@@ -45,6 +45,8 @@ await test('Free-only Auto ads and marketplace display units preserve private da
       const r=await request('/api/admin/adsense/view',{cookie:admin.cookie,method:'POST',body:{mode:'preview'}});
       assert.equal(r.status,200);const preference=r.headers.get('set-cookie').split(';')[0];
       const adminCookie=admin.cookie+'; '+preference;
+      assert.equal((await request('/api/session',{cookie:adminCookie})).data.admin_placement_view,'preview');
+      assert.equal((await request('/api/session',{cookie:pro.cookie+'; '+preference})).data.admin_placement_view,'hidden');
       assert.equal((await ad(adminCookie,'/cards')).data.placeholder,true);
       assert.deepEqual((await ad(adminCookie,'/account')).data,{eligible:false});
       assert.equal((await request('/api/admin/adsense/view',{cookie:free.cookie,method:'POST',body:{mode:'live'}})).status,403);

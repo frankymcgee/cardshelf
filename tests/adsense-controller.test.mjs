@@ -118,3 +118,9 @@ test('a loaded ad switches to an ad-free document when placeholders are enabled'
   const h=harness();await h.mount();h.response({eligible:false,placeholder:true,page_kind:'marketplace'});await h.check();
   assert.equal(h.redirects.length,1);assert.equal(h.scripts.length,1);
 });
+
+test('authenticated administrator preview does not call ad eligibility even when blocked',async()=>{
+  const h=harness();h.auth.state.value={loaded:true,user:{id:'admin',role:'admin'},admin_placement_view:'preview'};
+  h.win.__cardshelfAdSenseBlocked=true;await h.mount();assert.equal(h.calls.length,0);assert.equal(h.scripts.length,0);
+  h.auth.state.value={loaded:true,user:null,admin_placement_view:'hidden'};h.flush();await tick();assert.equal(h.placement.value,null);
+});
