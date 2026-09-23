@@ -55,6 +55,12 @@ export function marketplaceAdRows(items) {
   rows.splice(Math.min(6, list.length), 0, { key: 'cardshelf-market-ad', kind: 'ad', item: null });
   return rows;
 }
+/** Catalogue cards keep their own stable keys; the preview never counts as a card. */
+export function catalogueAdRows(items) {
+  return marketplaceAdRows(items).map(row => row.kind === 'ad'
+    ? { ...row, key: 'cardshelf-catalogue-ad' }
+    : { ...row, key: 'card:' + row.item.id, kind: 'card' });
+}
 /** Fixed-size request within the card footprint; never scale or crop an iframe. */
 export function marketplaceAdSize(width, height) {
   if (!Number.isFinite(width) || !Number.isFinite(height)) return null;

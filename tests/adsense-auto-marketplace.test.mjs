@@ -149,3 +149,13 @@ test('ad-free navigation keeps client routing while eligible Free pages get a ne
   assert.equal(await needs(false,'/account','/cards',false,async()=>{throw Error('Should not query');}),false);
   assert.equal(await needs(true,'/cards','/cards',true,async()=>{throw Error('Should not query');}),false);
 });
+
+test('catalogue preview rows preserve all cards and stable order across result sizes',async()=>{
+  const {catalogueAdRows}=await import('../shared/adsense-policy.mjs');
+  for(const count of [0,1,6,8,30]){
+    const items=Array.from({length:count},(_,i)=>({id:'card-'+i})),original=structuredClone(items),rows=catalogueAdRows(items);
+    assert.deepEqual(rows.filter(r=>r.kind==='card').map(r=>r.item),items);
+    assert.equal(rows.filter(r=>r.kind==='ad').length,1);assert.equal(rows[Math.min(6,count)].kind,'ad');
+    assert.equal(new Set(rows.map(r=>r.key)).size,rows.length);assert.deepEqual(items,original);
+  }
+});

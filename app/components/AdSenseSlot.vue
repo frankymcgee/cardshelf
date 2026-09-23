@@ -2,7 +2,7 @@
 import { startAdSense } from '../../shared/adsense-browser.mjs'
 import { adFreePath, adsensePageKind, marketplaceAdSize } from '../../shared/adsense-policy.mjs'
 interface Placement { eligible: boolean; placeholder?: boolean; publisher_id?: string; slot_id?: string; revision?: number; auto_ads?: boolean; page_kind?: string }
-const props = defineProps<{ contentReady: boolean; autoOnly?: boolean; marketplace?: boolean; manualAllowed?: boolean; adFreeUrl?: string }>()
+const props = defineProps<{ contentReady: boolean; autoOnly?: boolean; grid?: boolean; marketplace?: boolean; manualAllowed?: boolean; adFreeUrl?: string }>()
 const api = useApi(), route = useRoute(), auth = useAuth()
 const placement = ref<Placement | null>(null), unit = ref<HTMLElement | null>(null), failed = ref(false), unsupported = ref(false), unfilled = ref(false), manualRetired = ref(false)
 const adminPreview = computed(() => auth.state.value.user?.role === 'admin' && auth.state.value.admin_placement_view === 'preview')
@@ -115,7 +115,7 @@ onBeforeUnmount(() => {
 })
 </script>
 <template>
-  <AutoPlacementPreview v-if="placeholder" :key="route.path" :path="path()" :administrator="adminPreview" :marketplace="marketplace" />
+  <AutoPlacementPreview v-if="placeholder" :key="route.path" :path="path()" :administrator="adminPreview" :marketplace="marketplace" :grid="grid" />
   <aside v-else-if="placement?.eligible && contentReady && manual && !failed && !unfilled" :class="marketplace ? 'market-card marketplace-ad' : 'adsense-slot'" aria-label="Advertisements">
     <template v-if="marketplace">
       <div class="market-card-photo market-ad-photo"><div class="market-ad-space" style="position:relative;aspect-ratio:5/7;width:100%;min-width:0">

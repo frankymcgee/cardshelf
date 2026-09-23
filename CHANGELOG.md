@@ -1,3 +1,8 @@
+## 0.36.0 — Auto ads previews inside card grids
+
+- Insert one card-sized Auto ads preview after the first six cards in public catalogue, Cards and marketplace grids. Preserve card order, result totals and pagination.
+- Keep a banner in Cards list view, hide grid previews on empty/private views, and preserve paid/protected eligibility rules. Grid previews use Auto ads only; Google chooses live placement.
+
 ## 0.35.0 — Responsive Google Auto ads previews
 
 - Replace generic placeholders with page-appropriate Auto banner sizes, responsive Multiplex grids, dismissible anchors and desktop side rails. All placeholders represent Auto ads; none require manual unit IDs.

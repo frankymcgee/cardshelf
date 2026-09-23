@@ -1,21 +1,22 @@
 <script setup lang="ts">
-const props = defineProps<{ path: string; administrator: boolean; marketplace?: boolean }>()
+const props = defineProps<{ path: string; administrator: boolean; marketplace?: boolean; grid?: boolean }>()
 const cleanPath = computed(() => (props.path.split('?')[0] || '/').replace(/\/$/, '') || '/')
-const format = computed(() => props.marketplace ? 'rectangle' : cleanPath.value === '/' ? 'billboard' : cleanPath.value === '/features' ? 'multiplex' : cleanPath.value === '/pricing' || cleanPath.value.startsWith('/explore/') ? 'rectangle' : 'leaderboard')
+const format = computed(() => props.grid || props.marketplace ? 'rectangle' : cleanPath.value === '/' ? 'billboard' : cleanPath.value === '/features' ? 'multiplex' : cleanPath.value === '/pricing' || cleanPath.value.startsWith('/explore/') ? 'rectangle' : 'leaderboard')
 const labels = { billboard: 'Auto banner · large', leaderboard: 'Auto banner · horizontal', rectangle: 'Auto banner · rectangle', multiplex: 'Auto Multiplex · responsive grid' }
 const marketing = computed(() => ['/', '/features', '/pricing'].includes(cleanPath.value))
-const anchorAllowed = computed(() => ['/', '/features', '/app', '/cards'].includes(cleanPath.value))
+const anchorAllowed = computed(() => !props.grid && ['/', '/features', '/app', '/cards'].includes(cleanPath.value))
 const anchorClosed = ref(false), railClosed = ref(false)
 watch(cleanPath, () => { anchorClosed.value = false; railClosed.value = false })
 </script>
 <template>
-  <aside id="cardshelf-placement-preview" class="placement-preview" :class="['format-' + format, { 'market-card': marketplace }]" aria-label="Google Auto ads placeholder" data-testid="ad-placeholder" :data-format="format">
-    <small class="placement-caption">ADVERTISEMENT · AUTO ADS PLACEHOLDER</small>
+  <aside id="cardshelf-placement-preview" class="placement-preview" :class="['format-' + format, { 'grid-placement': grid, 'market-card': marketplace && !grid }]" aria-label="Google Auto ads placeholder" data-testid="ad-placeholder" :data-format="format">
+    <small class="placement-caption">{{ grid ? 'ADVERTISEMENT · AUTO ADS' : 'ADVERTISEMENT · AUTO ADS PLACEHOLDER' }}</small>
     <div v-if="format === 'multiplex'" class="multiplex-grid" aria-hidden="true"><div v-for="n in 4" :key="n" class="multiplex-tile"><span>▧</span><i /><i /></div></div>
     <div v-else class="preview-space"><span aria-hidden="true">▧</span><strong>{{ labels[format] }}</strong><p>Advertising helps support free accounts.</p></div>
     <strong v-if="format === 'multiplex'" class="format-label">{{ labels[format] }}</strong>
-    <small class="preview-dimensions"><template v-if="format === 'billboard'"><span class="desktop-size">970 × 250</span><span class="mobile-size">320 × 100</span></template><template v-else-if="format === 'leaderboard'"><span class="desktop-size">728 × 90</span><span class="mobile-size">320 × 100</span></template><template v-else-if="format === 'rectangle'">300 × 250</template><template v-else>4 columns → 2 columns</template> · illustrative, responsive</small>
-    <small v-if="administrator" class="preview-note">Google determines the live position, size and fill. This is a local layout preview.</small>
+    <small v-if="!grid" class="preview-dimensions"><template v-if="format === 'billboard'"><span class="desktop-size">970 × 250</span><span class="mobile-size">320 × 100</span></template><template v-else-if="format === 'leaderboard'"><span class="desktop-size">728 × 90</span><span class="mobile-size">320 × 100</span></template><template v-else-if="format === 'rectangle'">300 × 250</template><template v-else>4 columns → 2 columns</template> · illustrative, responsive</small>
+    <small v-if="grid" class="preview-note">Advertising space · not a card listing</small>
+    <small v-if="administrator && !grid" class="preview-note">Google determines the live position, size and fill. This is a local layout preview.</small>
   </aside>
   <aside v-if="anchorAllowed && !anchorClosed" class="placement-anchor" :class="{ 'workspace-anchor': !marketing }" aria-label="Auto anchor placeholder" data-testid="placement-anchor">
     <div><small>ADVERTISEMENT · AUTO ANCHOR PREVIEW</small><strong>Responsive edge placement</strong><span>Illustrative size · 728 × 90 / 320 × 50</span></div>
@@ -35,5 +36,6 @@ watch(cleanPath, () => { anchorClosed.value = false; railClosed.value = false })
 @media(min-width:1800px) and (min-height:800px){.placement-rail{display:flex;position:fixed;right:16px;top:110px;width:160px;height:600px;z-index:25;padding:48px 12px 16px;flex-direction:column;align-items:center;justify-content:center;gap:25px}.placement-rail small{font-size:10px;line-height:1.6}.placement-rail>span{font-size:36px}.placement-rail strong{font-size:14px}}
 @media(min-width:768px){.workspace-anchor{left:calc(50% + 116px);width:min(728px,calc(100vw - 280px))}}
 @media(max-width:767px){.placement-preview{padding:12px;margin:24px auto}.format-billboard .preview-space,.format-leaderboard .preview-space{min-height:100px}.desktop-size{display:none}.mobile-size{display:inline}.multiplex-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.placement-anchor{min-height:70px;width:calc(100vw - 24px)}.workspace-anchor{bottom:calc(90px + env(safe-area-inset-bottom))}.placement-anchor span{display:none}}
+.grid-placement{margin:0!important;max-width:100%;height:100%;align-self:stretch;display:flex;flex-direction:column;justify-content:center;overflow-wrap:anywhere}.grid-placement .preview-space{min-height:0;flex:1;aspect-ratio:5/7}.grid-placement .preview-space strong{font-size:13px}.grid-placement .preview-note{font-size:10px}
 @media print{.placement-preview,.placement-anchor,.placement-rail{display:none!important}}
 </style>

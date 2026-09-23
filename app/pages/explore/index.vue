@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { catalogueAdRows } from '../../../shared/adsense-policy.mjs'
 import { GAMES, GAME_CODES, gameName } from '../../../shared/games.mjs'
 definePageMeta({ layout: 'marketing' })
 useMarketingSeo('Free card catalogue', 'Browse Pokémon, Yu-Gi-Oh! and Magic: The Gathering cards and available source prices without a subscription.', '/explore')
 const api = useApi(), route = useRoute()
 const game = ref(GAME_CODES.some(code => code === String(route.query.game)) ? String(route.query.game) : 'pokemon'), language = ref('en'), search = ref(''), set = ref(''), page = ref(1)
 const data = ref<any>(null), sets = ref<any[]>([]), error = ref(''), loading = ref(false)
+const gridRows = computed<any[]>(() => catalogueAdRows(data.value?.items))
 let sequence = 0, alive = true
 async function load() {
   const request = ++sequence; loading.value = true; error.value = ''
@@ -28,10 +30,9 @@ async function next(delta: number) { page.value += delta; await load() }
     <p v-if="error" class="alert warning" role="alert">{{ error }}</p>
     <p v-if="loading" class="muted" role="status">Loading the catalogue…</p>
     <p v-if="data" class="data-note">{{ data.total }} {{ gameName(game) }} catalogue entries on this server. Only imported sets are listed.</p>
-    <div v-if="data" class="public-card-grid"><NuxtLink v-for="card in data.items" :key="card.id" :to="'/explore/' + encodeURIComponent(card.id)" class="public-card-tile"><CardArtwork :card="card" :badges="false" effects-mode="off" /><strong>{{ card.name }}</strong><small>{{ card.set_name }} · #{{ card.local_id }}</small><span class="badge">{{ gameName(card.game) }}</span></NuxtLink></div>
+    <div v-if="data" class="public-card-grid"><template v-for="row in gridRows" :key="row.key"><AdSenseSlot v-if="row.kind === 'ad'" :content-ready="!!data?.items?.length && !error" grid auto-only /><NuxtLink v-else :to="'/explore/' + encodeURIComponent(row.item.id)" class="public-card-tile"><CardArtwork :card="row.item" :badges="false" effects-mode="off" /><strong>{{ row.item.name }}</strong><small>{{ row.item.set_name }} · #{{ row.item.local_id }}</small><span class="badge">{{ gameName(row.item.game) }}</span></NuxtLink></template></div>
     <p v-if="data && !data.items.length && !loading" class="empty-state">No cards match. The administrator can import more sets; no subscription is required to browse them.</p>
     <nav v-if="data" class="catalogue-pagination" aria-label="Catalogue pages"><button class="button secondary" :disabled="loading || page <= 1" @click="next(-1)">Previous</button><span>Page {{ page }} / {{ Math.max(1, Math.ceil(data.total / data.limit)) }}</span><button class="button secondary" :disabled="loading || page * data.limit >= data.total" @click="next(1)">Next</button></nav>
-    <AdSenseSlot :content-ready="!!data?.items?.length && !error" />
     <SponsorSlot placement="catalogue" />
     <CatalogueCredits />
   </div>

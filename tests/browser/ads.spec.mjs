@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
-async function fixtures(page,{blocked=false,rejectPreference=false}={}){
-  let mode='preview';const requests=[],errors=[];
+async function fixtures(page,{blocked=false,rejectPreference=false,count=1,hidden=false}={}){
+  let mode=hidden?'hidden':'preview';const requests=[],errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   page.on('request',r=>{if(/googlesyndication|doubleclick/.test(r.url()))requests.push(r.url());});
   await page.route('**/api/**',async route=>{
@@ -18,6 +18,7 @@ async function fixtures(page,{blocked=false,rejectPreference=false}={}){
     else if(path==='/api/marketplace/access')data={can_sell:false,can_enquire:false};
     else if(path==='/api/catalogue/facets')data={sets:[],rarities:[]};
     else if(path==='/api/ads/sponsor')data={eligible:false};
+    if(Array.isArray(data.items)){const sample=data.items[0];data.items=Array.from({length:count},(_,i)=>({...sample,id:sample.id+'-'+i}));data.total=count;}
     await route.fulfill({json:data});
   });
   return{requests,errors};
@@ -62,7 +63,7 @@ test('a rejected preference shows a recoverable error instead of silently reload
 
 test('Auto formats adapt across relevant pages without overflow or live requests',async({page})=>{
   const {requests,errors}=await fixtures(page,{blocked:true});
-  for(const [path,format] of [['/','billboard'],['/features','multiplex'],['/pricing','rectangle'],['/explore','leaderboard'],['/cards','leaderboard'],['/marketplace','rectangle']]){
+  for(const [path,format] of [['/','billboard'],['/features','multiplex'],['/pricing','rectangle'],['/explore','rectangle'],['/cards','rectangle'],['/marketplace','rectangle']]){
     await page.goto(path);const placement=page.getByTestId('ad-placeholder');
     await expect(placement).toHaveAttribute('data-format',format);await expect(placement).toBeVisible();
     const box=await placement.boundingBox();expect(box.width).toBeLessThanOrEqual(page.viewportSize().width);
@@ -70,6 +71,9 @@ test('Auto formats adapt across relevant pages without overflow or live requests
     if(path==='/features'){
       expect(await page.locator('.multiplex-grid').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(page.viewportSize().width<768?2:4);
       await placement.scrollIntoViewIfNeeded();await page.screenshot({path:`test-results/ads/multiplex-${test.info().project.name}.png`});
+    }
+    if(path==='/cards'){
+      await page.getByRole('button',{name:'List view',exact:true}).click();await expect(placement).toHaveAttribute('data-format','leaderboard');
     }
     if(path==='/cards' && page.viewportSize().width<768){
       const anchor=await page.getByTestId('placement-anchor').boundingBox(),nav=await page.locator('.mobile-nav').boundingBox();expect(anchor.y+anchor.height).toBeLessThanOrEqual(nav.y);
@@ -89,4 +93,31 @@ test('side rail uses only the unused widescreen margin and can be dismissed',asy
   await page.screenshot({path:`test-results/ads/rail-${test.info().project.name}.png`});
   await page.getByRole('button',{name:'Dismiss side rail preview'}).click();await expect(rail).toHaveCount(0);
   await page.goto('/');await page.setViewportSize({width:1024,height:768});await expect(page.getByTestId('placement-rail')).toBeHidden();
+});
+
+test('catalogue and marketplace grid previews follow six cards without replacing records',async({page})=>{
+  const {requests,errors}=await fixtures(page,{count:8,blocked:true});
+  for(const [path,gridSelector,cardSelector] of [['/explore','.public-card-grid','.public-card-tile'],['/cards','.card-grid','.card-tile'],['/marketplace','.market-grid','a.market-card']]){
+    await page.goto(path);const grid=page.locator(gridSelector),placement=grid.getByTestId('ad-placeholder');
+    await expect(grid.locator(cardSelector)).toHaveCount(8);await expect(placement).toHaveCount(1);
+    await expect(grid.locator(':scope > *').nth(6)).toHaveAttribute('data-testid','ad-placeholder');
+    await expect(placement).toHaveAttribute('data-format','rectangle');
+    expect(await placement.locator('a,button').count()).toBe(0);
+    const box=await placement.boundingBox(),card=await grid.locator(cardSelector).first().boundingBox();expect(Math.abs(box.width-card.width)).toBeLessThan(2);
+    await placement.scrollIntoViewIfNeeded();await page.screenshot({path:`test-results/ads/grid-${path.slice(1)}-${test.info().project.name}.png`});
+    if(path==='/cards'){
+      await expect(page.getByText('8 matching cards',{exact:true})).toBeVisible();
+      await page.getByRole('button',{name:'List view',exact:true}).click();await expect(page.getByTestId('ad-placeholder')).toHaveCount(1);
+      await page.getByRole('button',{name:'Grid view',exact:true}).click();await expect(grid.getByTestId('ad-placeholder')).toHaveCount(1);
+    }
+  }
+  await page.goto('/marketplace?mine=1');await expect(page.getByTestId('ad-placeholder')).toHaveCount(0);
+  expect(requests).toEqual([]);expect(errors).toEqual([]);
+});
+for(const options of [{count:0},{count:8,hidden:true}])test('empty or hidden grids have no preview '+JSON.stringify(options),async({page})=>{
+  await fixtures(page,options);
+  for(const path of ['/explore','/cards','/marketplace']){
+    await page.goto(path);await expect(page.getByTestId('ad-placeholder')).toHaveCount(0);
+    await expect(page.locator('.grid-placement')).toHaveCount(0);
+  }
 });
