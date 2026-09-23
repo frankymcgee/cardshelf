@@ -50,6 +50,7 @@ jobs:
       - name: Install scanner browser
         run: npx playwright install --with-deps chromium
       - run: npm run test:scanning-ui
+      - run: npm run test:ads-ui
       - name: Upload resolved lockfile and server log
         if: always()
         uses: actions/upload-artifact@v4

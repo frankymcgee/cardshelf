@@ -38,3 +38,9 @@ test('server HTML nonce pass covers inline modules, external scripts and modulep
   const out=nonceScriptTags(html,nonce);assert.equal((out.match(new RegExp('nonce="'+nonce+'"','g'))||[]).length,4);assert.ok(!out.includes('nonce="old"'));assert.ok(out.endsWith('<p>Card</p>'));
   assert.equal(nonceScriptTags(out,nonce),out);assert.throws(()=>nonceScriptTags(html,'bad'));
 });
+
+test('pending approval placeholders need no publisher, slots or approval confirmations',()=>{
+  const out=adsenseInput({enabled:false,verification_enabled:false,placeholders_enabled:true,revision:0,password:'test',reason:'Pending site approval'});
+  assert.equal(out.placeholders_enabled,true);assert.equal(adsenseReady(out),false);
+  assert.throws(()=>adsenseInput({...out,placeholders_enabled:'true'}));
+});

@@ -1,3 +1,9 @@
+## 0.34.0 — Ad placeholders and administrator viewing
+
+- Show local placeholders to eligible Free accounts before AdSense approval, without Google requests.
+- Administrators can choose Hidden, Placeholder preview or Live ads for their account in this browser. Private routes stay excluded.
+- Placeholder positions are illustrative; Google determines real Auto ads placement. Migration 022 defaults placeholders off.
+
 ## 0.33.0 — Automatic scan placement in binders
 
 - Choose a Pokémon Collection or Tracking binder before scanning and retain it for subsequent cards. Automatic placement reuses the exact printing's existing pocket or finds the first empty pocket across all pages.

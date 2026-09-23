@@ -106,3 +106,15 @@ test('component cleanup disconnects observers, timers and event listeners',async
   const h=harness();await h.mount();h.unmount();assert.equal(h.listeners.size,0);assert.equal(h.timers.length,0);
   assert.ok(h.resize.every(r=>r.disconnected));assert.ok(h.fill.every(r=>r.disconnected));await h.check();assert.equal(h.scripts.length,1);
 });
+
+test('placeholder works without a document nonce and never loads Google', async()=>{
+  const h=harness({autoOnly:true,response:{eligible:false,placeholder:true,page_kind:'marketplace',revision:99}});
+  h.doc.querySelector=()=>null;await h.mount();
+  assert.equal(h.placement.value.placeholder,true);assert.equal(h.scripts.length,0);
+  h.requestAd();assert.equal(h.scripts.length,0);
+  h.route.fullPath='/account';h.flush();await tick();assert.equal(h.placement.value,null);
+});
+test('a loaded ad switches to an ad-free document when placeholders are enabled',async()=>{
+  const h=harness();await h.mount();h.response({eligible:false,placeholder:true,page_kind:'marketplace'});await h.check();
+  assert.equal(h.redirects.length,1);assert.equal(h.scripts.length,1);
+});
