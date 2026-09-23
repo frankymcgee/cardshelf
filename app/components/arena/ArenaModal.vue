@@ -31,3 +31,8 @@ onBeforeUnmount(() => { dialog.value?.close(); restoreFocus() })
     <div class="arena-modal-body"><slot /></div>
   </dialog>
 </template>
+<style scoped>
+/* The generic .arena-button.quiet rule is 38px. The dialog's close target must
+   remain usable regardless of production stylesheet order or its slot parent. */
+.arena-modal-header > .arena-button { min-width: 44px; min-height: 44px; flex-shrink: 0; }
+</style>

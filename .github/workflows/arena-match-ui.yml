@@ -1,0 +1,59 @@
+name: Validate signed-in Arena match UI
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  match-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_USER: cardshelf
+          POSTGRES_PASSWORD: test-only-password
+          POSTGRES_DB: cardshelf_arena_browser_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U cardshelf -d cardshelf_arena_browser_test"
+          --health-interval 5s --health-timeout 5s --health-retries 15
+    env:
+      DATABASE_URL: postgresql://cardshelf:test-only-password@127.0.0.1:5432/cardshelf_arena_browser_test
+      APP_ORIGIN: http://127.0.0.1:3000
+      TEST_BASE_URL: http://127.0.0.1:3000
+      ALLOW_TEST_DATABASE: 'yes'
+      ARENA_BROWSER_TEST: 'yes'
+      BOOTSTRAP_TOKEN: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      CARDSHELF_INTEGRATION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      EMAIL_WORKER_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      - name: Install test browsers
+        run: npx playwright install --with-deps chromium webkit
+      - run: npm run build
+      - run: npm run migrate
+      - name: Start production Node server
+        run: |
+          npm start > /tmp/cardshelf-arena-browser.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/api/health; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/cardshelf-arena-browser.log
+          exit 1
+      - run: npm run test:arena-match
+      - name: Upload signed-in browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arena-match-ui-evidence
+          path: |
+            test-results/arena-match
+            playwright-report/arena-match
+            /tmp/cardshelf-arena-browser.log
