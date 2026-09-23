@@ -9,6 +9,8 @@ import {closeDatabase} from '../../lib/db.mjs';
 import {analyseCardScan,getCardScan,confirmCardScan,undoCardScan,scanAvailability} from '../../lib/card-scans.mjs';
 import {scanningAdminOverview} from '../../lib/card-scan-settings.mjs';
 import {ScanProviderError} from '../../lib/card-scan-provider.mjs';
+import {scanHash,scanReservation} from '../../lib/card-scan-logic.mjs';
+import {SCAN_DEFAULTS} from '../../shared/card-scanning.mjs';
 const base=process.env.TEST_BASE_URL,url=process.env.DATABASE_URL;
 if(process.env.ALLOW_TEST_DATABASE!=='yes'||!base||!new URL(url||'http://invalid').pathname.endsWith('_test')||!/^[a-f0-9]{64}$/i.test(process.env.CARDSHELF_INTEGRATION_KEY||''))throw Error('Use a disposable _test database and a synthetic encryption key.');
 const sql=postgres(url,{max:4}),origin=process.env.APP_ORIGIN||base,users=[],scanIds=[];
@@ -39,6 +41,12 @@ await test('card scanning receipts, spending limits and collection/binder writes
   const binderState=()=>sql`SELECT * FROM binders WHERE id=${binder}`.then(r=>r[0]);
   const body=async(overrides={})=>({printing_id:printing,condition:'UNKNOWN',quantity:2,entry_revision:(await entry())?.revision??0,confirm:true,...overrides});
   const expectError=(run,status)=>assert.rejects(run,e=>e.status===status);
+  async function changeSettings(overrides={}){
+    const current=(await request('/api/admin/scanning',{user:admin})).data.settings;
+    return request('/api/admin/scanning',{user:admin,method:'POST',body:{revision:current.revision,password,enabled:current.enabled,
+      monthly_budget_usd:current.monthly_budget_micros/1e6,user_monthly_limit:current.user_monthly_limit,
+      input_usd_per_million:current.input_price_micros/1e6,output_usd_per_million:current.output_price_micros/1e6,...overrides}});
+  }
   try{
     admin=await account('admin');owner=await account();other=await account();
     await sql`INSERT INTO card_sets(id,provider_id,language,name) VALUES(${setId},${group},'en','Synthetic scanner set')`;
@@ -61,12 +69,45 @@ await test('card scanning receipts, spending limits and collection/binder writes
     });
     await t.test('admin password and settings revision protect the encrypted provider credential',async()=>{
       const current=(await request('/api/admin/scanning',{user:admin})).data.settings;
+      for(const [key,value] of Object.entries(SCAN_DEFAULTS))assert.equal(current[key],value,'Upgrade preserves '+key);
       const settings={revision:current.revision,password,api_key:apiKey,enabled:true,monthly_budget_usd:5,user_monthly_limit:100,input_usd_per_million:.4,output_usd_per_million:1.6};
       assert.equal((await request('/api/admin/scanning',{user:admin,method:'POST',body:{...settings,password:'wrong'}})).status,403);
       const saved=await request('/api/admin/scanning',{user:admin,method:'POST',body:settings});assert.equal(saved.status,200,JSON.stringify(saved.data));secretFree(saved.data);
       assert.equal((await request('/api/admin/scanning',{user:admin,method:'POST',body:settings})).status,409);
       const [stored]=await sql`SELECT api_secret FROM card_scan_settings`;assert.ok(stored.api_secret.startsWith('v1.'));assert.ok(!stored.api_secret.includes(apiKey));
       assert.equal((await scanAvailability(owner.id)).available,true);
+    });
+    await t.test('admin settings persist long prompts and each in-flight scan keeps its original configuration and prices',async()=>{
+      const custom={...SCAN_DEFAULTS,model:'synthetic-reasoner',reasoning_effort:'high',reasoning_mode:'pro',image_detail:'auto',
+        max_output_tokens:4096,input_token_ceiling:32768,request_timeout_seconds:120,prompt:'日本語'.repeat(2000)};
+      const saved=await changeSettings({...custom,input_usd_per_million:.1,output_usd_per_million:.2});assert.equal(saved.status,200,JSON.stringify(saved.data));
+      for(const [key,value] of Object.entries(custom))assert.equal(saved.data[key],value);secretFree(saved.data);
+      const partial=await changeSettings();assert.equal(partial.status,200);assert.equal(partial.data.prompt,custom.prompt,'An older client must not reset new fields');
+      const reservation=scanReservation({...custom,input_price_micros:100000,output_price_micros:200000});assert.equal(partial.data.reservation_micros,reservation);
+      const u=upload();let release,started,captured;
+      const gate=new Promise(r=>release=r),entered=new Promise(r=>started=r);
+      const pending=analyse(u,owner,async({config})=>{captured=config;started();await gate;return {...result,output_tokens:1500,resolved_model:'synthetic-reasoner-2026-09-23'};});
+      await entered;
+      try{
+        assert.deepEqual(captured,custom);assert.equal(Number((await row(u.request_id)).accounted_micros),reservation);
+        // Restore the defaults while the previous model is still working.
+        const reset=await changeSettings({...SCAN_DEFAULTS,input_usd_per_million:.4,output_usd_per_million:1.6});assert.equal(reset.status,200);
+        await sql`UPDATE card_scans SET created_at=now()-interval '150 seconds' WHERE id=${u.request_id}`;
+        assert.equal((await getCardScan(owner.id,u.request_id)).status,'processing','Receipt uses its own longer timeout');
+        await expectError(()=>analyse(upload(),other),429);
+      }finally{release();await pending;}
+      const stored=await row(u.request_id);assert.equal(stored.status,'ready');assert.equal(stored.model,custom.model);
+      assert.equal(stored.settings_revision,partial.data.revision);assert.equal(stored.reasoning_effort,'high');assert.equal(stored.reasoning_mode,'pro');
+      assert.equal(stored.prompt_hash,scanHash(custom.prompt));assert.equal(stored.resolved_model,'synthetic-reasoner-2026-09-23');
+      assert.equal(stored.max_output_tokens,4096);assert.equal(stored.input_token_ceiling,32768);assert.equal(Number(stored.accounted_micros),500,'Use saved prices, including reasoning output');
+      const report=(await request('/api/admin/scanning',{user:admin})).data;
+      assert.equal(report.models.find(m=>m.model===custom.model).accounted_micros,'500');
+      const receipt=await getCardScan(owner.id,u.request_id);assert.ok(!JSON.stringify(receipt).includes(custom.prompt));
+      assert.ok(!JSON.stringify(await sql`SELECT detail FROM audit_log WHERE action LIKE 'scanning.%'`).includes(custom.prompt));
+      for(const patch of [{reasoning_effort:'unsupported'},{prompt:''},{model:'https://evil.test'},{max_output_tokens:32769}])assert.equal((await changeSettings(patch)).status,400);
+      assert.equal((await request('/api/admin/scanning',{user:owner,method:'POST',body:{...custom,password}})).status,403);
+      assert.equal((await request('/api/scans',{user:owner,method:'POST',body:{...upload(),model:custom.model}})).status,400);
+      assert.equal((await request('/api/admin/scanning',{user:admin,method:'POST',body:{prompt:'x'.repeat(66000)}})).status,413);
     });
     await t.test('receipt replay calls the provider once and never exposes another account or raw photos',async()=>{
       const u=upload(),a=await analyse(u),before=calls;assert.equal(a.status,'ready');assert.equal(a.candidates[0].id,cardId);
@@ -102,6 +143,16 @@ await test('card scanning receipts, spending limits and collection/binder writes
       assert.equal(bad.status,'failed');assert.equal(Number((await row(bad.id)).accounted_micros),0);assert.equal((await row(bad.id)).settled,true);
       await sql`UPDATE card_scans SET status='processing',created_at=now()-interval '3 minutes' WHERE id=${u.request_id}`;
       assert.equal((await getCardScan(owner.id,u.request_id)).status,'failed');assert.equal((await row(u.request_id)).error_code,'interrupted');
+    });
+    await t.test('late usage violations do not disable a newer administrator configuration',async()=>{
+      let release,started;const gate=new Promise(r=>release=r),entered=new Promise(r=>started=r),u=upload();
+      const pending=analyse(u,owner,async()=>{started();await gate;return {...result,observation:null,input_tokens:17000,bounds_exceeded:true};});
+      await entered;
+      try{const saved=await changeSettings({input_token_ceiling:32768});assert.equal(saved.status,200);}
+      finally{release();await pending;}
+      assert.equal((await scanAvailability(owner.id)).enabled,true);
+      assert.equal((await row(u.request_id)).settled,true);
+      assert.equal((await changeSettings({input_token_ceiling:16384})).status,200);
     });
     await t.test('confirmed additions are atomic, idempotent and undoable without discarding notes or wishlist',async()=>{
       await sql`INSERT INTO collection_entries(user_id,printing_id,condition,quantity,notes,wishlist) VALUES(${owner.id},${printing},'UNKNOWN',3,'Keep these notes',true)`;

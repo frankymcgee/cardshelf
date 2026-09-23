@@ -1,3 +1,10 @@
+## 0.32.0 — Configurable card recognition
+
+- Edit the OpenAI model name, reasoning effort/mode, image detail, output allowance, timeout and recognition prompt from the scanning admin page, with a restore-default prompt action.
+- Set model-specific token prices and preview the scan reservation before saving. Retain each scan's original settings and prices while administrators make changes.
+- Record requested and returned model names, show usage by model, accept model aliases, and explain unsupported configurations or insufficient output allowances.
+- Preserve existing defaults through additive migration 021; keep credentials encrypted, member overrides blocked, and collection additions explicitly confirmed.
+
 ## 0.31.2 — Arena browser runner storage
 
 - Free unused preinstalled Android and .NET SDK storage before the signed-in Arena browser job, which exhausted disk space while closing a WebKit tournament session.

@@ -1,12 +1,13 @@
 import {test,expect} from '@playwright/test';
 import sharp from 'sharp';
+import {SCAN_DEFAULTS,SCAN_PROMPT} from '../../shared/card-scanning.mjs';
 const cardId='en:scan-fixture-025',normal='11111111-1111-4111-8111-111111111111',holo='22222222-2222-4222-8222-222222222222',binderId='33333333-3333-4333-8333-333333333333';
 const fixtureImage=await sharp(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560"><rect width="400" height="560" rx="18" fill="#f4d24d"/><rect x="20" y="50" width="360" height="220" fill="#d8eaca"/><text x="25" y="35" font-size="20">Synthetic scanner card</text><text x="25" y="530" font-size="20">025 / 100 · TEST</text></svg>')).png().toBuffer();
 const card={id:cardId,game:'pokemon',language:'en',name:'Synthetic scanner card',local_id:'025',set_name:'Scanner test set',image_url:'data:image/png;base64,'+fixtureImage.toString('base64'),printings:[{id:normal,key:'normal',label:'Normal'},{id:holo,key:'holo',label:'Holo'}],entries:[{printing_id:holo,condition:'UNKNOWN',quantity:2,revision:7}],match_evidence:['Card number','Name'],match_strength:'Multiple details match'};
 const binder={id:binderId,title:'My collection binder',game:'pokemon',binder_type:'collection',columns:2,rows:2,page_count:2,revision:4,slots:[{position:1,printing_id:normal}]};
 async function fixtures(page,{noMatches=false,lostConfirmation=false,disabled=false}={}){
   let receipt=null;const calls=[],errors=[];
-  let settings={revision:1,enabled:false,api_key_set:false,key_available:true,monthly_budget_micros:0,user_monthly_limit:100,input_price_micros:400000,output_price_micros:1600000,model_label:'GPT-4.1 mini',model:'gpt-4.1-mini-2025-04-14',price_checked:'2026-09-23',reservation_micros:7783};
+  let settings={...SCAN_DEFAULTS,revision:1,enabled:false,api_key_set:false,key_available:true,monthly_budget_micros:0,user_monthly_limit:100,input_price_micros:400000,output_price_micros:1600000,reservation_micros:7783};
   page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/api/**',async route=>{
     const request=route.request(),path=decodeURIComponent(new URL(request.url()).pathname),method=request.method(),body=method==='POST'?request.postDataJSON():null;
@@ -26,8 +27,8 @@ async function fixtures(page,{noMatches=false,lostConfirmation=false,disabled=fa
     }else if(path.endsWith('/undo')){receipt={...receipt,status:'undone'};data=receipt;}
     else if(path.startsWith('/api/scans/'))data=receipt;
     else if(path==='/api/admin/scanning'){
-      if(method==='POST'){settings={...settings,...body,revision:settings.revision+1,monthly_budget_micros:body.monthly_budget_usd*1e6,api_key_set:!!body.api_key};delete settings.api_key;delete settings.password;data=settings;}
-      else data={settings,totals:{scans:3,recognised:3,confirmed:2,uncertain:0,accounted_micros:2880,measured_micros:2880,average_duration_ms:3500},users:[],history:[]};
+      if(method==='POST'){settings={...settings,...body,revision:settings.revision+1,monthly_budget_micros:body.monthly_budget_usd*1e6,input_price_micros:body.input_usd_per_million*1e6,output_price_micros:body.output_usd_per_million*1e6,api_key_set:!!body.api_key||settings.api_key_set};delete settings.api_key;delete settings.password;data=settings;}
+      else data={settings,totals:{scans:3,recognised:3,confirmed:2,uncertain:0,accounted_micros:2880,measured_micros:2880,average_duration_ms:3500},users:[],history:[],models:[{model:SCAN_DEFAULTS.model,resolved_model:SCAN_DEFAULTS.model,reasoning_effort:null,reasoning_mode:null,scans:3,failed:0,accounted_micros:2880,average_duration_ms:3500}]};
     }else return route.fulfill({status:404,json:{message:'Unexpected fixture path '+path}});
     await route.fulfill({json:data});
   });
@@ -94,4 +95,40 @@ test('scanning unavailable gives a clear setup message and disables capture',asy
   await fixtures(page,{disabled:true});await page.goto('/scan');
   await expect(page.getByText('Photo scanning has not been enabled by an administrator.')).toBeVisible();
   await expect(page.locator('input[type=file]')).toBeDisabled();
+});
+test('admin edits model, reasoning, prompt and cost limits, then restores the prompt without losing other settings',async({page},info)=>{
+  const {calls,errors}=await fixtures(page);await page.goto('/admin/scanning');
+  await expect(page.getByLabel('Recognition prompt',{exact:true})).toHaveValue(SCAN_PROMPT);
+  await page.getByLabel('Model name',{exact:true}).fill('synthetic-reasoner');
+  await page.getByRole('combobox',{name:'Reasoning effort',exact:true}).selectOption('high');
+  await page.getByRole('combobox',{name:'Reasoning mode',exact:true}).selectOption('pro');
+  await page.getByLabel('Maximum output tokens',{exact:true}).fill('4096');
+  await page.getByRole('combobox',{name:'Image detail',exact:true}).selectOption('auto');
+  const prompt='Read the printed number first.\nPreserve Japanese names: ピカチュウ.';
+  await page.getByLabel('Recognition prompt',{exact:true}).fill(prompt);
+  await page.getByText('Request limits',{exact:true}).click();
+  await page.getByLabel('Request timeout (seconds)',{exact:true}).fill('120');
+  await page.getByLabel('Input token reservation',{exact:true}).fill('32768');
+  await page.getByLabel('USD per million input tokens',{exact:true}).fill('0.1');
+  await page.getByLabel('USD per million output tokens',{exact:true}).fill('0.2');
+  await expect(page.getByTestId('scan-reservation')).toContainText('$0.0041');
+  await page.getByLabel('Confirm your administrator password').fill('synthetic password');
+  await page.getByRole('button',{name:'Save scanning settings'}).click();
+  await expect(page.getByText('Scanning settings saved.')).toBeVisible();
+  const saves=()=>calls.filter(c=>c.path==='/api/admin/scanning'&&c.method==='POST');expect(saves()).toHaveLength(1);
+  expect(saves()[0].body).toMatchObject({model:'synthetic-reasoner',reasoning_effort:'high',reasoning_mode:'pro',max_output_tokens:4096,image_detail:'auto',request_timeout_seconds:120,input_token_ceiling:32768,prompt,input_usd_per_million:.1,output_usd_per_million:.2});
+  await page.reload();await expect(page.getByLabel('Recognition prompt',{exact:true})).toHaveValue(prompt);
+  await expect(page.getByLabel('Model name',{exact:true})).toHaveValue('synthetic-reasoner');
+  await expect(page.getByRole('combobox',{name:'Reasoning effort',exact:true})).toHaveValue('high');
+  await expect(page.getByLabel('USD per million input tokens',{exact:true})).toHaveValue('0.1');
+  await noOverflow(page);await page.screenshot({path:info.outputPath('admin-model-settings.png'),fullPage:true});
+  await page.getByRole('button',{name:'Restore default prompt'}).click();expect(saves()).toHaveLength(1);
+  await expect(page.getByLabel('Recognition prompt',{exact:true})).toHaveValue(SCAN_PROMPT);
+  await page.getByRole('combobox',{name:'Reasoning effort',exact:true}).selectOption({label:'Model default · omit setting'});
+  await page.getByRole('combobox',{name:'Reasoning mode',exact:true}).selectOption({label:'Model default · omit setting'});
+  await page.getByLabel('Confirm your administrator password').fill('synthetic password');
+  await page.getByRole('button',{name:'Save scanning settings'}).click();
+  await expect(page.getByText('Scanning settings saved.')).toBeVisible();expect(saves()).toHaveLength(2);
+  expect(saves()[1].body).toMatchObject({model:'synthetic-reasoner',reasoning_effort:null,reasoning_mode:null,prompt:SCAN_PROMPT,max_output_tokens:4096});
+  expect(errors).toEqual([]);
 });
