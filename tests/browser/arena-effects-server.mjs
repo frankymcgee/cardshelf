@@ -10,8 +10,8 @@ const root = fileURLToPath(new URL('../../', import.meta.url)), require = create
 const files = new Map([
   ['/vue.js', path.join(path.dirname(require.resolve('vue/package.json')), 'dist/vue.esm-browser.prod.js')],
   ...[...fs.readdirSync(path.join(root, 'app/components/arena')).filter(n => n.endsWith('.vue')).map(n => 'app/components/arena/' + n),
-    'shared/arena.mjs', 'shared/arena-effects.mjs', 'tests/helpers/arena-table-fixtures.mjs', 'tests/browser/arena-effects-app.mjs',
-    ...['main', 'arena', 'arena-table', 'arena-interactions', 'arena-effects', 'arena-perspective'].map(n => 'app/assets/css/' + n + '.css')].map(file => ['/' + file, path.join(root, file)])
+    'shared/arena.mjs', 'shared/arena-art.mjs', 'shared/arena-effects.mjs', 'tests/helpers/arena-table-fixtures.mjs', 'tests/browser/arena-effects-app.mjs',
+    ...['main', 'arena', 'arena-table', 'arena-interactions', 'arena-effects', 'arena-perspective', 'arena-card-art', 'arena-scene'].map(n => 'app/assets/css/' + n + '.css')].map(file => ['/' + file, path.join(root, file)])
 ]);
 const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Arena effects fixture</title>'
   + [...files.keys()].filter(n => n.endsWith('.css')).map(n => `<link rel="stylesheet" href="${n}">`).join('')
@@ -20,6 +20,7 @@ const server = http.createServer((req, res) => {
   try {
     const name = new URL(req.url, 'http://127.0.0.1').pathname; res.setHeader('Cache-Control', 'no-store');
     if (name === '/') { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(html); return; }
+    if (/^\/arena\/(collector-room|walnut|card-back|training-art|navy-fabric)\.webp$/.test(name)) { res.setHeader('Content-Type', 'image/webp'); res.end(fs.readFileSync(path.join(root, 'public', name))); return; }
     const file = files.get(name); if (!file) { res.writeHead(404); res.end('Not found'); return; }
     let content = fs.readFileSync(file, 'utf8');
     if (name.endsWith('.vue')) {
