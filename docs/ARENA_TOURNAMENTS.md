@@ -1,4 +1,4 @@
-# Arena tournaments — v0.30.0
+# Arena tournaments — v0.30.1
 
 Administrators create private single-elimination events at `/arena/tournaments`.
 Invite an existing member by their registered email. Invitations appear in that

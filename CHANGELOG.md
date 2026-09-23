@@ -1,3 +1,8 @@
+## 0.30.1 — Commentary presentation and tournament fixtures
+
+- Keep the commentary table inside tablet viewports, use neutral spectator captions, and identify the source pairing for future bracket slots.
+- Resolve the coin toss before completing both opening fields in tournament test fixtures, so either random toss outcome is covered reliably.
+
 ## 0.30.0 — Invited tournaments and live commentary
 
 - Add private 2–64-player single-elimination events with in-app invitations, registered deck snapshots, random seeds, byes and automatic winner advancement.

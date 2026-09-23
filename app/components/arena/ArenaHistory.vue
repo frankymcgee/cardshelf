@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { arenaHistoryRows } from '../../../shared/arena-match-ui.mjs'
-const props = defineProps<{ events: any[]; seat: number; aliases: string[] }>()
+const props = defineProps<{ events: any[]; seat: number; aliases: string[]; spectator?: boolean }>()
 const query = ref(''), filter = ref('all')
 const rows = computed(() => arenaHistoryRows(props.events, props.seat, filter.value, query.value))
 function actor(seat: number | null) { return seat === null ? 'Table' : props.aliases?.[seat] || (seat === props.seat ? 'You' : 'Opponent') }
@@ -11,7 +11,7 @@ function actor(seat: number | null) { return seat === null ? 'Table' : props.ali
     <p>Most recent disclosed events, newest first. This is a bounded activity log, not a complete replay or a view of hidden cards.</p>
     <div class="arena-history-filters">
       <label>Search history<input v-model="query" type="search" maxlength="80" placeholder="Search event text or revealed names" autocomplete="off"></label>
-      <label>Show events<select v-model="filter"><option value="all">All players</option><option value="mine">Your actions</option><option value="opponent">Opponent actions</option><option value="table">Table events</option></select></label>
+      <label>Show events<select v-model="filter"><option value="all">All players</option><option value="mine">{{ spectator ? aliases[seat] + ' actions' : 'Your actions' }}</option><option value="opponent">{{ spectator ? aliases[1 - seat] + ' actions' : 'Opponent actions' }}</option><option value="table">Table events</option></select></label>
     </div>
     <p class="arena-history-count" role="status">{{ rows.length }} matching {{ rows.length === 1 ? 'event' : 'events' }} in the latest available history.</p>
     <ol v-if="rows.length" class="arena-history-events">

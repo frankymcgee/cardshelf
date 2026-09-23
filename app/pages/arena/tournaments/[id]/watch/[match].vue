@@ -45,7 +45,7 @@ onBeforeUnmount(() => { alive = false; clearInterval(timer); window.removeEventL
       <p v-if="!stream" class="arena-muted">Capture this window in your streaming software. Stream view removes the main navigation. This page grants no player controls and never receives hands, face-down Prize identities, deck lists or decision choices.</p>
       <ArenaModal :open="!!current" label="Public card details" @close="selected = ''"><ArenaCardPreview v-if="current" :unit="current" :parent="parent" :selected="selected" @select="inspect" /></ArenaModal>
       <ArenaModal :open="discardSeat !== null && !!table" :label="aliases[discardSeat ?? 0] + ' · Public discard'" @close="discardSeat = null"><template v-if="discardSeat !== null && table"><div class="arena-discard-grid"><ArenaCard v-for="unit in table.players[discardSeat].discard" :key="unit.id" :unit="unit" @select="inspect" /></div><p v-if="!table.players[discardSeat].discard.length">No discarded cards.</p></template></ArenaModal>
-      <ArenaModal :open="showHistory && !!table" label="Public match history" @close="showHistory = false"><ArenaHistory v-if="showHistory && table" :events="table.events" :seat="0" :aliases="aliases" /></ArenaModal>
+      <ArenaModal :open="showHistory && !!table" label="Public match history" @close="showHistory = false"><ArenaHistory v-if="showHistory && table" :events="table.events" :seat="0" :aliases="aliases" spectator /></ArenaModal>
     </template>
   </ArenaShell>
 </template>

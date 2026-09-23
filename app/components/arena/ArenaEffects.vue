@@ -78,6 +78,7 @@ async function update() {
   if (!plan.moves.length && !plan.impacts.length && !plan.cues.length) return
   await nextTick()
   if (!mounted || ticket !== generation || !props.available || document.hidden || !enabled.value) return
+  if (props.table.spectator) for (const cue of plan.cues) if (cue.kind === 'result') cue.text = 'Match complete'
   cues.value = plan.cues
   if (!reduced.value) {
     const destination = positions()

@@ -1,6 +1,6 @@
 import { test, expect, json } from './arena-match-fixtures.mjs';
 import { randomUUID } from 'node:crypto';
-import { cpuAction } from '../../lib/arena/bot.mjs';
+import { prepareTournamentOpening } from '../helpers/arena-tournament-setup.mjs';
 const baseURL = process.env.TEST_BASE_URL, headers = { Origin: baseURL, 'X-Requested-With': 'cardshelf' };
 async function client(browser, member) {
   const context = await browser.newContext({ baseURL, serviceWorkers: 'block', viewport: { width: 1440, height: 1000 } });
@@ -62,7 +62,7 @@ test('commentary is read-only, mobile-friendly and removed after administrator r
     const view = context => context.request.get('/api/arena/matches/' + id).then(json);
     async function move(context, action) { const before = await view(context); return json(await context.request.post('/api/arena/matches/' + id + '/actions', { headers, data: { revision: before.revision, request_id: randomUUID(), action } })); }
     await move(host, { type: 'ready' }); await move(guest, { type: 'ready' }); await move(host, { type: 'start' });
-    for (let i = 0; i < 40; i++) { const a = await view(host), b = await view(guest); if (a.table.phase !== 'setup' && !a.table.prompt && !b.table.prompt) break; const [ctx, current] = a.table.prompt || a.table.legal.length ? [host, a] : [guest, b]; await move(ctx, cpuAction(current.table)); }
+    await prepareTournamentOpening([host, guest], view, move);
     const page = await f.ac.newPage(), writes = []; page.on('request', r => { if (new URL(r.url()).pathname.startsWith('/api/') && r.method() !== 'GET') writes.push(r.url()); });
     const response = page.waitForResponse(r => r.url().includes('/spectate/' + id)); await page.goto('/arena/tournaments/' + f.id() + '/watch/' + id); const spectator = await json(await response);
     expect(spectator.table.players.every(p => p.hand.length === 0)).toBe(true); expect(spectator.table.prompt).toBeNull(); expect(spectator.table.legal).toEqual([]);

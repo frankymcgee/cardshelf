@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import postgres from 'postgres';
 import { hashPassword, randomToken, digest } from '../../lib/security.mjs';
-import { cpuAction } from '../../lib/arena/bot.mjs';
+import { prepareTournamentOpening } from '../helpers/arena-tournament-setup.mjs';
 import { lockArenaTournament, recordTournamentResult } from '../../lib/arena/tournament-state.mjs';
 const base = process.env.TEST_BASE_URL, dbUrl = process.env.DATABASE_URL;
 if (process.env.ALLOW_TEST_DATABASE !== 'yes' || !base || !new URL(dbUrl || 'http://invalid').pathname.endsWith('_test')) throw Error('Use the disposable _test database only.');
@@ -114,7 +114,7 @@ await test('Invited Arena tournaments and private administrator commentary', asy
       for (const p of stored.state.players) for (const unit of [...p.deck, ...p.hand, ...p.prizes, ...(p.active ? [p.active] : [])]) assert.ok(!encoded.includes(unit.id));
       for (const key of ['host_deck', 'guest_deck', 'state', 'invite_hash', 'request_hash']) assert.ok(!Object.hasOwn(watched, key));
       assert.deepEqual(watched.table.legal, []); assert.equal(watched.table.prompt, null);
-      for (let n = 0; n < 40; n++) { const h = await view(host), g = await view(guest); if (h.table.phase !== 'setup' && !h.table.prompt && !g.table.prompt) break; const choice = h.table.prompt || h.table.legal.length ? [host, h] : [guest, g]; const action = cpuAction(choice[1].table); assert.ok(action); await move(choice[0], action); }
+      await prepareTournamentOpening([host, guest], user => view(user), (user, action) => move(user, action));
       watched = ok(await request(path, admin)); assert.ok(watched.table.players.every(p => p.active?.card && p.hand.length === 0));
       await sql`UPDATE app_users SET role='user' WHERE id=${admin.id}`; assert.equal((await request(path, admin)).status, 403); await sql`UPDATE app_users SET role='admin' WHERE id=${admin.id}`;
       // Even an administrator with player entitlement gains no seat/action rights.

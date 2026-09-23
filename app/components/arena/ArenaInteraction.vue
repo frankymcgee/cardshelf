@@ -3,7 +3,7 @@ import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { arenaHandOptions, arenaInteractionStamp } from '../../../shared/arena.mjs'
 import ArenaCard from './ArenaCard.vue'
 import ArenaModal from './ArenaModal.vue'
-const props = defineProps<{ table: any; selected?: string; locked?: boolean }>()
+const props = defineProps<{ table: any; selected?: string; locked?: boolean; spectator?: boolean }>()
 const emit = defineEmits<{ select: [unit: any]; action: [action: any] }>()
 const surface = ref<HTMLElement | null>(null), gesture = ref<any>(null), review = ref<any>(null), hint = ref('')
 const options = computed<any[]>(() => arenaHandOptions(props.table, props.locked))
@@ -129,7 +129,7 @@ onBeforeUnmount(() => {
 <template>
   <div ref="surface" class="arena-play-surface" :class="{ 'is-arena-dragging': !!dragUnit }" @click.capture="swallowClick" @lostpointercapture="lostCapture">
     <slot v-bind="{ playable, targets, over, beginDrag, chooseTargets }" />
-    <p class="arena-play-status" role="status" aria-live="polite">{{ hint || 'Highlighted hand cards have a server-provided move. Select first; confirm before playing.' }}</p>
+    <p v-if="!spectator" class="arena-play-status" role="status" aria-live="polite">{{ hint || 'Highlighted hand cards have a server-provided move. Select first; confirm before playing.' }}</p>
     <div v-if="dragUnit" class="arena-drag-ghost" :style="ghostStyle" aria-hidden="true"><ArenaCard :unit="dragUnit" :tabindex="-1" /><span>{{ over ? 'Release to review' : 'Choose a highlighted target' }}</span></div>
     <ArenaModal :open="!!review && !!reviewUnit" label="Confirm card play" @close="review = null">
       <template v-if="reviewUnit">

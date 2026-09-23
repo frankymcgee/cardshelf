@@ -27,7 +27,7 @@ const turnLabel = computed(() => {
 })
 </script>
 <template>
-  <ArenaInteraction v-slot="interaction" :table="table" :selected="selected" :locked="locked" @select="emit('select', $event)" @action="emit('action', $event)">
+  <ArenaInteraction v-slot="interaction" :table="table" :selected="selected" :locked="locked" :spectator="spectator" @select="emit('select', $event)" @action="emit('action', $event)">
   <ArenaTable :focus-zone="focusZone">
     <template v-for="seat in sides" :key="seat">
       <ArenaPlayerZone :player="publicPlayer(seat)" :alias="alias(seat)" :seat="seat" :self="seat === self" :spectator="spectator" :turn="table.turn === seat && table.phase === 'playing'" :setup="table.phase === 'setup'" :turn-number="table.turn_number" :selected="selected" :hit="hit" :targets="interaction.targets" :over="interaction.over" @select="emit('select', $event)" @discard="emit('discard', $event)" />
