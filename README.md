@@ -1,4 +1,4 @@
-# CardShelf 0.32.0
+# CardShelf 0.33.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -6,10 +6,13 @@ binders, quick tracking, artwork effects, binder themes and a member marketplace
 
 ## Card photo scanning
 
-Open **Collection → Scan a card**, or start from a Pokémon Collection binder.
+Open **Collection → Scan a card**, or start from a Pokémon Collection or Tracking binder.
 Take or upload one English or Japanese card photo, review catalogue matches,
 choose its printing and condition, then confirm the copies to add. Optional binder
-placement and guarded Undo keep the collection and layout consistent.
+placement finds an existing matching pocket or the first empty pocket automatically.
+Choose another empty Collection pocket for an extra placement, or mark a prepared
+Tracking pocket collected. The selected binder is retained between scans, and
+guarded Undo restores the changes made by that scan.
 
 Scanning starts disabled. **More → Card scanning** lets administrators save an
 encrypted OpenAI API key, choose the model and reasoning settings, edit the
