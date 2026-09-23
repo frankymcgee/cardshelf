@@ -1,3 +1,13 @@
+## 0.25.0 — Arena UI refresh, Phase 5
+
+- Add focused table viewing without browser fullscreen, new storage or scroll locking. Keep Exit focus, action controls, inspection and required decisions accessible.
+- Add contextual setup/turn/connection/decision/result guidance and viewer-relative public Prize counts, without reading hidden arrays or inferring a winner.
+- Confirm manual End turn through the existing modal. Bind review to the current match/revision/rules/seat/turn, recheck the current legal action on confirmation and cancel on locks, state changes, blur or hidden tabs.
+- Move Help and History into scrollable dialogs; add bounded newest-first history search and player filters using only already-disclosed event text and revealed names.
+- Clear recovered read errors only when no uncertain action is pending. Preserve the identical request ID and payload for uncertain-response retries.
+- Add pure/component regression tests and a signed-in Chromium/WebKit production-build suite on isolated PostgreSQL, while retaining the full existing CI and browser gates.
+- Synchronise release stamps. No engine, compiler, API, database migration, dependency, billing, Postal or deployment change. See docs/ARENA_UI_PHASE5.md for validation scope.
+
 ## 0.24.0 — Arena UI refresh, Phase 4
 
 - Add a bounded effects layer for acknowledged card movement, attacks, exact server damage, conditions, healing, coin results, Stadium changes, turns and match results. The real board updates immediately and remains interactive.
