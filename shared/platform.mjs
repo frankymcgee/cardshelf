@@ -1,6 +1,6 @@
 // Public routes are explicit. All other UI routes continue to require sign-in.
 import { gameFromCardId } from './games.mjs';
-export const PUBLIC_PAGES = ['/', '/features', '/pricing', '/early-access', '/privacy', '/explore', '/register'];
+export const PUBLIC_PAGES = ['/', '/features', '/pokemon-arena', '/pricing', '/early-access', '/privacy', '/explore', '/register'];
 export const CURRENT_FEATURES = [
   { code: 'tracking_binders', label: 'Quick-add tracking binders' },
   { code: 'collection', label: 'Collection and variant tracking' },

@@ -1,3 +1,10 @@
+## 0.28.0 — Arena on the public website
+
+- Introduce a public Pokémon Arena page with product screenshots, play modes, interface highlights and answers to common questions.
+- Feature the new Arena on the homepage, platform page, navigation, plans page and shared calls to action.
+- Explain Arena membership requirements separately from free catalogue browsing and invited collection access.
+- Add responsive screenshot assets, a social sharing image and the public Arena page to the sitemap while keeping playable matches private.
+
 ## 0.27.0 — Arena illustrated tabletop
 
 - Add locally served room, walnut, woven playmat and blue card-back artwork to the first-person Arena.
