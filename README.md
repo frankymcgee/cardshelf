@@ -1,4 +1,4 @@
-# CardShelf 0.28.0
+# CardShelf 0.29.2
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -20,6 +20,11 @@ for installation, domain authentication, certificates and acceptance checks.
 See [v0.20 validation](docs/POSTAL_VALIDATION.md) for executed checks and their limits.
 
 ## Arena
+
+The [lobby and deck workshop](docs/ARENA_WORKSHOP.md) add illustrated deck shelves,
+quick return to an open table, catalogue-wide supported-card filtering, import review
+and separate deck copies. Mobile workshop tabs keep card search and the current draft
+within reach. Imported or duplicated lists are saved only after an explicit Save deck.
 
 [Phase 5](docs/ARENA_UI_PHASE5.md) adds an optional focused table view, contextual
 turn/connection guidance, public Prize counts, a revision-bound End turn confirmation,

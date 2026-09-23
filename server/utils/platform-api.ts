@@ -7,14 +7,14 @@ export async function platformUser(event: H3Event, admin = false) {
   ensure(!admin || user.role === 'admin', 403, 'Administrator access is required.')
   return user
 }
-export async function platformBody(event: H3Event) {
+export async function platformBody(event: H3Event, maxBytes = 16384) {
   ensure(getHeader(event,'content-type')?.split(';')[0]?.trim() === 'application/json',415,'Send an application/json request.')
   let size = 0
   const chunks: Buffer[] = []
   for await (const value of event.node.req) {
     const chunk = Buffer.isBuffer(value) ? value : Buffer.from(value)
     size += chunk.length
-    ensure(size <= 16384,413,'Request is too large.')
+    ensure(size <= maxBytes,413,'Request is too large.')
     chunks.push(chunk)
   }
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')) }

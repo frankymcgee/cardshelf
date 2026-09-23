@@ -1,3 +1,19 @@
+## 0.29.2 — Workshop browser validation
+
+- Locate catalogue dropdowns by their accessible combobox names in the signed-in browser tests. Await the lobby table response before checking the rendered continuation link.
+
+## 0.29.1 — Retain strict match snapshot validation
+
+- Keep repairable workshop deck reads separate from strict match snapshots. Older matches continue to reject newly supported cards with their original compiler and error response.
+
+## 0.29.0 — Arena lobby and deck workshop
+
+- Give the lobby illustrated deck covers, a prominent return to an open table, clearer play modes, and separate open/past match lists.
+- Rebuild the deck workshop with catalogue-wide support filtering, category/type/set/stage filters, composition, mobile tabs and accessible card inspection.
+- Review pasted lists and CardShelf JSON exports before applying them to a draft. Report missing, ambiguous and unsupported cards; require explicit replacement of an existing draft.
+- Duplicate a saved deck into a separate unsaved draft. Preserve private deck ownership, revision checks, creation retries and physical collection records.
+- Keep unavailable saved cards visible for removal, block them from match entry, and protect unsaved edits when leaving the workshop.
+
 ## 0.28.0 — Arena on the public website
 
 - Introduce a public Pokémon Arena page with product screenshots, play modes, interface highlights and answers to common questions.

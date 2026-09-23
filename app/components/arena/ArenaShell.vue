@@ -9,3 +9,5 @@ defineProps<{ title?: string; focused?: boolean; table?: boolean }>()
   </div>
 </template>
 <style src="~/assets/css/arena.css"></style>
+
+<style src="~/assets/css/arena-workshop.css"></style>
