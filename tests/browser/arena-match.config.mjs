@@ -9,6 +9,8 @@ export default defineConfig({
   timeout: 30_000, expect: { timeout: 5_000 },
   outputDir: '../../test-results/arena-match',
   reporter: [['list'], ['html', { outputFolder: 'playwright-report/arena-match', open: 'never' }]],
-  use: { baseURL, viewport: { width: 1440, height: 1000 }, screenshot: 'only-on-failure', trace: 'retain-on-failure' },
+  // Network fault injection must reach page.route in both browsers. This suite tests
+  // the online match, not the installable/offline shell; production SW behaviour is unchanged.
+  use: { baseURL, serviceWorkers: 'block', viewport: { width: 1440, height: 1000 }, screenshot: 'only-on-failure', trace: 'retain-on-failure' },
   projects: [{ name: 'chromium', use: { browserName: 'chromium' } }, { name: 'webkit', use: { browserName: 'webkit' } }]
 });

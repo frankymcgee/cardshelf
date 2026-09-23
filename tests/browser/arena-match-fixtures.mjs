@@ -69,7 +69,14 @@ export const test = base.extend({
       if (new URL(url).origin !== new URL(baseURL).origin) { external.push(url); await route.abort(); } else await route.continue();
     });
     if (controlledClock) await page.clock.install();
-    await page.goto('/arena/matches/' + game.id);
+    // Separate initial network/bootstrap readiness from the unchanged 5-second UI assertions.
+    // Register before navigation so a fast first response cannot be missed.
+    const initialResponse = page.waitForResponse(response =>
+      new URL(response.url()).pathname === '/api/arena/matches/' + game.id
+      && response.request().method() === 'GET', { timeout: 30_000 });
+    const [, response] = await Promise.all([page.goto('/arena/matches/' + game.id), initialResponse]);
+    const firstView = await json(response);
+    expect(firstView.id).toBe(game.id); expect(firstView.revision).toBeGreaterThanOrEqual(game.revision);
     await expect(page.locator('.arena-connection')).toContainText('Connected');
     await expect(page.getByRole('region', { name: 'Match status' })).toContainText('Your move');
     await use(page);

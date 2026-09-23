@@ -1,11 +1,11 @@
 import { test, expect, action, json } from './arena-match-fixtures.mjs';
+import { openTableTools as tools } from './arena-match-controls.mjs';
 const status = page => page.getByRole('region', { name: 'Match status' });
 const endButton = page => page.locator('.arena-turn-actions').getByRole('button', { name: /end turn/i });
 const review = page => page.getByRole('dialog', { name: 'End your turn?', exact: true });
 const writes = (page, game) => {
   const bodies = []; page.on('request', request => { if (request.method() === 'POST' && request.url().endsWith('/matches/' + game.id + '/actions')) bodies.push(request.postDataJSON()); }); return bodies;
 };
-async function tools(page) { const menu = page.locator('.arena-table-tools'); if (!await menu.evaluate(el => el.open)) await menu.locator('summary').click(); }
 
 test('signed-in focused table retains status, controls and inspection without writes', async ({ page, game }, info) => {
   const sent = writes(page, game);
@@ -42,18 +42,34 @@ test('a real server revision from another client expires an open end-turn review
 });
 
 test('lost acknowledged reply preserves and retries the identical request rather than playing twice', async ({ page, game }) => {
-  const sent = writes(page, game); let intercepted = 0;
+  const sent = writes(page, game); let intercepted = 0, committed;
   await page.route('**/api/arena/matches/' + game.id + '/actions', async route => {
-    if (++intercepted === 1) { const response = await route.fetch(); expect(response.ok()).toBeTruthy(); await route.abort('failed'); }
+    if (++intercepted === 1) {
+      // Commit through the real server, then deliberately discard that response.
+      committed = await json(await route.fetch());
+      await route.abort('failed');
+    }
     else await route.continue();
   });
-  await endButton(page).click(); await review(page).getByRole('button', { name: 'Confirm end turn' }).click();
+  const failed = page.waitForEvent('requestfailed', {
+    predicate: request => request.method() === 'POST'
+      && request.url().endsWith('/matches/' + game.id + '/actions'), timeout: 30_000
+  });
+  await endButton(page).click();
+  const [failedRequest] = await Promise.all([
+    failed, review(page).getByRole('button', { name: 'Confirm end turn' }).click()
+  ]);
+  expect(intercepted).toBe(1); expect(failedRequest.failure()).not.toBeNull();
+  expect(committed.revision).toBeGreaterThan(game.revision);
   await expect(page.getByRole('button', { name: 'Retry same action' })).toBeVisible();
   await expect(status(page)).toContainText('Action result uncertain'); await expect(endButton(page)).toBeDisabled();
   const reply = page.waitForResponse(r => r.url().endsWith('/matches/' + game.id + '/actions') && r.request().method() === 'POST');
-  await page.getByRole('button', { name: 'Retry same action' }).click(); expect((await reply).ok()).toBeTruthy();
+  await page.getByRole('button', { name: 'Retry same action' }).click();
+  const recovered = await json(await reply);
+  expect(recovered.revision).toBe(committed.revision); // The retry must not advance the game twice.
   await expect(page.getByRole('button', { name: 'Retry same action' })).toHaveCount(0);
   expect(sent[1]).toEqual(sent[0]);
+  expect(sent.filter(body => body.action.type === 'end_turn')).toHaveLength(2);
   await expect.poll(() => page.evaluate(() => Object.keys(sessionStorage).filter(key => key.startsWith('cardshelf-arena-action:')).length)).toBe(0);
 });
 
@@ -110,6 +126,10 @@ test.describe('narrow signed-in match', () => {
     await button.tap(); await tools(page); await page.getByRole('button', { name: 'History', exact: true }).tap();
     const history = page.getByRole('dialog', { name: 'Match history', exact: true }); await expect(history).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-    await history.getByRole('button', { name: 'Close', exact: true }).tap(); expect(sent).toEqual([]);
+    const close = history.getByRole('button', { name: 'Close', exact: true });
+    const closeBox = await close.boundingBox();
+    expect(closeBox.height).toBeGreaterThanOrEqual(44);
+    expect(closeBox.y).toBeGreaterThanOrEqual(0); expect(closeBox.y + closeBox.height).toBeLessThanOrEqual(844);
+    await close.tap(); expect(sent).toEqual([]);
   });
 });
