@@ -112,7 +112,7 @@
   .arena-table .arena-hand-hint { margin: 4px 0 0 16px; font-size: 10px; }
   .arena-table .arena-hand-fan.arena-hand-interactive { min-height: 240px; padding: 24px 20px 18px; }
   .arena-table .arena-hand-interactive > .arena-card { width: clamp(122px, 12cqw, 186px); flex-basis: clamp(122px, 12cqw, 186px); margin-left: -50px; }
-  .arena-table .arena-table-actions { align-self: center; }
+  .arena-table .arena-table-actions { align-self: start; }
   .arena-table-actions .arena-action-tray { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; padding: 14px; }
   .arena-table-actions .arena-tray-heading { display: contents; }
   .arena-table-actions .arena-tray-heading > div { grid-column: 1 / -1; padding-right: 35px; }
