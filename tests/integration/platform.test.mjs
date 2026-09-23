@@ -39,7 +39,7 @@ await test('public site and subscription preparation',async t=>{
    });
   });
   await t.test('every public page is server-rendered without login',async()=>{
-   for(const [path,title] of [['/','One beautiful home.'],['/features','Everything in its place.'],['/pricing','Your level of detail.'],['/early-access','Let’s make an introduction.'],['/privacy','Accounts and collections']]){
+   for(const [path,title] of [['/','One beautiful home.'],['/features','Everything in its place.'],['/pokemon-arena','Your seat at the table.'],['/pricing','Your level of detail.'],['/early-access','Let’s make an introduction.'],['/privacy','Accounts and collections']]){
     const r=await request(path);assert.equal(r.status,200,path);assert.ok(r.data.includes(title),path+' server HTML');assert.match(r.headers.get('x-robots-tag'),/index, follow/);assert.ok(!r.data.includes('Platform tester'));assert.ok(!r.data.includes('untouched-session'));
    }
   });
