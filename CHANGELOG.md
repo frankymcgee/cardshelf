@@ -1,3 +1,10 @@
+## 0.31.0 — Card photo scanning
+
+- Take or upload one English or Japanese Pokémon card photo, resolve visible details against the imported catalogue, and confirm its printing, condition and quantity before adding it.
+- Optionally place the printing into an empty or matching Collection binder pocket. Repeated requests are idempotent; guarded Undo restores the previous quantity and removes a newly placed pocket.
+- Add encrypted OpenAI configuration, per-user monthly scan allowances, a shared monthly budget, and usage/cost history for evaluating a future local recognition provider.
+- Scanning starts disabled, strips image metadata, keeps photos out of persistent storage, and requires explicit consent before external processing. No automatic condition grading or authentication.
+
 ## 0.30.1 — Commentary presentation and tournament fixtures
 
 - Keep the commentary table inside tablet viewports, use neutral spectator captions, and identify the source pairing for future bracket slots.

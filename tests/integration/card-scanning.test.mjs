@@ -1,0 +1,161 @@
+// Real PostgreSQL + production HTTP routes. Recognition is injected in process;
+// all keys/photos are synthetic and no call can reach OpenAI from this fixture.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+import postgres from 'postgres';
+import {hashPassword,randomToken,digest} from '../../lib/security.mjs';
+import {closeDatabase} from '../../lib/db.mjs';
+import {analyseCardScan,getCardScan,confirmCardScan,undoCardScan,scanAvailability} from '../../lib/card-scans.mjs';
+import {scanningAdminOverview} from '../../lib/card-scan-settings.mjs';
+import {ScanProviderError} from '../../lib/card-scan-provider.mjs';
+const base=process.env.TEST_BASE_URL,url=process.env.DATABASE_URL;
+if(process.env.ALLOW_TEST_DATABASE!=='yes'||!base||!new URL(url||'http://invalid').pathname.endsWith('_test')||!/^[a-f0-9]{64}$/i.test(process.env.CARDSHELF_INTEGRATION_KEY||''))throw Error('Use a disposable _test database and a synthetic encryption key.');
+const sql=postgres(url,{max:4}),origin=process.env.APP_ORIGIN||base,users=[],scanIds=[];
+const password='Synthetic scanner administrator password 123',apiKey='sk-synthetic-scanner-key-never-real';
+const group='ci-scan-'+randomUUID().replaceAll('-',''),setId='en:'+group,cardId=setId+'-025';
+const observation={card_count:1,readable:true,card_name:'Synthetic scanner card',collector_number:'025',printed_total:null,set_code:group,set_name:null,language:'en'};
+const result={observation,input_tokens:2000,output_tokens:100,bounds_exceeded:false};
+async function account(role='user'){
+  const id=randomUUID(),token=randomToken();users.push(id);
+  await sql`INSERT INTO app_users(id,email,name,password_hash,role) VALUES(${id},${id+'@example.test'},'Scanner fixture',${await hashPassword(password)},${role})`;
+  await sql`INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(${digest(token)},${id},now()+interval '1 hour')`;
+  await sql`INSERT INTO account_tier_overrides(user_id,tier,reason) VALUES(${id},'complimentary','Synthetic scanner access')`;
+  return {id,cookie:'cardshelf_session='+token};
+}
+async function request(path,{user,method='GET',body,headers={}}={}){
+  const r=await fetch(base+path,{method,redirect:'manual',headers:{Origin:origin,'X-Requested-With':'cardshelf',...(user?{Cookie:user.cookie}:{}),...(body===undefined?{}:{'Content-Type':'application/json'}),...headers},body:body===undefined?undefined:JSON.stringify(body)});
+  assert.match(r.headers.get('content-type')||'',/json/);return {status:r.status,data:await r.json()};
+}
+function upload(){const id=randomUUID();scanIds.push(id);return {request_id:id,image:'data:image/jpeg;base64,YWJj',confirm_external_processing:true};}
+const row=id=>sql`SELECT * FROM card_scans WHERE id=${id}`.then(rows=>rows[0]);
+function secretFree(value){const text=JSON.stringify(value);for(const s of [apiKey,password,process.env.CARDSHELF_INTEGRATION_KEY])assert.ok(!text.includes(s),'Secret leaked');}
+await test('card scanning receipts, spending limits and collection/binder writes',async t=>{
+  const previous=await sql`SELECT * FROM card_scan_settings`,controls=await sql`SELECT * FROM stripe_billing_controls`;
+  let admin,owner,other,printing,otherPrinting,binder,tracking,foreign;let calls=0;
+  const analyse=(body,user=owner,recognise=async()=>{calls++;return result;})=>analyseCardScan(user.id,body,{prepare:async()=>Buffer.from('synthetic'),recognise});
+  const entry=()=>sql`SELECT * FROM collection_entries WHERE user_id=${owner.id} AND printing_id=${printing} AND condition='UNKNOWN'`.then(r=>r[0]);
+  const binderState=()=>sql`SELECT * FROM binders WHERE id=${binder}`.then(r=>r[0]);
+  const body=async(overrides={})=>({printing_id:printing,condition:'UNKNOWN',quantity:2,entry_revision:(await entry())?.revision??0,confirm:true,...overrides});
+  const expectError=(run,status)=>assert.rejects(run,e=>e.status===status);
+  try{
+    admin=await account('admin');owner=await account();other=await account();
+    await sql`INSERT INTO card_sets(id,provider_id,language,name) VALUES(${setId},${group},'en','Synthetic scanner set')`;
+    await sql`INSERT INTO cards(id,provider_id,set_id,language,local_id,name) VALUES(${cardId},${group+'-025'},${setId},'en','25',${observation.card_name})`;
+    [printing,otherPrinting]=(await sql`INSERT INTO printings(card_id,key,label,source) VALUES(${cardId},'normal','Normal','tcgdex'),(${cardId},'holo','Holo','tcgdex') RETURNING id`).map(r=>r.id);
+    for(const [user,type] of [[owner,'collection'],[owner,'tracking'],[other,'collection']]){
+      const [b]=await sql`INSERT INTO binders(user_id,title,columns,rows,page_count,binder_type) VALUES(${user.id},'Scanner binder',2,2,1,${type}) RETURNING id`;
+      if(user===other)foreign=b.id;else if(type==='tracking')tracking=b.id;else binder=b.id;
+    }
+    await sql`UPDATE card_scan_settings SET enabled=false,api_secret=null,monthly_budget_micros=0 WHERE singleton`;
+    await t.test('HTTP authentication, administration, consent, CSRF and bounded JSON bodies',async()=>{
+      for(const path of ['/api/scans','/api/admin/scanning'])assert.equal((await request(path)).status,401);
+      assert.equal((await request('/api/admin/scanning',{user:owner})).status,403);
+      assert.equal((await request('/api/scans',{user:owner,method:'POST',body:upload(),headers:{Origin:'https://evil.test'}})).status,403);
+      assert.equal((await request('/api/scans',{user:owner,method:'POST',body:upload(),headers:{'Content-Type':'text/plain'}})).status,415);
+      assert.equal((await request('/api/scans',{user:owner,method:'POST',body:{...upload(),confirm_external_processing:false}})).status,400);
+      assert.equal((await request('/api/scans',{user:owner,method:'POST',body:upload()})).status,503);
+      assert.equal((await request('/api/scans/'+randomUUID()+'/confirm',{user:owner,method:'POST',body:{padding:'x'.repeat(5000)}})).status,413);
+      assert.equal((await scanAvailability(owner.id)).available,false);
+    });
+    await t.test('admin password and settings revision protect the encrypted provider credential',async()=>{
+      const current=(await request('/api/admin/scanning',{user:admin})).data.settings;
+      const settings={revision:current.revision,password,api_key:apiKey,enabled:true,monthly_budget_usd:5,user_monthly_limit:100,input_usd_per_million:.4,output_usd_per_million:1.6};
+      assert.equal((await request('/api/admin/scanning',{user:admin,method:'POST',body:{...settings,password:'wrong'}})).status,403);
+      const saved=await request('/api/admin/scanning',{user:admin,method:'POST',body:settings});assert.equal(saved.status,200,JSON.stringify(saved.data));secretFree(saved.data);
+      assert.equal((await request('/api/admin/scanning',{user:admin,method:'POST',body:settings})).status,409);
+      const [stored]=await sql`SELECT api_secret FROM card_scan_settings`;assert.ok(stored.api_secret.startsWith('v1.'));assert.ok(!stored.api_secret.includes(apiKey));
+      assert.equal((await scanAvailability(owner.id)).available,true);
+    });
+    await t.test('receipt replay calls the provider once and never exposes another account or raw photos',async()=>{
+      const u=upload(),a=await analyse(u),before=calls;assert.equal(a.status,'ready');assert.equal(a.candidates[0].id,cardId);
+      assert.equal((await analyse(u)).id,a.id);assert.equal(calls,before);
+      await expectError(()=>analyse(u,other),409);await expectError(()=>analyse({...u,image:'data:image/jpeg;base64,YWJk'}),409);
+      assert.equal((await request('/api/scans/'+a.id,{user:other})).status,404);
+      const stored=await row(a.id);assert.equal(Number(stored.accounted_micros),960);assert.equal(stored.settled,true);
+      for(const key of ['api_secret','image_hash','input_tokens'])assert.equal(Object.hasOwn(a,key),false);secretFree(a);
+    });
+    await t.test('only one analysis can occupy the CPU/network slot and spending is reserved before dispatch',async()=>{
+      let release,started;const gate=new Promise(r=>release=r),entered=new Promise(r=>started=r);
+      const u=upload(),pending=analyse(u,owner,async()=>{started();await gate;calls++;return result;});
+      await entered;
+      try{assert.equal((await analyse(u)).status,'processing');await expectError(()=>analyse(upload(),other),429);assert.equal(Number((await row(u.request_id)).accounted_micros),7783);}
+      finally{release();await pending;}
+    });
+    await t.test('the monthly budget and personal quota prevent dispatch but preserve receipt retries',async()=>{
+      const u=upload();await analyse(u);const before=calls;
+      const [used]=await sql`SELECT count(*)::integer AS n FROM card_scans WHERE user_id=${owner.id}`;
+      await sql`UPDATE card_scan_settings SET user_monthly_limit=${used.n}`;
+      await expectError(()=>analyse(upload()),429);assert.equal((await analyse(u)).status,'ready');assert.equal(calls,before);
+      await sql`UPDATE card_scan_settings SET user_monthly_limit=100`;
+      const [total]=await sql`SELECT coalesce(sum(accounted_micros),0)::integer AS n FROM card_scans WHERE budget_month=date_trunc('month',now() AT TIME ZONE 'UTC')::date`;
+      await sql`UPDATE card_scan_settings SET monthly_budget_micros=${total.n+7782}`;
+      await expectError(()=>analyse(upload(),other),429);assert.equal(calls,before);assert.equal((await scanAvailability(owner.id)).available,false);
+      await sql`UPDATE card_scan_settings SET monthly_budget_micros=5000000`;
+    });
+    await t.test('uncertain provider failures retain reservations; rejected images release money; stale receipts terminate',async()=>{
+      const u=upload(),failed=await analyse(u,owner,async()=>{throw new ScanProviderError('provider_unavailable');});assert.equal(failed.status,'failed');
+      const reserved=await row(u.request_id);assert.equal(reserved.settled,false);assert.equal(Number(reserved.accounted_micros),7783);
+      await analyse(u);assert.equal((await row(u.request_id)).status,'failed');
+      const invalid=upload(),bad=await analyseCardScan(owner.id,invalid,{recognise:async()=>{assert.fail('Invalid bytes must never reach provider');}});
+      assert.equal(bad.status,'failed');assert.equal(Number((await row(bad.id)).accounted_micros),0);assert.equal((await row(bad.id)).settled,true);
+      await sql`UPDATE card_scans SET status='processing',created_at=now()-interval '3 minutes' WHERE id=${u.request_id}`;
+      assert.equal((await getCardScan(owner.id,u.request_id)).status,'failed');assert.equal((await row(u.request_id)).error_code,'interrupted');
+    });
+    await t.test('confirmed additions are atomic, idempotent and undoable without discarding notes or wishlist',async()=>{
+      await sql`INSERT INTO collection_entries(user_id,printing_id,condition,quantity,notes,wishlist) VALUES(${owner.id},${printing},'UNKNOWN',3,'Keep these notes',true)`;
+      const scan=await analyse(upload()),b=await binderState(),input=await body({binder:{id:binder,revision:b.revision,position:0}});
+      const responses=await Promise.all([request('/api/scans/'+scan.id+'/confirm',{user:owner,method:'POST',body:input}),request('/api/scans/'+scan.id+'/confirm',{user:owner,method:'POST',body:input})]);
+      for(const r of responses)assert.equal(r.status,200,JSON.stringify(r.data));assert.equal((await entry()).quantity,5);
+      assert.equal((await sql`SELECT * FROM binder_slots WHERE binder_id=${binder} AND position=0`).length,1);
+      await expectError(()=>confirmCardScan(owner.id,scan.id,{...input,quantity:1}),409);await expectError(()=>confirmCardScan(other.id,scan.id,input),404);
+      assert.equal((await undoCardScan(owner.id,scan.id)).status,'undone');assert.equal((await undoCardScan(owner.id,scan.id)).status,'undone');
+      assert.equal((await entry()).quantity,3);assert.equal((await entry()).notes,'Keep these notes');assert.equal((await entry()).wishlist,true);
+      assert.equal((await sql`SELECT * FROM binder_slots WHERE binder_id=${binder} AND position=0`).length,0);
+      assert.equal((await confirmCardScan(owner.id,scan.id,input)).status,'undone');assert.equal((await entry()).quantity,3);
+    });
+    await t.test('stale ownership and occupied, foreign or independent binder pockets reject the whole addition',async()=>{
+      const scan=await analyse(upload()),b=await binderState(),before=(await entry()).quantity;
+      await expectError(async()=>confirmCardScan(owner.id,scan.id,{...await body(),entry_revision:0}),409);
+      for(const [id,status] of [[foreign,404],[tracking,400]])await expectError(async()=>confirmCardScan(owner.id,scan.id,await body({binder:{id,revision:1,position:0}})),status);
+      await sql`INSERT INTO binder_slots(binder_id,position,printing_id) VALUES(${binder},1,${otherPrinting})`;
+      await expectError(async()=>confirmCardScan(owner.id,scan.id,await body({binder:{id:binder,revision:b.revision,position:1}})),409);
+      assert.equal((await entry()).quantity,before);assert.equal((await row(scan.id)).status,'ready');
+      await sql`INSERT INTO binder_slots(binder_id,position,printing_id) VALUES(${binder},0,${printing})`;
+      await confirmCardScan(owner.id,scan.id,await body({binder:{id:binder,revision:b.revision,position:0}}));
+      await undoCardScan(owner.id,scan.id);assert.equal((await sql`SELECT * FROM binder_slots WHERE binder_id=${binder} AND position=0`).length,1,'Existing placement survives undo');
+    });
+    await t.test('edits after scanning prevent undo from clobbering later work',async()=>{
+      const scan=await analyse(upload());await confirmCardScan(owner.id,scan.id,await body());
+      await sql`UPDATE collection_entries SET quantity=quantity+1,revision=revision+1 WHERE user_id=${owner.id} AND printing_id=${printing} AND condition='UNKNOWN'`;
+      const before=(await entry()).quantity;await expectError(()=>undoCardScan(owner.id,scan.id),409);assert.equal((await entry()).quantity,before);
+      const scan2=await analyse(upload()),b=await binderState();await confirmCardScan(owner.id,scan2.id,await body({binder:{id:binder,revision:b.revision,position:2}}));
+      await sql`UPDATE binders SET revision=revision+1 WHERE id=${binder}`;await expectError(()=>undoCardScan(owner.id,scan2.id),409);
+    });
+    await t.test('membership loss stops chargeable analysis and additions while allowing safe undo',async()=>{
+      const a=await analyse(upload()),b=await analyse(upload());await confirmCardScan(owner.id,a.id,await body());
+      await sql`UPDATE account_tier_overrides SET tier='collector' WHERE user_id=${owner.id}`;
+      await sql`INSERT INTO stripe_billing_controls(id,environment,subscriptions_enabled,enforcement_enabled) VALUES(1,'production',false,true) ON CONFLICT(id) DO UPDATE SET enforcement_enabled=true,environment='production'`;
+      await expectError(()=>analyse(upload()),403);await expectError(async()=>confirmCardScan(owner.id,b.id,await body()),403);
+      assert.equal((await undoCardScan(owner.id,a.id)).status,'undone');assert.equal((await scanAvailability(owner.id)).eligible,false);
+      await sql`UPDATE account_tier_overrides SET tier='complimentary' WHERE user_id=${owner.id}`;
+    });
+    await t.test('unexpected accounting boundaries pause scanning, and admin usage contains no credentials',async()=>{
+      const a=await analyse(upload(),owner,async()=>({...result,observation:null,input_tokens:17000,bounds_exceeded:true}));assert.equal(a.status,'failed');
+      assert.equal((await scanAvailability(owner.id)).available,false);
+      const report=await scanningAdminOverview(admin.id);assert.equal(report.settings.enabled,false);assert.ok(report.totals.scans>0);assert.ok(report.history.length);secretFree(report);
+      secretFree(await sql`SELECT detail FROM audit_log WHERE action LIKE 'scanning.%'`);
+      const retained=await row(a.id);await sql`DELETE FROM app_users WHERE id=${owner.id}`;
+      assert.equal((await row(a.id)).user_id,null);assert.equal((await row(a.id)).accounted_micros,retained.accounted_micros);
+      for(const id of scanIds){const r=await row(id);if(r&&r.user_id===null){assert.equal(r.observations,null);assert.equal(r.addition,null);assert.equal(r.image_hash,'0'.repeat(64));}}
+    });
+  }finally{
+    try{
+      await sql`DELETE FROM card_scans WHERE id IN ${sql(scanIds)}`;
+      await sql`DELETE FROM card_scan_settings`;for(const r of previous)await sql`INSERT INTO card_scan_settings ${sql(r)}`;
+      await sql`DELETE FROM stripe_billing_controls`;for(const r of controls)await sql`INSERT INTO stripe_billing_controls ${sql(r)}`;
+      if(users.length)await sql`DELETE FROM app_users WHERE id IN ${sql(users)}`;
+      await sql`DELETE FROM printings WHERE card_id=${cardId}`;await sql`DELETE FROM cards WHERE id=${cardId}`;await sql`DELETE FROM card_sets WHERE id=${setId}`;
+    }finally{await sql.end();await closeDatabase();}
+  }
+});
