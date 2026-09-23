@@ -1,8 +1,22 @@
-# CardShelf 0.33.0
+# CardShelf 0.34.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
 binders, quick tracking, artwork effects, binder themes and a member marketplace.
+
+## Ad placeholders and administrator preview
+
+Under **More → Google AdSense**, enable **Show placeholder ad sections** and save
+with your administrator password and a reason. This replaces live Google ads for
+eligible Free members and needs no Google approval or IDs. Disable placeholders
+when you are ready to enable approved live advertising. Migration 022 adds the
+setting, defaulting off.
+
+**Your administrator ad view** separately offers Hidden (default), Placeholder
+preview, and Live ads. Apply the choice, then follow a preview link. The choice is
+for your account in that browser; live ads still require enabled, approved site
+settings. Previews use local illustrative placements, not Google's predicted Auto
+ads layout. Private routes and paid/protected member exclusions are preserved.
 
 ## Card photo scanning
 

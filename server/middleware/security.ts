@@ -23,7 +23,7 @@ export default defineEventHandler(async event => {
     setHeader(event, 'Cache-Control', 'private, no-store')
     setHeader(event, 'Vary', 'Cookie')
     try {
-      const placement = await adsensePlacement(await sessionUser(getCookie(event, 'cardshelf_session')), event.path)
+      const placement = await adsensePlacement(await sessionUser(getCookie(event, 'cardshelf_session')), event.path, getCookie(event, 'cardshelf_admin_ads'))
       if (placement.eligible) {
         const nonce = randomBytes(16).toString('hex')
         event.context.cardshelfAdsense = { nonce, revision: placement.revision }

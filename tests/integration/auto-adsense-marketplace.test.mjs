@@ -38,6 +38,26 @@ await test('Free-only Auto ads and marketplace display units preserve private da
   try{
     oldSettings=await sql`SELECT * FROM adsense_settings`;await sql`DELETE FROM adsense_settings`;
     admin=await account('admin');free=await account('free');pro=await account('plus');collector=await account('collector');tester=await account('tester');complimentary=await account('complimentary');
+    await t.test('placeholder and administrator view controls preserve server eligibility',async()=>{
+      await save({verification_enabled:false,publisher_id:'',placeholders_enabled:true});
+      assert.equal((await ad(free.cookie,'/cards')).data.placeholder,true);
+      for(const u of [admin,pro,collector,tester,complimentary])assert.deepEqual((await ad(u.cookie,'/cards')).data,{eligible:false});
+      const r=await request('/api/admin/adsense/view',{cookie:admin.cookie,method:'POST',body:{mode:'preview'}});
+      assert.equal(r.status,200);const preference=r.headers.get('set-cookie').split(';')[0];
+      const adminCookie=admin.cookie+'; '+preference;
+      assert.equal((await ad(adminCookie,'/cards')).data.placeholder,true);
+      assert.deepEqual((await ad(adminCookie,'/account')).data,{eligible:false});
+      assert.equal((await request('/api/admin/adsense/view',{cookie:free.cookie,method:'POST',body:{mode:'live'}})).status,403);
+      const doc=await request('/cards',{cookie:adminCookie});assert.ok(!String(doc.headers.get('content-security-policy')).includes('strict-dynamic'));
+      await save({enabled:true,auto_ads_enabled:true});
+      const live=await request('/api/admin/adsense/view',{cookie:admin.cookie,method:'POST',body:{mode:'live'}});
+      const liveCookie=admin.cookie+'; '+live.headers.get('set-cookie').split(';')[0];
+      assert.equal((await ad(liveCookie,'/cards')).data.eligible,true);
+      assert.deepEqual((await ad(liveCookie,'/account')).data,{eligible:false});
+      assert.equal((await ad(pro.cookie+'; '+live.headers.get('set-cookie').split(';')[0],'/cards')).data.eligible,false);
+      assert.ok(String((await request('/cards',{cookie:liveCookie})).headers.get('content-security-policy')).includes('strict-dynamic'));
+      await save({});
+    });
     await sql`INSERT INTO card_sets(id,provider_id,language,game,name,card_count) VALUES(${setId},${'ad-'+suffix},'en','pokemon','Synthetic ad test set',1)`;
     await sql`INSERT INTO cards(id,provider_id,set_id,language,game,local_id,name) VALUES(${cardId},${'ad-'+suffix+'-1'},${setId},'en','pokemon','1',${'Ad card '+suffix})`;
     const [printing]=await sql`INSERT INTO printings(card_id,key,label,source) VALUES(${cardId},'normal','Normal','tcgdex') RETURNING id`;printingId=printing.id;
