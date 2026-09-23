@@ -28,6 +28,14 @@ jobs:
       EMAIL_WORKER_ENABLED: 'false'
     steps:
       - uses: actions/checkout@v4
+      - name: Free runner storage for browser traces
+        run: |
+          df -h / /tmp "$GITHUB_WORKSPACE"
+          df -i / /tmp "$GITHUB_WORKSPACE"
+          # Unused preinstalled SDKs on this disposable Ubuntu runner.
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet
+          sudo apt-get clean
+          df -h / /tmp "$GITHUB_WORKSPACE"
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -48,6 +56,12 @@ jobs:
           cat /tmp/cardshelf-arena-browser.log
           exit 1
       - run: npm run test:arena-match
+      - name: Report browser runner storage
+        if: always()
+        run: |
+          df -h / /tmp "$GITHUB_WORKSPACE"
+          df -i / /tmp "$GITHUB_WORKSPACE"
+          du -sh node_modules .output test-results playwright-report "$RUNNER_TEMP" /tmp 2>/dev/null || true
       - name: Upload signed-in browser evidence
         if: always()
         uses: actions/upload-artifact@v4

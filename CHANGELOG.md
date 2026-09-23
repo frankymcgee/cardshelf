@@ -1,3 +1,8 @@
+## 0.31.2 — Arena browser runner storage
+
+- Free unused preinstalled Android and .NET SDK storage before the signed-in Arena browser job, which exhausted disk space while closing a WebKit tournament session.
+- Report disk space, inode availability and browser output sizes to diagnose runner storage failures while retaining the existing test assertions and traces.
+
 ## 0.31.1 — Scanner validation and recovery
 
 - Preserve the scanner destination through sign-in and clear stale connection errors when a saved receipt is recovered.
