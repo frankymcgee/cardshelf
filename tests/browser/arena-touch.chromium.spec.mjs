@@ -17,7 +17,8 @@ test('touch handle transfers implicit capture, reviews a Bench drop and confirms
   expect(origin).not.toBeNull(); expect(destination).not.toBeNull();
   const x = origin.x + origin.width / 2, y = origin.y + origin.height / 2;
   const dx = destination.x + destination.width / 2, dy = destination.y + destination.height / 2;
-  expect(dy).toBeGreaterThan(0); expect(dy).toBeLessThan(1000);
+  // A stationary drop must not enter the 56px auto-scroll edge band.
+  expect(dy).toBeGreaterThan(56); expect(dy).toBeLessThan(944);
   const client = await page.context().newCDPSession(page);
   const touch = (type, x, y) => client.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1, radiusX: 1, radiusY: 1, force: 1 }] });
   let touching = false;

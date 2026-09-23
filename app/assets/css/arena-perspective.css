@@ -129,13 +129,14 @@
   .arena-table .arena-hand-fan.arena-hand-interactive { min-height: 255px; }
 }
 @container arena-table (max-width: 759px) {
-  .arena-table-perspective { padding-bottom: 12px; }
+  .arena-table-perspective { padding-bottom: 8px; }
   .arena-table-plane { border-width: 4px; border-radius: 18px; padding: 4px; }
   .arena-table .arena-table-lanes { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: 'field field' 'prizes reserve'; gap: 14px 8px; }
   .arena-table .arena-table-bench { padding: 8px 0; border-inline: 0; }
   .arena-table .arena-bench-row { gap: 5px; }
   .arena-table .arena-table-side { padding-inline: 0; }
-  .arena-table .arena-table-reserve { flex-direction: row; padding-bottom: 18px; gap: 12px; }
+  .arena-table [data-side="self"] { padding-bottom: 6px; }
+  .arena-table .arena-table-reserve { flex-direction: row; padding-bottom: 12px; gap: 12px; }
   .arena-table .arena-deck-stack, .arena-table .arena-table-discard { width: 48px; min-height: 67px; }
   .arena-table .arena-deck-stack { height: 67px; }
   .arena-table .arena-table-prizes { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 8px; max-width: 150px; padding: 0; }
@@ -146,9 +147,10 @@
   .arena-table .arena-table-centre { grid-template-columns: minmax(0, 1fr); padding: 12px 0; gap: 10px; }
   .arena-table .arena-table-status { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px; }
   .arena-table .arena-hand-area { padding-top: 8px; }
+  .arena-table .arena-zone-caption { margin-bottom: 6px; }
   .arena-table .arena-hand-interactive > .arena-card { width: 96px; flex-basis: 96px; margin-left: -34px; }
   .arena-table .arena-hand-interactive > .arena-card:first-child { margin-left: 0; }
-  .arena-table .arena-hand-fan.arena-hand-interactive { min-height: 178px; padding-block: 20px; }
+  .arena-table .arena-hand-fan.arena-hand-interactive { min-height: 170px; padding-block: 18px; }
   .arena-table-instructions { padding: 12px; }
 }
 @media (max-width: 600px) {

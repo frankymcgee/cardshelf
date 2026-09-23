@@ -1,6 +1,6 @@
 # Arena UI Phase 6 — first-person tabletop
 
-Release: **0.26.0**. Based on merged Phase 5, main `ae80c070`.
+Release: **0.26.1**. Based on merged Phase 5, main `ae80c070`.
 
 The approved visual direction is a seated-player view across a dark playmat with
 a wood-coloured edge: the opponent recedes into the distance, the player's hand

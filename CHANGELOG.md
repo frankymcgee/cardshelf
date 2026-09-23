@@ -1,3 +1,8 @@
+## 0.26.1 — Mobile tabletop drag spacing
+
+- Keep the near Bench comfortably outside the auto-scroll edge when the touch drag handle is centred.
+- Strengthen the existing touch regression to require an interior drop point.
+
 ## 0.26.0 — First-person Arena tabletop
 
 - A perspective playmat with a distant opponent field, a larger foreground hand, wood-edged table depth, and separate face-down Prize and deck stacks.
