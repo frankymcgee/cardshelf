@@ -1,4 +1,4 @@
-# Arena lobby and deck workshop — v0.29.1
+# Arena lobby and deck workshop — v0.29.2
 
 The lobby uses the existing collector-room and teaching-card artwork, plus each
 member's own deck cards, to carry the table presentation into match setup. The most

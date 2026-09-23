@@ -1,3 +1,7 @@
+## 0.29.2 — Workshop browser validation
+
+- Locate catalogue dropdowns by their accessible combobox names in the signed-in browser tests. Await the lobby table response before checking the rendered continuation link.
+
 ## 0.29.1 — Retain strict match snapshot validation
 
 - Keep repairable workshop deck reads separate from strict match snapshots. Older matches continue to reject newly supported cards with their original compiler and error response.

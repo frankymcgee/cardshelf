@@ -1,6 +1,5 @@
 import { test, expect, json } from './arena-match-fixtures.mjs';
 import { randomUUID } from 'node:crypto';
-const headers={Origin:process.env.TEST_BASE_URL,'X-Requested-With':'cardshelf'};
 async function seed(sql) {
  const suffix=randomUUID().replaceAll('-',''),set='en:browser-workshop-'+suffix,basic=set+'-1',energy=set+'-2';
  await sql`INSERT INTO card_sets(id,provider_id,game,language,name,card_count) VALUES(${set},${set.slice(3)},'pokemon','en','Browser workshop set',2)`;
@@ -10,7 +9,8 @@ async function seed(sql) {
 async function clean(sql,fixture){await sql`DELETE FROM cards WHERE set_id=${fixture.set}`;await sql`DELETE FROM card_sets WHERE id=${fixture.set}`;}
 
 test('lobby highlights the active match and returns to the same private table',async({page,game},info)=>{
- await page.goto('/arena');await expect(page.getByRole('heading',{name:'Continue match',exact:true})).toBeVisible();
+ const tables=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/arena/matches'&&r.request().method()==='GET');
+ await page.goto('/arena');expect((await json(await tables)).matches.some(m=>m.id===game.id&&m.status==='active')).toBe(true);await expect(page.getByRole('heading',{name:'Continue match',exact:true})).toBeVisible();
  await expect(page.locator('.aw-mode-card')).toHaveCount(3);
  await page.setViewportSize({width:390,height:844});
  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -23,9 +23,9 @@ test('review import, save, export and duplicate use real private deck APIs',asyn
  const fixture=await seed(environment.sql);
  try{
   await page.goto('/arena/decks/new');await expect(page.getByRole('heading',{name:'Find your cards'})).toBeVisible();
-  await page.getByLabel('Imported set',{exact:true}).selectOption(fixture.set);
+  await page.getByRole('combobox',{name:'Imported set',exact:true}).selectOption(fixture.set);
   await expect(page.locator('.aw-catalogue-card')).toHaveCount(2);
-  await page.getByLabel('Card category',{exact:true}).selectOption('pokemon');await expect(page.locator('.aw-catalogue-card')).toHaveCount(1);
+  await page.getByRole('combobox',{name:'Card category',exact:true}).selectOption('pokemon');await expect(page.locator('.aw-catalogue-card')).toHaveCount(1);
   await page.locator('.aw-catalogue-card .arena-card').click();const dialog=page.getByRole('dialog',{name:'Browser Workshop Basic'});await expect(dialog).toBeVisible();await page.keyboard.press('Escape');await expect(dialog).not.toBeVisible();
   await page.locator('.aw-import > summary').first().click();await page.getByLabel('Deck list',{exact:true}).fill(fixture.export);
   await page.getByRole('button',{name:'Review import',exact:true}).click();const review=page.getByRole('region',{name:'Import review'});await expect(review).toContainText('ready to play once saved');
@@ -45,12 +45,12 @@ test('mobile workshop keeps import replacement deliberate and card inspection re
  const fixture=await seed(environment.sql);
  try{
   await page.setViewportSize({width:390,height:844});await page.goto('/arena/decks/new');
-  await page.getByLabel('Imported set',{exact:true}).selectOption(fixture.set);await expect(page.locator('.aw-catalogue-card')).toHaveCount(2);
+  await page.getByRole('combobox',{name:'Imported set',exact:true}).selectOption(fixture.set);await expect(page.locator('.aw-catalogue-card')).toHaveCount(2);
   await page.getByRole('button',{name:'Add Browser Workshop Basic to deck',exact:true}).click();
   await page.locator('.aw-import > summary').first().click();await page.getByLabel('Deck list',{exact:true}).fill(fixture.export);await page.getByRole('button',{name:'Review import',exact:true}).click();
   const apply=page.getByRole('button',{name:'Apply to draft',exact:true});await expect(apply).toBeDisabled();await page.getByLabel('Replace the cards in my current draft').check();await apply.click();
   await expect(page.getByLabel('Deck name',{exact:true})).toBeVisible();await expect(page.locator('.aw-count-heading')).toContainText('60');
-  await page.getByRole('button',{name:'Card catalogue',exact:true}).click();await expect(page.getByLabel('Imported set',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Card catalogue',exact:true}).click();await expect(page.getByRole('combobox',{name:'Imported set',exact:true})).toBeVisible();
   await page.locator('.aw-catalogue-card .arena-card').first().click();const dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();await expect(dialog.getByRole('button',{name:'Close',exact:true})).toBeVisible();await page.keyboard.press('Escape');await expect(dialog).not.toBeVisible();
   await page.setViewportSize({width:320,height:740});await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:info.outputPath('workshop-mobile.png'),fullPage:true});
