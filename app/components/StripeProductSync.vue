@@ -55,7 +55,7 @@ onMounted(load)
       <form class="form-stack spaced" @submit.prevent="save">
         <label class="sync-check"><input v-model="form.managed" type="checkbox"><span>Manage new subscription products and prices in Stripe. Successful syncs replace manually published offers for this environment.</span></label>
         <label class="sync-check"><input v-model="form.daily" type="checkbox" :disabled="!form.managed"><span>Automatically sync every 24 hours while Stripe-managed products are enabled.</span></label>
-        <label v-if="environment==='production'" class="sync-check"><input v-model="form.mirror_plans" type="checkbox"><span>Keep Platform administration plan details in sync with Live Stripe products (read-only here).</span></label>
+        <label v-if="environment==='production'" class="sync-check"><input v-model="form.mirror_plans" type="checkbox"><span>Keep Pricing & plans details in sync with Live Stripe products (read-only here).</span></label>
         <p v-else class="small muted">Test catalogue changes never overwrite Live platform plans or appear on the public pricing page.</p>
         <label>Administrator password<input v-model="form.password" type="password" autocomplete="current-password" required></label>
         <label class="sync-check"><input v-model="form.confirm" type="checkbox" required><span>I understand that syncing updates new offers and website content, but does not enable billing, change access grants or reprice existing subscriptions.</span></label>

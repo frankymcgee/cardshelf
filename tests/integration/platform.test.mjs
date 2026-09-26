@@ -58,7 +58,7 @@ await test('public site and subscription preparation',async t=>{
   });
   await t.test('public SSR never includes an authenticated account identity',async()=>{const r=await request('/',{cookie});assert.ok(!r.data.includes('platform-'+id));assert.ok(!r.data.includes('Platform tester'))});
   await t.test('sitemap includes public pages only',async()=>{const r=await request('/sitemap.xml');assert.equal(r.status,200);assert.match(r.data,/<loc>https?:\/\//);for(const path of ['/binders','/account','/api/','/shared/','/marketplace'])assert.ok(!r.data.includes(path));assert.match((await request('/robots.txt')).data,/Disallow: \/api\//)});
-  await t.test('private page shell and APIs remain non-indexable and protected',async()=>{assert.match((await request('/app')).headers.get('x-robots-tag'),/noindex/);assert.equal((await request('/api/account/membership')).status,401);assert.equal((await request('/api/admin/platform')).status,401);assert.equal((await request('/api/dashboard')).status,401)});
+  await t.test('private page shell and APIs remain non-indexable and protected',async()=>{assert.match((await request('/app')).headers.get('x-robots-tag'),/noindex/);assert.equal((await request('/api/account/membership')).status,401);assert.equal((await request('/api/admin/platform')).status,401);assert.equal((await request('/api/admin/platform/plans')).status,401);assert.equal((await request('/api/dashboard')).status,401)});
   await t.test('newly created testers have non-expiring access with all current features',async()=>{
    const r=await request('/api/account/membership',{cookie});assert.equal(r.status,200);
    assert.equal(r.data.grant.kind,'beta_tester');assert.equal(r.data.access.expires_at,null);
@@ -76,8 +76,10 @@ await test('public site and subscription preparation',async t=>{
   });
   await t.test('public forms retain origin checks and bounded JSON bodies',async()=>{assert.equal((await request('/api/public/access-requests',{method:'POST',body:{},headers:{Origin:'https://evil.test'}})).status,403);assert.equal((await request('/api/public/access-requests',{method:'POST',body:{message:'x'.repeat(17000)}})).status,413)});
   await t.test('the public form honeypot does not store a contact',async()=>{const email='bot-'+id+'@example.test';const r=await request('/api/public/access-requests',{method:'POST',body:{website:'spam',email}});assert.equal(r.status,200);assert.equal((await sql`SELECT id FROM platform_requests WHERE email=${email}`).length,0)});
-  await t.test('collectors cannot read requests or edit plans',async()=>{assert.equal((await request('/api/admin/platform',{cookie})).status,403);assert.equal((await request('/api/admin/platform/plans/collector',{method:'PUT',cookie,body:{name:'x',revision:1}})).status,403)});
+  await t.test('collectors cannot read requests or edit plans',async()=>{assert.equal((await request('/api/admin/platform',{cookie})).status,403);assert.equal((await request('/api/admin/platform/plans',{cookie})).status,403);assert.equal((await request('/api/admin/platform/plans/collector',{method:'PUT',cookie,body:{name:'x',revision:1}})).status,403)});
   await t.test('administrators can edit only unpublished draft pricing',async()=>{
+   const plans=await request('/api/admin/platform/plans',{cookie:adminCookie});assert.equal(plans.status,200);assert.ok(plans.data.some(p=>p.code==='free'));assert.ok(!JSON.stringify(plans.data).includes('password_hash'));
+   const inbox=await request('/api/admin/platform?view=requests',{cookie:adminCookie});assert.equal(inbox.status,200);assert.equal(inbox.data.members,undefined);assert.equal(inbox.data.plans,undefined);assert.ok(Array.isArray(inbox.data.requests));
    const overview=await request('/api/admin/platform',{cookie:adminCookie});assert.equal(overview.status,200);assert.equal(overview.data.billing_enabled,false);
    const plan=overview.data.plans.find(p=>p.code==='collector');const body={name:'Future collector',description:'Planning only',monthly_price_minor:1299,annual_price_minor:null,revision:plan.revision};
    assert.equal((await request('/api/admin/platform/plans/collector',{method:'PUT',cookie:adminCookie,body})).status,200);

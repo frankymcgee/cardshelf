@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {PRIMARY_NAVIGATION,COLLECTION_LINKS,MORE_GROUPS,ADMIN_LINKS,activeNavigation,administrationLinks,navigationMatches} from '../shared/navigation.mjs';
+import {PRIMARY_NAVIGATION,COLLECTION_LINKS,MORE_GROUPS,ADMIN_LINKS,ADMIN_ENTRY,ADMIN_GROUPS,activeNavigation,administrationLinks,navigationMatches} from '../shared/navigation.mjs';
 import {retiredBattleRoute} from '../shared/legacy-battle.mjs';
 import {arenaPaidTier} from '../shared/arena.mjs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
@@ -13,7 +13,7 @@ test('five primary destinations replace eight tabs without removing existing too
 });
 for(const [path,group] of [['/app','home'],['/app/','home'],['/cards?set=en:one','collection'],['/cards/one','collection'],['/binders/new','collection'],['/games','collection'],['/explore/en:one','collection'],['/marketplace/inbox','market'],['/arena/matches/a','arena'],['/arena/decks/new','arena'],['/admin/arena','more'],['/membership','more'],['/referrals','more'],['/cardshelf','more']])test('correct navigation group for '+path,()=>assert.equal(activeNavigation(path),group));
 for(const role of [undefined,null,'user','collector','plus','complimentary','Admin',''])test('administration links hidden from role '+role,()=>assert.deepEqual(administrationLinks(role),[]));
-test('administrator sees all administrative cards',()=>assert.equal(administrationLinks('admin'),ADMIN_LINKS));
+test('administrator enters the grouped hub through one navigation card',()=>{assert.equal(administrationLinks('admin'),ADMIN_ENTRY);assert.equal(ADMIN_ENTRY.length,1);assert.equal(ADMIN_ENTRY[0].to,'/admin');assert.deepEqual(ADMIN_GROUPS.flatMap(g=>g.links).map(l=>l.to).sort(),ADMIN_LINKS.map(l=>l.to).sort());});
 test('exact page matching does not activate root for every page',()=>{assert.equal(navigationMatches('/cards','/'),false);assert.equal(navigationMatches('/cards-other','/cards'),false);assert.equal(navigationMatches('/cards/123','/cards'),true);});
 for(const path of ['/battle','/battle/','/battle/decks/new','/battle/matches/123?token=private','/%62attle//matches/123'])test('retired page redirects to arena without leaking prior match IDs: '+path,()=>assert.deepEqual(retiredBattleRoute(path),{kind:'page',admin:false,to:'/arena'}));
 for(const path of ['/api/battle','/api/battle/cards','/api/battle/matches/123/actions','/api/%62attle/join'])test('retired API classification: '+path,()=>assert.deepEqual(retiredBattleRoute(path),{kind:'api',admin:false,to:'/arena'}));

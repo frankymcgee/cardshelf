@@ -1,8 +1,27 @@
-# CardShelf 0.36.0
+# CardShelf 0.37.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
 binders, quick tracking, artwork effects, binder themes and a member marketplace.
+
+## Pricing and membership scan allowances
+
+**More → Administration → Pricing & plans** brings Free, Stripe product sync,
+Test pricing preview and public pricing together. Free is a built-in $0 tier;
+no Stripe product or subscription is needed. Paid product details continue to
+come from Stripe, and the Test preview remains read-only.
+
+Set scan limits under **Administration → Card scanning → Monthly scans by
+membership tier**. `0` means unlimited member scans. The shared USD budget still
+applies. Limits reset each UTC calendar month; changing tier does not reset usage.
+Existing collection/game access rules are unchanged: Free remains catalogue-only,
+and Collector needs collection access (available while enforcement is off) to scan.
+Plus/Pro, Complimentary and protected testers retain their existing scan access.
+Migration `023_scan_tier_limits.sql` starts every tier with your previous global
+limit. Save changes with your administrator password.
+
+The Administration home groups and searches all tools. The request inbox now
+focuses on website requests; member management stays in Memberships & referrals.
 
 ## Ad placeholders and administrator preview
 
@@ -57,7 +76,7 @@ Choose another empty Collection pocket for an extra placement, or mark a prepare
 Tracking pocket collected. The selected binder is retained between scans, and
 guarded Undo restores the changes made by that scan.
 
-Scanning starts disabled. **More → Card scanning** lets administrators save an
+Scanning starts disabled. **More → Administration → Card scanning** lets administrators save an
 encrypted OpenAI API key, choose the model and reasoning settings, edit the
 recognition prompt, and set model prices, a shared budget and member allowance.
 Usage reports support a future GPU hosting comparison. The existing CPU server handles
@@ -189,7 +208,7 @@ integration-key tests plus Stripe payment tests remain, with new activation regr
 
 ## Stripe-managed product catalogue
 
-Version 0.11.0 adds **Platform administration → Stripe product catalogue**: opt in once,
+Version 0.11.0 adds **Administration → Pricing & plans → Stripe product catalogue**: opt in once,
 then manage product descriptions, uploaded images, unit labels, marketing features,
 monthly/yearly prices and tax in Stripe. Use **Sync now** or the optional 24-hour sync.
 Live product details can also populate the read-only platform plan records. Existing

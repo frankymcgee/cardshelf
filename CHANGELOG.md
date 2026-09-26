@@ -1,3 +1,10 @@
+## 0.37.0 — Free pricing, tier scan allowances and admin navigation
+
+- Show Free beside paid plans in public pricing and the read-only Test preview, even when checkout is paused or no Test products have been synced. No Stripe product is required for Free.
+- Add monthly scan allowances for Free, Collector, Plus/Pro and Complimentary/tester tiers. Zero means unlimited member scans; collection/game permissions, shared USD budget and request concurrency still apply. Show the current allowance on pricing and in the scanner.
+- Migration 023 copies the existing global allowance to every tier. Usage remains per account per UTC calendar month across tier changes. Replayed requests keep their receipts without consuming another allowance.
+- Add a searchable Administration home and section switcher, move product sync/private plan notes to Pricing & plans, simplify the request inbox and remove duplicated subscription links and outdated scanning copy.
+
 ## 0.36.0 — Auto ads previews inside card grids
 
 - Insert one card-sized Auto ads preview after the first six cards in public catalogue, Cards and marketplace grids. Preserve card order, result totals and pagination.

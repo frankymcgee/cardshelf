@@ -71,6 +71,7 @@ await test('administrator-only Test pricing preview with untouched Live policy a
     await t.test('admin sees Test monthly/yearly offers despite Live enforcement, paused checkout and unavailable credentials', async () => {
       const before = await snapshot(), r = await request(path, admin.cookie);
       assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.environment, 'sandbox'); assert.equal(r.data.preview, true); assert.equal(r.data.checkout_enabled, false);
+      assert.deepEqual(Object.keys(r.data.scan_allowances).sort(),['collector','free','plus']);
       assert.equal(r.data.offers.length, 2); assert.deepEqual(r.data.offers.map(o => o.cadence).sort(), ['ANNUAL', 'MONTHLY']);
       assert.equal(r.data.offers[0].product_snapshot.name, 'PREVIEW_TEST_' + suffix);
       assert.equal(r.data.offers[0].product_snapshot.unit_label, 'collector'); assert.equal(r.data.offers[0].product_snapshot.marketing_features.length, 1);
@@ -87,12 +88,13 @@ await test('administrator-only Test pricing preview with untouched Live policy a
     });
     await t.test('public pricing ignores preview flags and no server-rendered preview page leaks Test content', async () => {
       for (const url of ['/api/public/subscription-offers', '/api/public/subscription-offers?preview=true&environment=sandbox']) {
-        const r = await request(url, admin.cookie); assert.equal(r.status, 200); assert.deepEqual(r.data, { enabled: false, offers: [] });
+        const r = await request(url, admin.cookie); assert.equal(r.status, 200); assert.equal(r.data.enabled,false);assert.deepEqual(r.data.offers,[]);assert.deepEqual(Object.keys(r.data.scan_allowances).sort(),['collector','free','plus']);
       }
-      for (const cookie of [undefined, admin.cookie]) for (const url of ['/pricing?preview=true', '/admin/integrations/stripe-preview']) {
+      for (const cookie of [undefined, admin.cookie]) for (const url of ['/pricing?preview=true', '/admin/integrations/stripe-preview', '/admin']) {
         const r = await request(url, cookie); assert.equal(r.status, 200); assert.equal(typeof r.data, 'string');
         assert.ok(!r.data.includes('PREVIEW_TEST_')); assert.ok(!r.data.includes('LIVE_PRIVATE_'));
-        if (url.startsWith('/admin/')) { assert.match(r.headers.get('cache-control'), /no-store/); assert.match(r.headers.get('x-robots-tag'), /noindex/); }
+        if (url.startsWith('/pricing')) assert.match(r.data,/data-testid="free-plan"/);
+        if (url.startsWith('/admin')) { assert.match(r.headers.get('cache-control'), /no-store/); assert.match(r.headers.get('x-robots-tag'), /noindex/); }
       }
     });
     await t.test('failed sync reports a warning without its raw exception and preserves last saved products', async () => {

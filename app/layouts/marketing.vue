@@ -20,7 +20,7 @@ function closeMenu() { menuOpen.value = false; menuButton.value?.focus() }
         </nav>
       </div>
     </header>
-    <main id="marketing-main" tabindex="-1"><div v-if="route.path === '/pricing'" class="m-container"><FreePlanCard /></div><slot /><AdSenseSlot v-if="['/', '/features', '/pricing'].includes(route.path)" :content-ready="true" auto-only /><FreePrivacyNotice v-if="route.path === '/privacy'" /></main>
+    <main id="marketing-main" tabindex="-1"><slot /><AdSenseSlot v-if="['/', '/features', '/pricing'].includes(route.path)" :content-ready="true" auto-only /><FreePrivacyNotice v-if="route.path === '/privacy'" /></main>
     <footer class="m-footer"><div class="m-container">
       <div class="m-footer-top"><div><NuxtLink to="/" class="m-logo"><img src="/icon.svg" width="32" height="32" alt="" />CardShelf</NuxtLink><p>Your collection. Your next match.<br>A little more room for the hobby.</p></div>
         <nav aria-label="Footer navigation"><NuxtLink to="/features">The platform</NuxtLink><NuxtLink to="/pokemon-arena">Pokémon Arena</NuxtLink><NuxtLink to="/pricing">Plans & access</NuxtLink><NuxtLink to="/#questions">Questions</NuxtLink><NuxtLink to="/early-access">Request access</NuxtLink><NuxtLink to="/privacy">Privacy & data</NuxtLink><NuxtLink to="/login">Sign in</NuxtLink></nav>

@@ -9,7 +9,7 @@ async function fixtures(page,{noMatches=false,lostConfirmation=false,disabled=fa
   let receipt=null;const calls=[],errors=[];
   let cardState=structuredClone(card);
   const binderStates=[structuredClone({...binder,slots:collectionSlots}),{...binder,id:trackingId,binder_type:'tracking',title:'Prepared checklist',slots:[{position:5,printing_id:holo,is_collected:trackingCollected}]}];
-  let settings={...SCAN_DEFAULTS,revision:1,enabled:false,api_key_set:false,key_available:true,monthly_budget_micros:0,user_monthly_limit:100,input_price_micros:400000,output_price_micros:1600000,reservation_micros:7783};
+  let settings={...SCAN_DEFAULTS,revision:1,enabled:false,api_key_set:false,key_available:true,monthly_budget_micros:0,user_monthly_limit:100,tier_monthly_limits:{free:100,collector:100,plus:100,complimentary:100},input_price_micros:400000,output_price_micros:1600000,reservation_micros:7783};
   page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/api/**',async route=>{
     const request=route.request(),path=decodeURIComponent(new URL(request.url()).pathname),method=request.method(),body=method==='POST'?request.postDataJSON():null;
@@ -214,4 +214,17 @@ test('admin edits model, reasoning, prompt and cost limits, then restores the pr
   await expect(page.getByText('Scanning settings saved.')).toBeVisible();expect(saves()).toHaveLength(2);
   expect(saves()[1].body).toMatchObject({model:'synthetic-reasoner',reasoning_effort:null,reasoning_mode:null,prompt:SCAN_PROMPT,max_output_tokens:4096});
   expect(errors).toEqual([]);
+});
+
+test('administrator saves zero as an unlimited tier allowance',async({page})=>{
+  const {calls,errors}=await fixtures(page);await page.goto('/admin/scanning');
+  await page.getByLabel('Collector Plus / Pro monthly scans',{exact:false}).fill('0');
+  await page.getByLabel('Complimentary & testers monthly scans',{exact:false}).fill('250');
+  await page.getByLabel('Confirm your administrator password').fill('Synthetic password');
+  await page.getByRole('button',{name:'Save scanning settings',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('Scanning settings saved');
+  const sent=calls.find(c=>c.path==='/api/admin/scanning'&&c.method==='POST');
+  expect(sent.body.tier_monthly_limits).toEqual({free:100,collector:100,plus:0,complimentary:250});
+  await expect(page.getByLabel('Collector Plus / Pro monthly scans',{exact:false})).toHaveValue('0');
+  await noOverflow(page);expect(errors).toEqual([]);
 });

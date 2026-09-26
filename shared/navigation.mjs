@@ -32,7 +32,8 @@ export const MORE_GROUPS = Object.freeze([
 ]);
 /** @type {readonly NavCard[]} */
 export const ADMIN_LINKS = Object.freeze([
-  {to:'/admin/platform',label:'Platform',description:'People, plans and product sync.',icon:'settings'},
+  {to:'/admin/pricing',label:'Pricing & plans',description:'Free tier, Stripe product sync and pricing preview.',icon:'star'},
+  {to:'/admin/platform',label:'Website requests',description:'Review access, support and privacy requests.',icon:'mail'},
   {to:'/admin/memberships',label:'Memberships & referrals',description:'Assign tiers and review referrals.',icon:'shield'},
   {to:'/admin/integrations/stripe',label:'Stripe',description:'Connection and billing controls.',icon:'link'},
   {to:'/admin/integrations/stripe-preview',label:'Test pricing preview',description:'Review Sandbox products without billing.',icon:'cards'},
@@ -42,8 +43,18 @@ export const ADMIN_LINKS = Object.freeze([
   {to:'/admin/emails',label:'Emails',description:'Postal, delivery, DNS checks and suppressed recipients.',icon:'mail'},
   {to:'/admin/scanning',label:'Card scanning',description:'Recognition model, prompt, scan allowances and costs.',icon:'search'},
   {to:'/admin/passwords',label:'Password recovery',description:'Help an account recover access.',icon:'shield'},
-  {to:'/admin/arena',label:'Arena administration',description:'Availability and supported gameplay.',icon:'cards'}
+  {to:'/admin/arena',label:'Arena administration',description:'Availability and supported gameplay.',icon:'cards'},
+  {to:'/marketplace/moderation',label:'Marketplace moderation',description:'Review reported listings.',icon:'shield'},
+  {to:'/settings#catalogue',label:'Pokémon imports & account tools',description:'Import Pokémon sets, invite testers and back up the server.',icon:'download'}
 ]);
+/** @type {readonly {id:string,title:string,links:readonly NavCard[]}[]} */
+export const ADMIN_GROUPS = Object.freeze([
+  {id:'plans',title:'Plans & billing',paths:['/admin/pricing','/admin/integrations/stripe-preview','/admin/memberships','/admin/integrations/stripe']},
+  {id:'content',title:'Cards & community',paths:['/admin/scanning','/admin/game-catalogue','/settings#catalogue','/admin/arena','/marketplace/moderation']},
+  {id:'operations',title:'People & services',paths:['/admin/platform','/admin/free-platform','/admin/adsense','/admin/emails','/admin/passwords']}
+].map(group=>({id:group.id,title:group.title,links:group.paths.map(path=>ADMIN_LINKS.find(link=>link.to===path)).filter(Boolean)})));
+/** @type {readonly NavCard[]} */
+export const ADMIN_ENTRY = Object.freeze([{to:'/admin',label:'Administration',description:'Plans, people, scanning and platform services.',icon:'shield'}]);
 /** @param {string} value */
 export function navigationPath(value) {
   return typeof value==='string' ? value.split(/[?#]/,1)[0].replace(/\/+$/,'') || '/' : '/';
@@ -61,4 +72,4 @@ export function activeNavigation(path) {
   return 'more';
 }
 /** @param {string|null|undefined} role @returns {readonly NavCard[]} */
-export function administrationLinks(role) { return role==='admin'?ADMIN_LINKS:[]; }
+export function administrationLinks(role) { return role==='admin'?ADMIN_ENTRY:[]; }
