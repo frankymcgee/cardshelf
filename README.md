@@ -1,4 +1,4 @@
-# CardShelf 0.37.0
+# CardShelf 0.38.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -214,3 +214,13 @@ monthly/yearly prices and tax in Stripe. Use **Sync now** or the optional 24-hou
 Live product details can also populate the read-only platform plan records. Existing
 subscription snapshots and tester/Complimentary access are preserved; syncing does not
 enable billing. See [Stripe product setup, limits and acceptance](docs/STRIPE_PRODUCTS.md).
+
+## Affiliate shops
+
+More → Administration → Affiliate shops manages up to 12 external shops. Paste programme-issued HTTPS links, optionally add a supported search URL containing `{query}` and a referral/coupon code, then choose placements and games. Links start disabled and have a live preview, ordering controls and optional expiry (end of the selected UTC day). Migration `024_affiliate_shops.sql` starts with no shops configured.
+
+**Start with Amazon** creates paused entries for binders, sleeves and card packs. Paste complete Associates links from SiteStripe or Mobile GetLink; Amazon links are preserved unchanged, labelled as Amazon, and include the required Associate disclosure. No Amazon API key is needed for these text links. Confirm CardShelf's existing price-history functionality with Amazon before enabling links: its participation rules restrict price-tracking sites unless Amazon agrees. See the [Amazon setup notes and official sources](docs/affiliate-shops.md#start-with-amazon-binders-sleeves-and-packs).
+
+These optional shopping links appear on marketplace browsing, collection card details and public catalogue card details. They are labelled as affiliate links for all tiers; they do not load advertising scripts or contact a shop until a visitor follows a link. No stock, price or commission is inferred from a URL. Existing member listings and enquiries continue as before.
+
+Use the exact URLs and codes approved by each programme. Affiliate IDs are public; do not paste credentials. CardTrader documents issued code rewards for eligible Zero purchases, but a normal URL/API key does not earn commission by itself. Marketplace data access and buying through its API require a separately agreed integration; this release does not place orders or import CardTrader offers. [Integration notes](docs/affiliate-shops.md).

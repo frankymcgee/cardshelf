@@ -29,6 +29,7 @@ onBeforeUnmount(() => { sequence++; clearTimeout(timer) })
       <label>Condition<select v-model="filters.condition"><option value="">All conditions</option><option v-for="c in SALE_CONDITIONS" :key="c" :value="c">{{ c }}</option></select></label>
       <label>Sort<select v-model="filters.order"><option value="newest">Newest first</option><option value="price_low">Price: low to high</option><option value="price_high">Price: high to low</option></select></label>
     </div>
+    <AffiliateLinks v-if="!mine" placement="marketplace" :search="filters.q" />
     <div v-if="failure" class="market-error" role="alert">{{ failure }} <button class="text-button" @click="load">Retry</button></div>
     <p v-if="loading && !data" class="loading-panel" role="status">Loading the market…</p>
     <div v-if="data" class="market-grid" :aria-busy="loading">

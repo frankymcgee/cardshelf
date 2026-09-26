@@ -39,6 +39,7 @@ export const ADMIN_LINKS = Object.freeze([
   {to:'/admin/integrations/stripe-preview',label:'Test pricing preview',description:'Review Sandbox products without billing.',icon:'cards'},
   {to:'/admin/game-catalogue',label:'Game imports',description:'Import additional card games.',icon:'download'},
   {to:'/admin/free-platform',label:'Free tier & sponsors',description:'Registration and first-party ads.',icon:'grid'},
+  {to:'/admin/affiliate-shops',label:'Affiliate shops',description:'External shopping links, referral codes and previews.',icon:'link'},
   {to:'/admin/adsense',label:'Google AdSense',description:'Ad units, Auto ads and verification.',icon:'settings'},
   {to:'/admin/emails',label:'Emails',description:'Postal, delivery, DNS checks and suppressed recipients.',icon:'mail'},
   {to:'/admin/scanning',label:'Card scanning',description:'Recognition model, prompt, scan allowances and costs.',icon:'search'},
@@ -50,7 +51,7 @@ export const ADMIN_LINKS = Object.freeze([
 /** @type {readonly {id:string,title:string,links:readonly NavCard[]}[]} */
 export const ADMIN_GROUPS = Object.freeze([
   {id:'plans',title:'Plans & billing',paths:['/admin/pricing','/admin/integrations/stripe-preview','/admin/memberships','/admin/integrations/stripe']},
-  {id:'content',title:'Cards & community',paths:['/admin/scanning','/admin/game-catalogue','/settings#catalogue','/admin/arena','/marketplace/moderation']},
+  {id:'content',title:'Cards & community',paths:['/admin/scanning','/admin/game-catalogue','/settings#catalogue','/admin/arena','/marketplace/moderation','/admin/affiliate-shops']},
   {id:'operations',title:'People & services',paths:['/admin/platform','/admin/free-platform','/admin/adsense','/admin/emails','/admin/passwords']}
 ].map(group=>({id:group.id,title:group.title,links:group.paths.map(path=>ADMIN_LINKS.find(link=>link.to===path)).filter(Boolean)})));
 /** @type {readonly NavCard[]} */
