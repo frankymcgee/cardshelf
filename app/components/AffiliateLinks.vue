@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AFFILIATE_DISCLOSURE, AMAZON_DISCLOSURE, affiliateLinks, amazonShop, affiliateImageUrl } from '../../shared/affiliate-shops.mjs'
+import { AFFILIATE_DISCLOSURE, AMAZON_DISCLOSURE, affiliateLinks, amazonShop, affiliateImageUrl, affiliateLinkLabel as linkLabel, affiliateLinkDescription as linkDescription } from '../../shared/affiliate-shops.mjs'
 const props = defineProps<{ placement: string; card?: any; search?: string; game?: string; shops?: any[] }>()
 const api = useApi(), fetched = ref<any[]>([])
 let alive = true
@@ -7,8 +7,6 @@ const failedImages = reactive<Record<string, boolean>>({})
 const links = computed(() => affiliateLinks(props.shops ?? fetched.value, { placement: props.placement, card: props.card, search: props.search, game: props.game }))
 const hasAmazon = computed(() => links.value.some(amazonShop))
 const hasProducts = computed(() => links.value.some(shop => shop.kind === 'product'))
-const linkLabel = (shop: any) => shop.kind === 'product' ? (amazonShop(shop) ? 'View on Amazon' : 'View at shop') : amazonShop(shop) ? shop.name + ' on Amazon' : (shop.isSearch ? 'Search ' : 'Visit ') + shop.name
-const linkDescription = (shop: any) => shop.kind === 'product' ? 'View ' + shop.name + (amazonShop(shop) ? ' on Amazon' : ' at external shop') : linkLabel(shop)
 const imageUrl = (shop: any) => affiliateImageUrl(shop, props.shops !== undefined)
 onMounted(async () => {
   if (props.shops !== undefined) return
@@ -18,7 +16,11 @@ onMounted(async () => {
 onBeforeUnmount(() => { alive = false })
 </script>
 <template>
-  <section v-if="links.length" class="affiliate-shops" aria-label="External shops" data-testid="affiliate-shops">
+  <div v-if="links.length && placement === 'marketplace'" class="affiliate-market-preview" data-testid="affiliate-shops">
+    <div class="affiliate-market-grid"><MarketplaceAffiliateCard v-for="shop in links" :key="shop.id" :shop="shop" :preview="shops !== undefined" /></div>
+    <AffiliateDisclosure :amazon="hasAmazon" />
+  </div>
+  <section v-else-if="links.length" class="affiliate-shops" aria-label="External shops" data-testid="affiliate-shops">
     <div class="affiliate-heading"><h3>{{ hasProducts ? 'Products and external shops' : 'Explore external shops' }}</h3><span class="badge">Affiliate links</span></div>
     <p class="affiliate-disclosure">{{ AFFILIATE_DISCLOSURE }}</p>
     <p v-if="hasAmazon" class="affiliate-disclosure amazon-disclosure" data-testid="amazon-disclosure">{{ AMAZON_DISCLOSURE }}</p>
@@ -34,6 +36,7 @@ onBeforeUnmount(() => { alive = false })
   </section>
 </template>
 <style scoped>
+.affiliate-market-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:16px}.affiliate-market-preview{min-width:0}@media(max-width:600px){.affiliate-market-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
 .affiliate-shops{margin:24px 0;padding:20px;border:1px solid var(--line,#dfe3ec);border-radius:16px;background:var(--paper);color:var(--ink);min-width:0}.affiliate-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.affiliate-heading h3{font-size:17px;margin:0}.affiliate-disclosure,.affiliate-availability{font-size:12px;line-height:1.65;color:var(--muted,#656378);margin:10px 0 0}.affiliate-list{display:grid;gap:12px;margin-top:16px}.affiliate-shop{display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--line,#dfe3ec);padding-top:14px;min-width:0}.affiliate-shop>div{min-width:0}.affiliate-shop p{font-size:12px;line-height:1.6;margin:6px 0;overflow-wrap:anywhere}.affiliate-shop strong,.affiliate-shop code{overflow-wrap:anywhere}.affiliate-shop small{display:block;color:var(--muted,#656378);margin-top:4px}.affiliate-shop a{flex-shrink:0;white-space:normal;overflow-wrap:anywhere;text-align:center}.affiliate-code code{font-weight:700}@media(max-width:650px){.affiliate-shop{align-items:stretch;flex-direction:column;gap:8px}.affiliate-shop a{justify-content:center}.affiliate-shops{padding:16px}}
 .amazon-disclosure{font-weight:650;color:var(--ink,#252338)}
 .affiliate-shop a{max-width:50%}

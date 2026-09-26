@@ -2,6 +2,8 @@
 
 CardShelf v0.38 adds optional external shopping links to the marketplace, collection card details and public catalogue card details. Links work for visitors and every membership tier. The external retailer takes payment and handles delivery; CardShelf does not import inventory, reserve products or create orders.
 
+In v0.39.1, marketplace products and external shops share one grid with collector listings. Affiliate positions are randomized per visit and remain stable during ordinary updates. Collector listing order and page totals are unchanged; card filters and price sorting apply to those collector listings. Each external tile is labelled **Affiliate link**, with the full disclosure and Amazon statement below the results. An affiliate-only marketplace shows product tiles without an empty-listings panel. The Marketplace draft preview uses the same tiles.
+
 ## Set up a shop
 
 1. Apply migration `024_affiliate_shops.sql` through the normal deployment migration step. Affiliate shopping starts disabled with no shops.
@@ -11,7 +13,7 @@ CardShelf v0.38 adds optional external shopping links to the marketplace, collec
 5. Optionally enter a referral/coupon code for customers to copy into the shop's checkout. CardShelf displays it without promising a discount or applying it automatically. Add an end date if needed; the entire shop is hidden after that UTC date.
 6. Choose placements and games, reorder shops, and inspect the live draft preview. The preview includes paused shops with valid, unexpired links. Clicking a preview opens the external shop.
 7. Enable the shop and **Show affiliate shopping links**, confirm your current administrator password and save. Up to 12 shops are supported. Changes are audited and concurrent edits are rejected so one administrator cannot silently overwrite another.
-8. Check **Saved marketplace visibility**, which reads the same public endpoint as visitors and refreshes after saving. It lists the saved links eligible for Marketplace; **Check saved links** refreshes it manually. Use **View marketplace** to confirm the links under the Browse cards filters. The draft preview can show paused shops and is not proof of publication. My listings and private enquiries intentionally omit affiliate links.
+8. Check **Saved marketplace visibility**, which reads the same public endpoint as visitors and refreshes after saving. It lists the saved links eligible for Marketplace; **Check saved links** refreshes it manually. Use **View marketplace** to confirm the tiles within the main results grid. The draft preview can show paused shops and is not proof of publication. My listings and private enquiries intentionally omit affiliate links.
 
 If the saved count is zero, check the main switch, each shop's enable switch, the Marketplace placement and any end date, then save. An unsaved link does not appear publicly. A failed visibility check is reported separately from an empty published list.
 
@@ -28,7 +30,7 @@ The public endpoint returns only currently enabled, unexpired shops when the glo
 3. Enter a product name (up to 120 characters), your own description (up to 600 characters) and the exact affiliate URL for that product. Search templates are not used for products, so a marketplace search cannot redirect a product card to a different item.
 4. Upload a photo you own or have permission to publish: a still JPEG, PNG or WebP, up to 1 MB and 12 megapixels. The server validates its format, strips metadata and re-encodes it to WebP at a maximum of 1200 × 1200 pixels and 512 KiB. It never fetches an image URL or a retailer's page. The product name is used as the image's alternative text.
 5. Review the draft preview, select placements/games, enable the entry and main switch, then confirm your current administrator password and save. Image uploads alone do not publish or overwrite saved settings. Replacing or removing an image takes effect publicly only after saving.
-6. Check **Saved marketplace visibility** and follow **View marketplace**. The card displays a shop button instead of a price. It shares the existing disclosure, ordering, expiry and pause controls. Shop links and product cards share the 12-entry limit.
+6. Check **Saved marketplace visibility** and follow **View marketplace**. The card displays a shop button instead of a price. It shares the existing disclosure, expiry and pause controls. Saved ordering applies to card-detail placements and the draft preview; marketplace positions are mixed per visit. Shop links and product cards share the 12-entry limit.
 
 Product images are served from CardShelf. Private image previews require an administrator session. Public requests must refer to an enabled, unexpired product in the saved settings while the main switch is on, even when the image ID is known. All image responses use `no-store`; disabling or replacing an image blocks subsequent requests, although it cannot erase an image already displayed in a visitor's browser. Missing images show a placeholder while the product link remains usable.
 

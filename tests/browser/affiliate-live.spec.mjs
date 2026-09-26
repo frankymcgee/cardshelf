@@ -26,13 +26,13 @@ test('saved active Amazon links really appear in Browse cards and disappear when
     await page.getByLabel('Current administrator password').fill(password);await page.getByRole('button',{name:'Save affiliate shops',exact:true}).click();
     await expect(publication).toContainText('1 saved link is available');await expect(publication).toContainText('Card binders');
     await page.getByRole('link',{name:'View marketplace',exact:true}).click();
-    const panel=page.getByTestId('affiliate-shops');await expect(panel).toBeVisible();
+    const panel=page.locator('[data-market-affiliate]');await expect(panel).toBeVisible();
     await expect(panel.locator('a')).toHaveCount(1);const link=panel.getByRole('link',{name:'Card binders on Amazon (opens in a new tab)'});
     await expect(link).toHaveAttribute('href',url);await expect(link).toHaveAttribute('rel','sponsored nofollow noopener');
     await expect(page.getByTestId('amazon-disclosure')).toBeVisible();
     await page.getByLabel('Search',{exact:true}).fill('English booster packs');await expect(link).toHaveAttribute('href',url);
     await page.screenshot({path:info.outputPath('published-affiliate-marketplace.png'),fullPage:true});
-    await page.getByRole('link',{name:'My listings',exact:true}).click();await expect(panel).toHaveCount(0);
+    await page.getByRole('link',{name:'My listings',exact:true}).click();await expect(panel).toHaveCount(0);await expect(page.getByTestId('affiliate-disclosure')).toHaveCount(0);
     await page.goto('/admin/affiliate-shops');await expect(publication).toContainText('1 saved link is available');
     await page.getByRole('button',{name:'Add product card',exact:true}).click();
     await page.getByLabel('Product name',{exact:true}).fill('Archive zip binder');
@@ -48,7 +48,7 @@ test('saved active Amazon links really appear in Browse cards and disappear when
     await page.getByRole('button',{name:'Save affiliate shops',exact:true}).click();await expect(publication).toContainText('2 saved links are available');
     await page.reload();await expect(page.getByLabel('Product name',{exact:true})).toHaveValue('Archive zip binder');
     await page.getByRole('link',{name:'View marketplace',exact:true}).click();
-    const product=page.getByTestId('affiliate-product');await expect(product).toContainText('My original product description.');
+    const product=page.getByTestId('marketplace-results').getByTestId('affiliate-product');await expect(product).toContainText('My original product description.');
     await expect(product.getByRole('link')).toHaveText(/View on Amazon/);await expect(product.getByRole('link')).toHaveAttribute('href',url);
     await expect(product.getByRole('img')).toHaveAttribute('src',imagePath);await product.scrollIntoViewIfNeeded();
     await expect.poll(()=>product.getByRole('img').evaluate(img=>img.naturalWidth)).toBeGreaterThan(0);
@@ -62,7 +62,7 @@ test('saved active Amazon links really appear in Browse cards and disappear when
     await page.getByRole('link',{name:'View marketplace',exact:true}).click();
     expect(await (await pausedResponse).json()).toEqual({shops:[]});
     expect((await page.request.get(imagePath)).status()).toBe(404);
-    await expect(page.getByRole('heading',{name:'Find your next favourite',exact:true})).toBeVisible();await expect(panel).toHaveCount(0);expect(errors).toEqual([]);
+    await expect(page.getByRole('heading',{name:'Find your next favourite',exact:true})).toBeVisible();await expect(panel).toHaveCount(0);await expect(page.getByTestId('affiliate-disclosure')).toHaveCount(0);expect(errors).toEqual([]);
   }finally{
     if(original)await sql`UPDATE affiliate_shop_settings SET enabled=${original.enabled},shops=${sql.json(original.shops)},revision=${original.revision},updated_by=${original.updated_by},updated_at=${original.updated_at} WHERE singleton`;
     if(imageId)await sql`DELETE FROM affiliate_product_images WHERE id=${imageId}`;

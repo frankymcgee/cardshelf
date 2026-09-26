@@ -13,6 +13,8 @@ export function amazonUrl(value){
   try{const host=new URL(value).hostname;return AMAZON_DOMAINS.some(domain=>host===domain||host.endsWith('.'+domain));}catch{return false;}
 }
 export function amazonShop(shop){return shop?.retailer==='amazon'||amazonUrl(shop?.url)||amazonUrl(shop?.search_url);}
+export function affiliateLinkLabel(shop){return shop.kind==='product'?(amazonShop(shop)?'View on Amazon':'View at shop'):amazonShop(shop)?shop.name+' on Amazon':(shop.isSearch?'Search ':'Visit ')+shop.name;}
+export function affiliateLinkDescription(shop){return shop.kind==='product'?'View '+shop.name+(amazonShop(shop)?' on Amazon':' at external shop'):affiliateLinkLabel(shop);}
 export function affiliateImageUrl(shop,preview=false){
   if(shop?.kind!=='product'||typeof shop.image_id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(shop.image_id))return '';
   return (preview?'/api/admin/affiliate-shops/images/':'/api/public/affiliate-images/')+shop.image_id;

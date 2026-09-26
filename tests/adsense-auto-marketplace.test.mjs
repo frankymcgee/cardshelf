@@ -127,8 +127,8 @@ test('schema replaces only the old three-column slot check, with opt-in defaults
 test('page integration fences private card dialogs and preserves a single keyed ad over filtering',async()=>{
   const cards=await text('app/pages/cards.vue'),market=await text('app/pages/marketplace/index.vue'),component=await text('app/components/AdSenseSlot.vue');
   assert.match(cards,/enterPrivateCard\(window, id\)/);assert.ok(!cards.includes('@select="selected = $event"'));assert.match(cards,/!selected/);
-  assert.match(market,/marketplaceAdRows\(data.value\?\.items\)/);assert.match(market,/:manual-allowed="data.items.length >= 4"/);
-  assert.match(market,/<div v-if="data" class="market-grid"/);assert.match(market,/:key="row.key"/);
+  assert.match(market,/marketplaceAdRows\(data.value\?\.items\)/);assert.match(market,/:manual-allowed="data\?.items.length >= 4"/);
+  assert.match(market,/marketplaceAffiliateRows\(marketplaceAdRows/);assert.match(market,/:key="row.key"/);
   assert.match(component,/Advertisements/);assert.match(component,/Advertising, not a card for sale/);assert.ok(!/<a\b|<NuxtLink\b|@click/.test(component));
   assert.match(component,/if \(!auth.state.value.loaded\) await auth.refresh\(\)/);
   assert.match(component,/window.location.replace\(adFreePath/);assert.match(component,/setInterval\(visibleCheck, 60000\)/);

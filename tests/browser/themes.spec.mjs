@@ -67,7 +67,7 @@ for(const mode of ['light','dark']){
   test(mode+' marketplace and administration share the palette',async({page},info)=>{
     const errors=await fixtures(page,mode);await page.emulateMedia({colorScheme:mode});
     for(const [url,panel,selectors] of [
-      ['/marketplace','.market-card',['.market-card-copy h2','.market-card-copy p','.market-card-footer','[data-testid="amazon-disclosure"]','[data-testid="affiliate-shops"] a','.market-filters input']],
+      ['/marketplace','.market-card',['.market-card-copy h2','.market-card-copy p','.market-card-footer','[data-testid="amazon-disclosure"]','[data-market-affiliate] a','[data-market-affiliate] h2','[data-market-affiliate] .affiliate-label','.market-filters input']],
       ['/admin','.admin-card',['.admin-card h3','.admin-card p','.admin-search input']],
       ['/admin/affiliate-shops','.affiliate-section',['.affiliate-section h2','.affiliate-section .data-note','.affiliate-section .alert','input[type="url"]']],
       ['/admin/pricing','.settings-panel',['.settings-panel h2','.settings-panel .muted','.button.primary']],

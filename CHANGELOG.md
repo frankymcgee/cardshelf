@@ -1,3 +1,10 @@
+## 0.39.1 — One marketplace grid
+
+- Mix affiliate products and external shops into the same responsive grid as collector listings. Randomize affiliate positions per visit and keep them steady through ordinary updates; preserve collector sorting, pagination, exact tracking URLs and the single keyed ad slot.
+- Move the full affiliate and Amazon disclosures below the results. Mark each external tile as an Affiliate link, retain its retailer button and omit prices or checkout controls.
+- Show a populated grid when only affiliate products are available, keep My listings private, and update the administrator Marketplace preview to match the tiles and bottom disclosure. No migration or settings changes are required.
+- Verify desktop/phone light and dark layouts, sorting, pagination, image fallback, optional-service failures, empty results and the real publication flow.
+
 ## 0.39.0 — Manual affiliate product cards
 
 - Add product cards alongside existing affiliate shop links, with manually entered names, descriptions, locally uploaded images and a View on Amazon / View at shop button. Product cards show no price, stock status or checkout controls and keep their exact destination through marketplace searches.
