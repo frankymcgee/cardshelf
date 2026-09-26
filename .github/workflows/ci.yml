@@ -52,6 +52,7 @@ jobs:
       - run: npm run test:scanning-ui
       - run: npm run test:ads-ui
       - run: npm run test:pricing-ui
+      - run: npm run test:affiliates-ui
       - name: Upload resolved lockfile and server log
         if: always()
         uses: actions/upload-artifact@v4

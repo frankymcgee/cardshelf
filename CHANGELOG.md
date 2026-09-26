@@ -1,3 +1,11 @@
+## 0.38.0 — Amazon starter links and configurable affiliate shops
+
+- Add admin-managed external shop links with optional encoded card searches, referral codes, placement/game filters, ordering and expiry.
+- Start Amazon entries for binders, sleeves and card packs; paste supplied Associates links unchanged. Include the Amazon disclosure and explicit Amazon destination labels, with no product scraping, price claims or API credentials.
+- Preview links before saving; master and per-shop switches start disabled. Current admin password, revision conflicts and audit events protect changes.
+- Show disclosed external shopping options on marketplace browsing, collection card details and public catalogue details, with no external script or automatic purchase.
+- Add migration 024; no accounts, API keys, prices or commission rates are seeded. CardTrader buying and data access remain separate from approved referral links.
+
 ## 0.37.0 — Free pricing, tier scan allowances and admin navigation
 
 - Show Free beside paid plans in public pricing and the read-only Test preview, even when checkout is paused or no Test products have been synced. No Stripe product is required for Free.
