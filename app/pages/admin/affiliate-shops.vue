@@ -104,7 +104,7 @@ useSeoMeta({ title: 'Affiliate shops · CardShelf' })
     </fieldset>
     <button type="button" class="button secondary" :disabled="busy || shops.length >= 12" @click="add()">Add shop</button>
     <section class="panel affiliate-section form-stack">
-      <h2>Preview your links</h2><p class="data-note">Shows valid, unexpired draft links for the selected placement, including paused shops. Nothing is published until you save and enable it. Opening a preview link visits the external shop.</p>
+      <h2>Preview your links</h2><p class="data-note">Shows valid, unexpired draft links for the selected placement, including paused shops. Nothing is published until you save and enable it. Marketplace entries appear as tiles mixed among collector listings, with the disclosure below the results. Opening a preview link visits the external shop.</p>
       <div class="affiliate-fields"><label>Preview placement<select v-model="previewPlacement"><option v-for="placement in placements" :key="placement.code" :value="placement.code">{{ placement.name }}</option></select></label><label>Preview search<input v-model="previewQuery" maxlength="300"></label></div>
       <AffiliateLinks :shops="previewShops" :placement="previewPlacement" :search="previewQuery" />
       <p v-if="!shops.length" class="muted">Add your first shop to see its preview.</p>

@@ -1,4 +1,4 @@
-# CardShelf 0.39.0
+# CardShelf 0.39.2
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -222,6 +222,8 @@ More → Administration → Affiliate shops manages up to 12 external shops. Pas
 **Start with Amazon** creates paused entries for binders, sleeves and card packs. Paste complete Associates links from SiteStripe or Mobile GetLink; Amazon links are preserved unchanged, labelled as Amazon, and include the required Associate disclosure. No Amazon API key is needed for these text links. Confirm CardShelf's existing price-history functionality with Amazon before enabling links: its participation rules restrict price-tracking sites unless Amazon agrees. See the [Amazon setup notes and official sources](docs/affiliate-shops.md#start-with-amazon-binders-sleeves-and-packs).
 
 **Manual product cards** add a product name, your own description, a locally uploaded photo and a **View on Amazon** or **View at shop** button. Choose **Add product card** or change an existing entry's display type. JPEG, PNG and WebP uploads are limited to 1 MB; use images you own or have permission to publish. Uploads stay private until the entry is saved and enabled. No price, stock status, checkout, scraping or retailer API access is involved. Product destinations stay fixed during searches. Migration `025_affiliate_product_images.sql` stores images on the server.
+
+Marketplace products and shops appear as tiles in the main listings grid, with randomized positions that stay steady during a visit. Each has an Affiliate link label, and the full affiliate disclosure sits below the results. Collector sorting and pagination are preserved.
 
 These optional shopping links appear on marketplace browsing, collection card details and public catalogue card details. They are labelled as affiliate links for all tiers; they do not load advertising scripts or contact a shop until a visitor follows a link. No stock, price or commission is inferred from a URL. Existing member listings and enquiries continue as before.
 
