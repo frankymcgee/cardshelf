@@ -51,7 +51,7 @@ test('administration tools are grouped, searchable and reachable through the sec
   await page.getByLabel('Go to admin section').selectOption('/admin/pricing');
   await expect(page.getByRole('heading',{name:'Pricing & plans',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Free · $0 forever',exact:true})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Stripe product catalogue',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Manage it once. Keep it in sync.',exact:true})).toBeVisible();
   await page.getByRole('link',{name:'Test pricing preview',exact:true}).first().click();
   await expect(page.getByTestId('free-plan')).toBeVisible();expect(errors).toEqual([]);
 });
