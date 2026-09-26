@@ -13,6 +13,10 @@ export function amazonUrl(value){
   try{const host=new URL(value).hostname;return AMAZON_DOMAINS.some(domain=>host===domain||host.endsWith('.'+domain));}catch{return false;}
 }
 export function amazonShop(shop){return shop?.retailer==='amazon'||amazonUrl(shop?.url)||amazonUrl(shop?.search_url);}
+export function affiliateImageUrl(shop,preview=false){
+  if(shop?.kind!=='product'||typeof shop.image_id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(shop.image_id))return '';
+  return (preview?'/api/admin/affiliate-shops/images/':'/api/public/affiliate-images/')+shop.image_id;
+}
 
 // Only administrator-supplied HTTPS destinations. No scripts, redirects or remote fetches.
 export function affiliateUrl(value, template = false) {
@@ -43,7 +47,7 @@ export function affiliateLinks(shops, {placement='',card=null,search='',game=''}
   return (Array.isArray(shops)?shops:[]).filter(shop=>affiliateShopActive(shop,now)&&shop.placements?.includes(placement)&&
     (!selectedGame||!shop.games?.length||shop.games.includes(selectedGame))).map(shop=>{
       let href=shop.url,isSearch=false;
-      if(query&&!amazonShop(shop)&&affiliateUrl(shop.search_url,true)){
+      if(query&&shop.kind!=='product'&&!amazonShop(shop)&&affiliateUrl(shop.search_url,true)){
         try{const candidate=shop.search_url.replaceAll('{query}',encodeURIComponent(query));if(affiliateUrl(candidate)){href=candidate;isSearch=true;}}catch{/* Keep the shop link if the search cannot be encoded. */}
       }
       return {...shop,href,isSearch};

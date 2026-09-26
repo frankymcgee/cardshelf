@@ -2,11 +2,12 @@
 import {test,expect} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
 import postgres from 'postgres';
+import sharp from 'sharp';
 import {hashPassword,randomToken,digest} from '../../lib/security.mjs';
 const base=process.env.TEST_BASE_URL;
 if(process.env.ALLOW_TEST_DATABASE!=='yes'||!base||!new URL(process.env.DATABASE_URL||'http://invalid').pathname.endsWith('_test'))throw new Error('Use a disposable _test database only.');
 test('saved active Amazon links really appear in Browse cards and disappear when paused',async({page,context},info)=>{
-  const sql=postgres(process.env.DATABASE_URL,{max:2}),id=randomUUID(),token=randomToken(),password='Affiliate browser fixture 123';let original;
+  const sql=postgres(process.env.DATABASE_URL,{max:2}),id=randomUUID(),token=randomToken(),password='Affiliate browser fixture 123';let original,imageId;
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   try{
     [original]=await sql`SELECT * FROM affiliate_shop_settings WHERE singleton`;
@@ -33,14 +34,38 @@ test('saved active Amazon links really appear in Browse cards and disappear when
     await page.screenshot({path:info.outputPath('published-affiliate-marketplace.png'),fullPage:true});
     await page.getByRole('link',{name:'My listings',exact:true}).click();await expect(panel).toHaveCount(0);
     await page.goto('/admin/affiliate-shops');await expect(publication).toContainText('1 saved link is available');
+    await page.getByRole('button',{name:'Add product card',exact:true}).click();
+    await page.getByLabel('Product name',{exact:true}).fill('Archive zip binder');
+    await page.getByLabel('Product description',{exact:true}).fill('A binder for sleeved cards.\nMy original product description.');
+    await page.getByLabel('Affiliate product URL',{exact:true}).fill(url);
+    const image=await sharp({create:{width:300,height:400,channels:3,background:'#5546d8'}}).png().toBuffer();
+    const uploadResponse=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/affiliate-shops/images'&&r.request().method()==='POST');
+    await page.getByLabel('Product image',{exact:true}).setInputFiles({name:'binder.png',mimeType:'image/png',buffer:image});
+    imageId=(await (await uploadResponse).json()).id;expect(imageId).toBeTruthy();
+    await expect(page.locator('.affiliate-image-preview')).toBeVisible();
+    const imagePath='/api/public/affiliate-images/'+imageId;expect((await page.request.get(imagePath)).status()).toBe(404);
+    await page.getByLabel('Enable this shop').last().check();await page.getByLabel('Current administrator password').fill(password);
+    await page.getByRole('button',{name:'Save affiliate shops',exact:true}).click();await expect(publication).toContainText('2 saved links are available');
+    await page.reload();await expect(page.getByLabel('Product name',{exact:true})).toHaveValue('Archive zip binder');
+    await page.getByRole('link',{name:'View marketplace',exact:true}).click();
+    const product=page.getByTestId('affiliate-product');await expect(product).toContainText('My original product description.');
+    await expect(product.getByRole('link')).toHaveText(/View on Amazon/);await expect(product.getByRole('link')).toHaveAttribute('href',url);
+    await expect(product.getByRole('img')).toHaveAttribute('src',imagePath);await product.scrollIntoViewIfNeeded();
+    await expect.poll(()=>product.getByRole('img').evaluate(img=>img.naturalWidth)).toBeGreaterThan(0);
+    expect((await page.request.get(imagePath)).status()).toBe(200);await expect(product).not.toContainText(/\$|Add to cart|In stock/i);
+    await page.getByLabel('Search',{exact:true}).fill('Unrelated card');await expect(product.getByRole('link')).toHaveAttribute('href',url);
+    await page.screenshot({path:info.outputPath('manual-product-marketplace.png'),fullPage:true});
+    await page.goto('/admin/affiliate-shops');
     await page.getByLabel('Show affiliate shopping links').uncheck();await page.getByLabel('Current administrator password').fill(password);await page.getByRole('button',{name:'Save affiliate shops',exact:true}).click();
     await expect(publication).toContainText('No saved affiliate links');
     const pausedResponse=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/public/affiliate-shops');
     await page.getByRole('link',{name:'View marketplace',exact:true}).click();
     expect(await (await pausedResponse).json()).toEqual({shops:[]});
+    expect((await page.request.get(imagePath)).status()).toBe(404);
     await expect(page.getByRole('heading',{name:'Find your next favourite',exact:true})).toBeVisible();await expect(panel).toHaveCount(0);expect(errors).toEqual([]);
   }finally{
     if(original)await sql`UPDATE affiliate_shop_settings SET enabled=${original.enabled},shops=${sql.json(original.shops)},revision=${original.revision},updated_by=${original.updated_by},updated_at=${original.updated_at} WHERE singleton`;
-    await sql`DELETE FROM audit_log WHERE user_id=${id}`;await sql`DELETE FROM app_users WHERE id=${id}`;await sql`DELETE FROM auth_attempts WHERE bucket=${digest('affiliate-shops-admin:'+id)}`;await sql.end();
+    if(imageId)await sql`DELETE FROM affiliate_product_images WHERE id=${imageId}`;
+    await sql`DELETE FROM audit_log WHERE user_id=${id}`;await sql`DELETE FROM app_users WHERE id=${id}`;await sql`DELETE FROM auth_attempts WHERE bucket IN ${sql([digest('affiliate-shops-admin:'+id),digest('affiliate-product-image:'+id)])}`;await sql.end();
   }
 });

@@ -1,11 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { affiliateUrl, affiliateSearch, affiliateLinks, amazonShop, AMAZON_STARTERS } from '../shared/affiliate-shops.mjs';
+import { affiliateUrl, affiliateSearch, affiliateLinks, amazonShop, AMAZON_STARTERS, affiliateImageUrl } from '../shared/affiliate-shops.mjs';
 import { affiliateSettingsInput, publicAffiliateShops } from '../lib/affiliate-shops.mjs';
 
 const shop = (overrides={}) => ({id:'00000000-0000-0000-0000-000000000001',name:'Example shop',description:'Cards and packs',url:'https://shop.example.com/packs?affiliate=approved%2Bcode&campaign=cardshelf',search_url:'https://shop.example.com/search?q={query}&affiliate=approved%2Bcode',referral_code:'ISSUED-CODE',enabled:true,placements:['marketplace','cards','catalogue'],games:[],expires_on:'',...overrides});
 const input = overrides => ({enabled:true,shops:[shop()],revision:1,password:' Password with spaces ',...overrides});
 const now = new Date('2026-09-26T23:59:59Z');
+
+test('manual product cards preserve fixed destinations and accept only local image identifiers',async()=>{
+  const product=shop({kind:'product',search_url:'',image_id:'00000000-0000-0000-0000-000000000002',name:'Binder '.repeat(17),description:'My original description.\n'.repeat(20)});
+  const saved=affiliateSettingsInput(input({shops:[product]})).shops[0];
+  assert.equal(saved.content_source,'manual');assert.equal(saved.kind,'product');assert.equal(saved.image_id,product.image_id);
+  assert.equal(affiliateLinks([product],{placement:'marketplace',search:'other product'},now)[0].href,product.url);
+  // A legacy/malformed search value must never redirect a product's identity.
+  assert.equal(affiliateLinks([{...product,search_url:shop().search_url}],{placement:'cards',card:{name:'Different card'}},now)[0].href,product.url);
+  assert.equal(affiliateImageUrl(product),'/api/public/affiliate-images/'+product.image_id);
+  assert.equal(affiliateImageUrl(product,true),'/api/admin/affiliate-shops/images/'+product.image_id);
+  for(const image_id of ['https://evil.example/image.png','../../private','',null,12])assert.equal(affiliateImageUrl({...product,image_id}),'');
+  const pub=await publicAffiliateShops(async()=>[{enabled:true,shops:[saved]}]);
+  assert.equal(pub.shops[0].image_id,product.image_id);assert.equal(pub.shops[0].kind,'product');assert.equal(pub.shops[0].content_source,undefined);
+  for(const change of [{kind:'imported'},{content_source:'amazon_api'},{image_url:'https://evil.example/pixel'},{image_base64:'bad'},{image_id:'https://evil.example/image.png'},{image_id:null},{kind:'shop'},{search_url:shop().search_url},{name:'x'.repeat(121)},{description:'x'.repeat(601)}]){
+    assert.throws(()=>affiliateSettingsInput(input({shops:[{...product,...change}]})),e=>e.status===400);
+  }
+  const legacy=affiliateSettingsInput(input()).shops[0];assert.equal(legacy.kind,'shop');assert.equal(legacy.image_id,'');assert.equal(affiliateImageUrl({...product,kind:'shop'}),'');
+});
 
 test('affiliate URLs preserve tracking bytes and reject executable, private or malformed destinations',()=>{
   assert.equal(affiliateUrl(shop().url),shop().url);

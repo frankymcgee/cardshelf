@@ -1,3 +1,10 @@
+## 0.39.0 — Manual affiliate product cards
+
+- Add product cards alongside existing affiliate shop links, with manually entered names, descriptions, locally uploaded images and a View on Amazon / View at shop button. Product cards show no price, stock status or checkout controls and keep their exact destination through marketplace searches.
+- Add a Product card display type, image upload/replacement/removal and draft preview to Affiliate shops. Existing entries remain shop links until changed; publishing still requires enablement, placements, a current administrator password and an unchanged revision.
+- Migration 025 stores decoded WebP images with metadata stripped. Draft previews require administrator access; public image requests check saved publication and expiry. Global pause, per-entry pause and image replacement/removal revoke subsequent public requests. Reclaim old unused uploads during later saves/uploads and bound stored uploads.
+- Keep content explicitly manual; no retailer scraping, automatic import, API credentials or Amazon-owned images are added. Extend unit, real PostgreSQL/HTTP and desktop/phone browser coverage for product publishing, upload failures and image access.
+
 ## 0.38.1 — Affiliate visibility and consistent colour themes
 
 - Show the saved marketplace affiliate-link count and shop names in administration, using the same public endpoint as visitors. Refresh after saving, distinguish published links from paused draft previews, and provide a direct marketplace link.
