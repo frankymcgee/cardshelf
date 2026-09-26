@@ -1,14 +1,25 @@
 import {test,expect} from '@playwright/test';
+import sharp from 'sharp';
 import {AMAZON_STARTERS,AMAZON_DISCLOSURE} from '../../shared/affiliate-shops.mjs';
 const shop=overrides=>({id:'00000000-0000-0000-0000-000000000001',name:'Example cards',description:'English cards and sealed packs',url:'https://shop.example.com/packs?ref=approved%2Bpartner',search_url:'https://shop.example.com/search?q={query}&ref=approved%2Bpartner',referral_code:'ISSUED-CODE',enabled:true,placements:['marketplace','cards','catalogue'],games:[],expires_on:'',...overrides});
 const card={id:'en:base1-4',game:'pokemon',name:'Charizard & friends',set_name:'Base Set',local_id:'4',language:'en',rarity:'Rare',faces:[],rules_text:'Fixture card',image_url:'',printings:[]};
-async function fixtures(page,{empty=false,failed=false,conflict=false,amazon=false}={}){
+const productImageId='00000000-0000-0000-0000-000000000099';
+const product=()=>shop({kind:'product',name:'Archive zip binder',description:'A binder for sleeved cards.\nChoose your preferred colour.',image_id:productImageId,retailer:'amazon',url:'https://www.amazon.com.au/dp/ABCDEFGHIJ?tag=fixture-22',search_url:'',referral_code:''});
+const productPhoto=await sharp(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360"><rect width="480" height="360" fill="#eeeaf9"/><rect x="110" y="30" width="260" height="300" rx="20" fill="#6757b8"/><path d="M140 30V330" stroke="#473679" stroke-width="12"/><rect x="185" y="115" width="120" height="90" rx="8" fill="#ded7f5"/><text x="245" y="164" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#473679">CARD BINDER</text></svg>')).png().toBuffer();
+async function fixtures(page,{empty=false,failed=false,conflict=false,amazon=false,products=false,brokenImage=false,uploadFails=false}={}){
   const errors=[],posts=[];page.on('pageerror',e=>errors.push(e.message));
   let settings={enabled:false,shops:[],revision:1};
   await page.route('https://shop.example.com/**',route=>route.abort());
   await page.route('**/api/**',async route=>{
     const path=new URL(route.request().url()).pathname;let data;
     if(path==='/api/session')data={user:{id:'affiliate-fixture',name:'Affiliate tester',role:'admin'},setup_required:false};
+    else if(path==='/api/admin/affiliate-shops/images'){
+      if(uploadFails)return route.fulfill({status:415,json:{message:'Use a still JPEG, PNG or WebP image.'}});
+      data={id:productImageId,width:480,height:360};
+    }
+    else if(path.startsWith('/api/admin/affiliate-shops/images/')||path.startsWith('/api/public/affiliate-images/')){
+      return brokenImage?route.fulfill({status:404,json:{message:'Image unavailable'}}):route.fulfill({contentType:'image/png',body:productPhoto});
+    }
     else if(path==='/api/admin/affiliate-shops'){
       if(route.request().method()==='POST'){
         const body=route.request().postDataJSON();posts.push(body);
@@ -18,7 +29,7 @@ async function fixtures(page,{empty=false,failed=false,conflict=false,amazon=fal
     }
     else if(path==='/api/public/affiliate-shops'){
       if(failed)return route.fulfill({status:503,json:{message:'Temporarily unavailable'}});
-      data={shops:empty?[]:amazon?AMAZON_STARTERS.map((entry,i)=>shop({...entry,id:String(i),retailer:'amazon',url:'https://www.amazon.com.au/dp/ABCDEFGHIJ?tag=fixture-22',search_url:'',referral_code:''})):[shop(),shop({id:'00000000-0000-0000-0000-000000000002',name:'MTG only',games:['mtg']})]};
+      data={shops:empty?[]:products?[product(),shop()]:amazon?AMAZON_STARTERS.map((entry,i)=>shop({...entry,id:String(i),retailer:'amazon',url:'https://www.amazon.com.au/dp/ABCDEFGHIJ?tag=fixture-22',search_url:'',referral_code:''})):[shop(),shop({id:'00000000-0000-0000-0000-000000000002',name:'MTG only',games:['mtg']})]};
     }
     else if(path==='/api/marketplace/listings')data={items:[],total:0};
     else if(path==='/api/marketplace/access')data={can_sell:true,can_enquire:true};
@@ -101,4 +112,37 @@ test('Amazon starter entries are paused and binders, sleeves and packs keep supp
     await expect(link).toHaveAttribute('referrerpolicy','strict-origin-when-cross-origin');
   }
   await noOverflow(page);await page.screenshot({path:info.outputPath('amazon-marketplace.png'),fullPage:true});expect(errors).toEqual([]);
+});
+
+for(const mode of ['light','dark'])test(mode+' manual product cards upload, preview and publish without price or checkout',async({page},info)=>{
+  const {errors,posts}=await fixtures(page,{products:true});
+  await page.addInitScript(value=>localStorage.setItem('cardshelf.theme',value),mode);await page.goto('/admin/affiliate-shops');
+  await page.getByRole('button',{name:'Add product card',exact:true}).click();await expect(page.getByLabel('Enable this shop')).not.toBeChecked();
+  await page.getByLabel('Product name',{exact:true}).fill(product().name);await page.getByLabel('Product description',{exact:true}).fill(product().description);
+  await page.getByLabel('Affiliate product URL',{exact:true}).fill(product().url);
+  await page.getByLabel('Product image',{exact:true}).setInputFiles({name:'my-binder.png',mimeType:'image/png',buffer:productPhoto});
+  await expect(page.locator('.affiliate-image-preview')).toHaveAttribute('src','/api/admin/affiliate-shops/images/'+productImageId);
+  const preview=page.getByTestId('affiliate-product');await expect(preview).toContainText(product().name);await expect(preview.getByRole('link')).toHaveText(/View on Amazon/);
+  expect(posts).toHaveLength(0);await expect(page.getByLabel('Optional affiliate search URL')).toHaveCount(0);
+  await preview.scrollIntoViewIfNeeded();await noOverflow(page);await page.screenshot({path:info.outputPath(mode+'-manual-product-admin.png'),fullPage:true});
+  await page.getByLabel('Enable this shop').check();await page.getByLabel('Show affiliate shopping links').check();
+  await page.getByLabel('Current administrator password').fill('Fixture password');await page.getByRole('button',{name:'Save affiliate shops',exact:true}).click();
+  await expect(page.getByText('Affiliate shops saved.',{exact:true})).toBeVisible();expect(posts[0].shops[0].image_id).toBe(productImageId);expect(posts[0].shops[0].kind).toBe('product');
+  await page.goto('/marketplace');const tile=page.getByTestId('affiliate-product');
+  await expect(tile.getByRole('img')).toHaveAttribute('src','/api/public/affiliate-images/'+productImageId);await tile.scrollIntoViewIfNeeded();
+  await expect.poll(()=>tile.getByRole('img').evaluate(image=>image.naturalWidth)).toBeGreaterThan(0);
+  await expect(tile.getByRole('link')).toHaveAttribute('href',product().url);await expect(tile.getByRole('link')).toHaveAttribute('rel','sponsored nofollow noopener');
+  await expect(tile).not.toContainText(/\$|Add to cart|In stock/i);await expect(page.getByTestId('amazon-disclosure')).toBeVisible();
+  await page.getByLabel('Search',{exact:true}).fill('Different product');await expect(tile.getByRole('link')).toHaveAttribute('href',product().url);
+  await noOverflow(page);await tile.scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath(mode+'-manual-product-marketplace.png'),fullPage:true});
+  await page.getByRole('link',{name:'My listings',exact:true}).click();await expect(tile).toHaveCount(0);expect(errors).toEqual([]);
+});
+test('failed images leave product links usable and failed uploads preserve form edits',async({page})=>{
+  const {errors}=await fixtures(page,{products:true,brokenImage:true,uploadFails:true});await page.goto('/marketplace');
+  const tile=page.getByTestId('affiliate-product');await tile.scrollIntoViewIfNeeded();await expect(tile).toContainText('Product image unavailable');await expect(tile.getByRole('link')).toHaveAttribute('href',product().url);
+  await page.goto('/admin/affiliate-shops');await page.getByRole('button',{name:'Add product card',exact:true}).click();
+  await page.getByLabel('Product name',{exact:true}).fill('My draft binder');await page.getByLabel('Affiliate product URL',{exact:true}).fill(product().url);
+  await page.getByLabel('Product image',{exact:true}).setInputFiles({name:'binder.png',mimeType:'image/png',buffer:productPhoto});
+  await expect(page.getByRole('alert')).toContainText('Use a still JPEG');await expect(page.getByLabel('Product name',{exact:true})).toHaveValue('My draft binder');
+  await expect(page.getByLabel('Affiliate product URL',{exact:true})).toHaveValue(product().url);expect(errors).toEqual([]);
 });

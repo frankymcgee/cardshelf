@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { GAMES } from '../../../shared/games.mjs'
-import { AMAZON_STARTERS, amazonShop, affiliateLinks } from '../../../shared/affiliate-shops.mjs'
+import { AMAZON_STARTERS, amazonShop, affiliateLinks, affiliateImageUrl } from '../../../shared/affiliate-shops.mjs'
 const api = useApi(), notice = useNotice()
 const saved = ref<any>(null), shops = ref<any[]>([]), enabled = ref(false), password = ref(''), busy = ref(false), error = ref('')
 const previewPlacement = ref('marketplace'), previewQuery = ref('Charizard 4 Base Set English')
 const placements = [{ code: 'marketplace', name: 'Marketplace' }, { code: 'cards', name: 'Collection card details' }, { code: 'catalogue', name: 'Public catalogue card details' }]
 const previewShops = computed(() => shops.value.map(shop => ({ ...shop, enabled: true })))
 const published = ref<any[] | null>(null), checking = ref(false), publicationError = ref('')
+const uploading = ref('')
 const publishedMarketplace = computed(() => affiliateLinks(published.value || [], { placement: 'marketplace' }))
 async function checkPublished() {
   checking.value = true; publicationError.value = ''
@@ -14,11 +15,25 @@ async function checkPublished() {
   catch (e) { published.value = null; publicationError.value = errorMessage(e) }
   finally { checking.value = false }
 }
-function accept(value: any) { saved.value = value; enabled.value = value.enabled; shops.value = structuredClone(value.shops).map((shop: any) => ({ ...shop, retailer: shop.retailer || (amazonShop(shop) ? 'amazon' : 'other') })) }
+function accept(value: any) { saved.value = value; enabled.value = value.enabled; shops.value = structuredClone(value.shops).map((shop: any) => ({ ...shop, kind: shop.kind || 'shop', image_id: shop.image_id || '', retailer: shop.retailer || (amazonShop(shop) ? 'amazon' : 'other') })) }
 async function load() { error.value = ''; try { accept(await api('/api/admin/affiliate-shops')) } catch (e) { error.value = errorMessage(e) } }
 onMounted(async () => { await load(); await checkPublished() })
-function add(retailer = 'other', name = '', description = '') { if (shops.value.length < 12) shops.value.push({ id: crypto.randomUUID(), retailer, name, description, url: '', search_url: '', referral_code: '', enabled: false, placements: ['marketplace','cards','catalogue'], games: [], expires_on: '' }) }
+function add(retailer = 'other', name = '', description = '', kind = 'shop') { if (shops.value.length < 12) shops.value.push({ id: crypto.randomUUID(), kind, image_id: '', retailer, name, description, url: '', search_url: '', referral_code: '', enabled: false, placements: ['marketplace','cards','catalogue'], games: [], expires_on: '' }) }
 function addAmazon() { if (shops.value.length <= 9) for (const entry of AMAZON_STARTERS) add('amazon', entry.name, entry.description) }
+function changeKind(shop: any) { if (shop.kind === 'product') shop.search_url = ''; else shop.image_id = '' }
+async function upload(shop: any, event: Event) {
+  const input = event.target as HTMLInputElement, file = input.files?.[0]
+  if (!file || busy.value) return
+  if (file.size > 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { error.value = 'Choose a JPEG, PNG or WebP image no larger than 1 MB.'; input.value = ''; return }
+  busy.value = true; uploading.value = shop.id; error.value = ''
+  try {
+    const encoded = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1] || ''); reader.onerror = () => reject(new Error('The image could not be read.')); reader.readAsDataURL(file) })
+    const image = await api('/api/admin/affiliate-shops/images', { method: 'POST', body: { image_base64: encoded, content_type: file.type } })
+    shop.image_id = image.id
+    notice.show('Product image uploaded to your draft. Save affiliate shops to publish it.')
+  } catch (e) { error.value = errorMessage(e) }
+  finally { busy.value = false; uploading.value = ''; input.value = '' }
+}
 function move(index: number, delta: number) { const next = index + delta; if (next < 0 || next >= shops.value.length) return; const [shop] = shops.value.splice(index, 1); shops.value.splice(next, 0, shop) }
 async function save() {
   if (busy.value || !saved.value) return
@@ -30,7 +45,7 @@ async function save() {
 useSeoMeta({ title: 'Affiliate shops · CardShelf' })
 </script>
 <template>
-  <header class="page-heading"><div><span class="eyebrow">EXTERNAL SHOPPING</span><h1>Affiliate shops</h1><p>Help collectors find binders, sleeves, cards and packs through your affiliate links.</p></div></header>
+  <header class="page-heading"><div><span class="eyebrow">EXTERNAL SHOPPING</span><h1>Affiliate shops</h1><p>Help collectors find binders, sleeves, cards and packs through shop links and product cards.</p></div></header>
   <p v-if="error" class="alert error" role="alert">{{ error }} <button type="button" class="text-button" :disabled="busy" @click="load">Reload saved settings</button></p>
   <form v-if="saved" class="affiliate-settings form-stack" @submit.prevent="save">
     <section class="panel affiliate-section form-stack" data-testid="affiliate-publication">
@@ -57,15 +72,30 @@ useSeoMeta({ title: 'Affiliate shops · CardShelf' })
       <button type="button" class="button secondary" :disabled="busy || shops.length > 9" @click="addAmazon">Add Amazon starter links</button>
       <p class="data-note">The three entries start paused. Fill each link or remove an unused entry before saving.</p>
     </section>
+    <section class="panel affiliate-section form-stack">
+      <h2>Manual product cards</h2><p class="data-note">Add a specific product with its name, your own description, a photo and the complete affiliate link. Visitors see a shop button instead of a price. You can also change an existing entry’s display type to Product card.</p>
+      <p class="data-note">Use a photo you own or have permission to publish. Amazon product pages are not imported or scraped. These cards do not need API access.</p>
+      <button type="button" class="button secondary" :disabled="busy || shops.length >= 12" @click="add('amazon', '', '', 'product')">Add product card</button>
+    </section>
     <fieldset v-for="(shop, index) in shops" :key="shop.id" class="panel affiliate-section shop-editor form-stack" :disabled="busy">
       <legend>{{ shop.name || 'New shop' }}</legend>
       <div class="affiliate-actions"><label class="checkbox-label"><input v-model="shop.enabled" type="checkbox">Enable this shop</label><button type="button" class="text-button" :disabled="index === 0" :aria-label="'Move shop ' + (index + 1) + ' up'" @click="move(index, -1)">Move up</button><button type="button" class="text-button" :disabled="index === shops.length - 1" :aria-label="'Move shop ' + (index + 1) + ' down'" @click="move(index, 1)">Move down</button><button type="button" class="text-button" :aria-label="'Remove shop ' + (index + 1)" @click="shops.splice(index, 1)">Remove</button></div>
-      <label>Shop name<input v-model="shop.name" required maxlength="60" placeholder="e.g. CardTrader"></label>
+      <label>Display type<select v-model="shop.kind" @change="changeKind(shop)"><option value="shop">Shop link</option><option value="product">Product card</option></select></label>
+      <label>{{ shop.kind === 'product' ? 'Product name' : 'Shop name' }}<input v-model="shop.name" required :maxlength="shop.kind === 'product' ? 120 : 60" :placeholder="shop.kind === 'product' ? 'e.g. 9-pocket zip binder' : 'e.g. CardTrader'"></label>
       <label>Retailer<select v-model="shop.retailer"><option value="other">Other shop</option><option value="amazon">Amazon Associates</option></select></label>
-      <label>Description<input v-model="shop.description" maxlength="180" placeholder="e.g. English singles and sealed packs"></label>
-      <label>Affiliate shop URL<input v-model="shop.url" required type="url" maxlength="2048" placeholder="https://…" autocomplete="off"></label>
-      <label v-if="!amazonShop(shop) || shop.search_url">Optional affiliate search URL<input v-model="shop.search_url" maxlength="2048" placeholder="https://shop.example.com/search?q={query}&amp;ref=your-code" autocomplete="off"></label>
-      <p v-if="!amazonShop(shop)" class="data-note">Use {query} where the shop expects the search text. CardShelf encodes the card’s name, set, number and language, or the marketplace search. Leave blank to always open the shop URL. Use a search link only if your programme supports it; check that its tracking parameters are retained.</p>
+      <label v-if="shop.kind === 'product'">Product description<textarea v-model="shop.description" maxlength="600" rows="3" placeholder="Write a short description of the product."></textarea></label>
+      <label v-else>Description<input v-model="shop.description" maxlength="180" placeholder="e.g. English singles and sealed packs"></label>
+      <template v-if="shop.kind === 'product'">
+        <img v-if="shop.image_id" :src="affiliateImageUrl(shop, true)" :alt="shop.name || 'Product image preview'" class="affiliate-image-preview" />
+        <label>Product image<input type="file" accept="image/jpeg,image/png,image/webp" @change="upload(shop, $event)"></label>
+        <p v-if="uploading === shop.id" role="status">Uploading product image…</p>
+        <p class="data-note">JPEG, PNG or WebP, up to 1 MB. Images are stored on CardShelf. Uploading or replacing a photo updates this draft; save to publish it. Unsaved uploads are retained for 24 hours.</p>
+        <button v-if="shop.image_id" type="button" class="text-button" @click="shop.image_id = ''">Remove product image from draft</button>
+      </template>
+      <label>{{ shop.kind === 'product' ? 'Affiliate product URL' : 'Affiliate shop URL' }}<input v-model="shop.url" required type="url" maxlength="2048" placeholder="https://…" autocomplete="off"></label>
+      <label v-if="shop.kind !== 'product' && (!amazonShop(shop) || shop.search_url)">Optional affiliate search URL<input v-model="shop.search_url" maxlength="2048" placeholder="https://shop.example.com/search?q={query}&amp;ref=your-code" autocomplete="off"></label>
+      <p v-if="shop.kind !== 'product' && !amazonShop(shop)" class="data-note">Use {query} where the shop expects the search text. CardShelf encodes the card’s name, set, number and language, or the marketplace search. Leave blank to always open the shop URL. Use a search link only if your programme supports it; check that its tracking parameters are retained.</p>
+      <p v-else-if="shop.kind === 'product' && !amazonShop(shop)" class="data-note">Use the affiliate link for this specific product. It stays unchanged when visitors search the marketplace.</p>
       <p v-else class="data-note">Amazon links open exactly as supplied, including short links. Keep search templates and coupon codes blank; your tracking ID is part of the Amazon link. Prices and availability are checked on Amazon.</p>
       <div class="affiliate-fields"><label v-if="!amazonShop(shop) || shop.referral_code">Optional referral or coupon code<input v-model="shop.referral_code" maxlength="80" autocomplete="off"></label><label>Optional end date<input v-model="shop.expires_on" type="date"></label></div>
       <p class="data-note">The whole shop link is hidden after its end date (UTC). Leave blank for no scheduled expiry.</p>
@@ -79,9 +109,10 @@ useSeoMeta({ title: 'Affiliate shops · CardShelf' })
       <AffiliateLinks :shops="previewShops" :placement="previewPlacement" :search="previewQuery" />
       <p v-if="!shops.length" class="muted">Add your first shop to see its preview.</p>
     </section>
-    <section class="panel affiliate-section form-stack"><label>Current administrator password<input v-model="password" required type="password" autocomplete="current-password" maxlength="128" :disabled="busy"></label><button class="button primary" :disabled="busy">{{ busy ? 'Saving…' : 'Save affiliate shops' }}</button></section>
+    <section class="panel affiliate-section form-stack"><label>Current administrator password<input v-model="password" required type="password" autocomplete="current-password" maxlength="128" :disabled="busy"></label><button class="button primary" :disabled="busy">{{ uploading ? 'Uploading image…' : busy ? 'Saving…' : 'Save affiliate shops' }}</button></section>
   </form><p v-else-if="!error" class="loading-panel">Loading affiliate settings…</p>
 </template>
 <style scoped>
+.affiliate-image-preview{display:block;max-width:100%;width:280px;height:210px;object-fit:contain;background:var(--surface-soft);border:1px solid var(--line);border-radius:10px;padding:10px}.affiliate-settings textarea{width:100%;min-width:0}
 .affiliate-settings{max-width:960px}.affiliate-section{padding:24px;min-width:0;margin:0}.affiliate-section legend{padding:0 8px;font-weight:700;overflow-wrap:anywhere}.affiliate-actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.affiliate-actions .checkbox-label{margin-right:auto}.affiliate-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}.affiliate-choices{border:1px solid var(--line,#ddd);border-radius:10px;padding:14px;display:flex;flex-wrap:wrap;gap:14px;min-width:0}.affiliate-choices p{flex-basis:100%;margin:0}.affiliate-section h2{font-size:19px;margin:0}.affiliate-settings input:not([type=checkbox]),.affiliate-settings select{width:100%;min-width:0}@media(max-width:650px){.affiliate-fields{grid-template-columns:1fr}.affiliate-section{padding:16px}}
 </style>

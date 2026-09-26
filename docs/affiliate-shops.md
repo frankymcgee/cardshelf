@@ -21,11 +21,26 @@ URLs and referral codes are public. Do not paste API keys, secrets or private cu
 
 The public endpoint returns only currently enabled, unexpired shops when the global switch is enabled. Unsaved previews never change it. If settings cannot be loaded, optional shopping links remain hidden and the rest of the page still works. Disabling settings takes effect on subsequent page loads; an already open page is not a live subscription to configuration changes.
 
+## Manual product cards
+
+1. Apply migration `025_affiliate_product_images.sql` with the normal migration step.
+2. Select **Add product card**. It starts paused, with Amazon selected; choose Other shop for another programme. Existing shop entries can be changed using **Display type → Product card**.
+3. Enter a product name (up to 120 characters), your own description (up to 600 characters) and the exact affiliate URL for that product. Search templates are not used for products, so a marketplace search cannot redirect a product card to a different item.
+4. Upload a photo you own or have permission to publish: a still JPEG, PNG or WebP, up to 1 MB and 12 megapixels. The server validates its format, strips metadata and re-encodes it to WebP at a maximum of 1200 × 1200 pixels and 512 KiB. It never fetches an image URL or a retailer's page. The product name is used as the image's alternative text.
+5. Review the draft preview, select placements/games, enable the entry and main switch, then confirm your current administrator password and save. Image uploads alone do not publish or overwrite saved settings. Replacing or removing an image takes effect publicly only after saving.
+6. Check **Saved marketplace visibility** and follow **View marketplace**. The card displays a shop button instead of a price. It shares the existing disclosure, ordering, expiry and pause controls. Shop links and product cards share the 12-entry limit.
+
+Product images are served from CardShelf. Private image previews require an administrator session. Public requests must refer to an enabled, unexpired product in the saved settings while the main switch is on, even when the image ID is known. All image responses use `no-store`; disabling or replacing an image blocks subsequent requests, although it cannot erase an image already displayed in a visitor's browser. Missing images show a placeholder while the product link remains usable.
+
+Uploads not referenced by saved entries are kept for at least 24 hours, then reclaimed on a later settings save or image upload. Saved images are retained for paused products too. A maximum of 120 stored images bounds abandoned drafts. Images are included in normal PostgreSQL backups. Failed uploads keep the existing draft image/text; expired drafts may need to be uploaded again before saving.
+
+These are manually maintained product details, marked `content_source: manual` in protected settings. They do not require Amazon API access. Do not copy Amazon product-page text or images as a workaround for unavailable API access. The product-card layout can later display an approved API source, but API credentials, automatic fetching/refresh and Amazon API content are not implemented in this release.
+
 ## Start with Amazon: binders, sleeves and packs
 
 Use **Add Amazon starter links** to create these three editable, paused entries. Paste a complete link for each entry from Amazon's SiteStripe or Mobile GetLink, using the country programme you joined. Remove any unused entries before saving. Specific product links or relevant product-list links can be used. A product-list link needs relevant original content alongside it; adapt each description to what you selected.
 
-Amazon links are preserved exactly, including Amazon short links. Search templates and referral/coupon codes are not used for Amazon: the tracking ID belongs in the supplied link. CardShelf labels the destination as Amazon and adds its required Associate disclosure. It does not fetch Amazon product images, prices, stock, reviews or ratings. No Amazon API key is required for these text links.
+Amazon links are preserved exactly, including Amazon short links. Search templates and referral/coupon codes are not used for Amazon: the tracking ID belongs in the supplied link. CardShelf labels the destination as Amazon and adds its required Associate disclosure. It does not fetch Amazon product images, prices, stock, reviews or ratings. No Amazon API key is required for these links or for manually authored product cards with your own/permitted images.
 
 List CardShelf's public website URL in Associates Central. **CardShelf records card price history; Amazon's participation rules restrict sites with price-tracking or alerting unless Amazon agrees. Confirm this existing functionality with Amazon before enabling links.** Native/mobile-app distribution has separate approval requirements. Signup and displaying links do not guarantee qualifying sales or approval; eligibility and earnings reports are managed by Amazon.
 
