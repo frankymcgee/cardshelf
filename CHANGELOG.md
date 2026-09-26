@@ -1,3 +1,11 @@
+## 0.41.0 — 2026-09-27
+
+- Add Complete this binder with a deduplicated list of missing printings, pocket locations, search, wishlist filters and bulk wishlist additions.
+- Preserve inventory-backed Collection progress and independent Tracking checkmarks; design checklists require confirmation of the displayed printings.
+- Find active member listings for the exact missing printing, with condition, AUD asking price, postage and pickup details. Exclude your own and unavailable listings.
+- Keep existing membership/game permissions, reject stale bulk selections atomically, and leave quantities, notes, binder layouts and sharing unchanged.
+- Add an index for exact-printing marketplace matches (migration 026).
+
 ## 0.40.0 — 2026-09-26
 
 - Build and validate native AMD64/ARM64 release images in GitHub Actions; publish to GHCR only after the main-branch application, Arena and container upgrade checks pass.
