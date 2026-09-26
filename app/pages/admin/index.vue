@@ -1,0 +1,10 @@
+<script setup lang="ts">
+import { ADMIN_GROUPS } from '../../../shared/navigation.mjs'
+const search = ref(''), auth = useAuth()
+const groups = computed(() => ADMIN_GROUPS.map(group => ({...group, links:group.links.filter(item => `${group.title} ${item.label} ${item.description}`.toLowerCase().includes(search.value.trim().toLowerCase()))})).filter(group => group.links.length))
+useSeoMeta({ title:'Administration · CardShelf' })
+</script>
+<template><div v-if="auth.state.value.user?.role === 'admin'" class="admin-home"><header class="page-heading"><div><span class="eyebrow">CARDSHELF ADMINISTRATION</span><h1>Manage your platform.</h1><p>Plans, people and services, organised by task.</p></div></header><label class="admin-search">Find an admin tool<input v-model="search" type="search" placeholder="Try pricing, scanning or email" /></label><section v-for="group in groups" :key="group.id" class="admin-group"><h2>{{ group.title }}</h2><div class="admin-grid"><NuxtLink v-for="item in group.links" :key="item.to" :to="item.to" class="panel admin-card"><AppIcon :name="item.icon" :size="25"/><div><h3>{{ item.label }}</h3><p>{{ item.description }}</p></div><AppIcon name="right" :size="18"/></NuxtLink></div></section><p v-if="!groups.length" role="status" class="muted">No tools match “{{ search }}”.</p></div></template>
+<style scoped>
+.admin-search{display:block;max-width:520px;font-size:13px;font-weight:600;margin-bottom:30px}.admin-search input{display:block;width:100%;margin-top:8px}.admin-group{margin:0 0 30px}.admin-group h2{font-size:17px;margin:0 0 14px}.admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.admin-card{display:flex;align-items:center;gap:16px;padding:22px;min-width:0}.admin-card:hover{border-color:var(--primary)}.admin-card>svg{color:var(--primary);flex-shrink:0}.admin-card>div{flex:1;min-width:0}.admin-card h3{font-size:15px;margin:0 0 6px}.admin-card p{font-size:12px;line-height:1.6;color:var(--muted);margin:0}@media(max-width:650px){.admin-grid{grid-template-columns:1fr}.admin-card{padding:18px}}
+</style>

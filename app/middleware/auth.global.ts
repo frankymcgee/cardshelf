@@ -10,5 +10,5 @@ export default defineNuxtRouteMiddleware(async to => {
   catch { if (to.path !== '/login') return navigateTo(login); return }
   if (!auth.state.value.user && to.path !== '/login') return navigateTo(login)
   if (auth.state.value.user && to.path === '/login') return navigateTo(safeReturnTo(to.query.next))
-  if (to.path.startsWith('/admin/') && auth.state.value.user?.role !== 'admin') return navigateTo('/account')
+  if ((to.path === '/admin' || to.path.startsWith('/admin/')) && auth.state.value.user?.role !== 'admin') return navigateTo('/account')
 })

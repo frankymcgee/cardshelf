@@ -1,4 +1,4 @@
-# Card photo scanning (v0.33.0)
+# Card photo scanning (v0.37.0)
 
 CardShelf can send one card-front photo to the OpenAI API, read visible identifying
 text, and suggest matching records from the imported catalogue. English and
@@ -11,15 +11,15 @@ Tracking placement also marks the chosen checklist pocket collected.
 ## Enable after upgrading
 
 1. Run the normal upgrade procedure, including migrations `020_card_scanning.sql`
-   and `021_card_scanning_settings.sql`. New installations start disabled, with a
+   `021_card_scanning_settings.sql` and `023_scan_tier_limits.sql`. New installations start disabled, with a
    zero budget and no credential. Existing installations keep their connection,
    budget, model, prompt and request defaults when migration 021 is applied.
 2. Preserve the existing `CARDSHELF_INTEGRATION_KEY`. If none exists, use
    `sh scripts/configure-integrations.sh`, retain a secure backup of `.env`, and
    recreate the application container with that environment. Do not replace a key
    already used by another integration.
-3. Open **More → Card scanning** as an administrator. Add an OpenAI project API key
-   with Responses API access, set a monthly USD budget and per-member allowance,
+3. Open **More → Administration → Card scanning** as an administrator. Add an OpenAI project API key
+   with Responses API access, set a monthly USD budget and per-tier member allowances,
    enable scanning, and confirm with the current administrator password.
 4. Import the Pokémon sets that members need, then open **Collection → Scan a card**.
    Test representative English/Japanese cards, reprints, foil finishes, and difficult
@@ -32,9 +32,28 @@ returned to the browser, and sent only to `https://api.openai.com/v1/responses`.
 Use a dedicated project/key for this feature to make provider invoice comparison
 clear. HTTPS should already be configured for the site and mobile camera uploads.
 
+## Membership allowances
+
+Set each tier's monthly allowance in **Monthly scans by membership tier**.
+The Plus row also covers Stripe products named Collector Pro. Complimentary
+covers administrators and protected tester grants. `0` means unlimited scans per
+member; a zero shared USD budget still stops scanning.
+
+Limits do not grant new permissions. Free remains catalogue-only and Collector
+cannot scan when collection access is excluded by tier enforcement. The public
+pricing table reflects these restrictions. Protected testers retain their access
+and use the Complimentary allowance.
+
+Migration 023 copies the previous global allowance into every tier. Current-month
+receipts are retained, so upgrading, downgrading or changing limits does not reset
+usage. UTC calendar-month boundaries reset the allowance, independently of Stripe
+billing cycles. All analysis attempts count, including failures; a receipt retry,
+confirmation or Undo does not count again. Old settings clients may preserve but
+cannot change the retired global cap; reload to use the new tier inputs.
+
 ## Model, reasoning and prompt controls
 
-**More → Card scanning → Recognition settings** accepts a model ID, reasoning
+**More → Administration → Card scanning → Recognition settings** accepts a model ID, reasoning
 effort/mode, maximum output tokens, image detail and a multiline recognition prompt.
 The initial model remains `gpt-4.1-mini-2025-04-14`. Choose a model with image input
 and strict structured-output support. Aliases are accepted; usage reports show

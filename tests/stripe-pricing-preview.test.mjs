@@ -13,6 +13,7 @@ function fixture({ role = 'admin', rows = [offer(), offer('ANNUAL')], sync = { l
     const text = parts.join('?').replace(/\s+/g, ' ').trim(); calls.push({ text, params });
     assert.match(text, /^SELECT /); assert.doesNotMatch(text, /\b(?:INSERT|UPDATE|DELETE|ALTER|DROP)\b/i);
     if (text.includes('FROM app_users')) return role === null ? [] : [{ role }];
+    if(text.includes('FROM card_scan_settings')) return [{free_monthly_limit:5,collector_monthly_limit:25,plus_monthly_limit:0}];
     assert.match(text, /WHERE environment='sandbox'/);
     if (text.includes('FROM stripe_offers')) { assert.match(text, /AND published/); return rows; }
     if (text.includes('FROM stripe_product_sync')) return sync ? [sync] : [];
@@ -27,7 +28,7 @@ test('preview reads only saved Sandbox offers without credentials, activation or
     const r = await stripePricingPreview(f.sql, 'admin-fixture');
     assert.equal(r.environment, 'sandbox'); assert.equal(r.preview, true); assert.equal(r.checkout_enabled, false);
     assert.equal(r.offers.length, 2); assert.equal(r.last_synced_at, '2026-09-18T00:00:00.000Z'); assert.equal(r.sync_failed, false);
-    assert.equal(f.calls.length, 3); assert.deepEqual(f.calls[0].params, ['admin-fixture']);
+    assert.equal(f.calls.length, 4); assert.deepEqual(r.scan_allowances,{free:5,collector:25,plus:0}); assert.deepEqual(f.calls[0].params, ['admin-fixture']);
     assert.ok(f.calls.every(c => !/billing_controls|stripe_connections|stripe_subscriptions/.test(c.text)));
   } finally { globalThis.fetch = original; }
 });

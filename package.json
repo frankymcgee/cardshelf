@@ -1,6 +1,6 @@
 {
   "name": "cardshelf",
-  "version": "0.36.0",
+  "version": "0.37.0",
   "private": true,
   "type": "module",
   "description": "A standalone, self-hosted card collection and binder planner.",
@@ -21,6 +21,7 @@
     "migrate": "node scripts/migrate.mjs",
     "worker": "node worker/index.mjs",
     "test:ads-ui": "playwright test --config=tests/browser/ads.config.mjs",
+    "test:pricing-ui": "playwright test --config=tests/browser/pricing-admin.config.mjs",
     "test:scanning-ui": "playwright test --config=tests/browser/scanning.config.mjs"
   },
   "dependencies": {

@@ -1,14 +1,15 @@
 <script setup lang="ts">
+import { SCAN_TIERS } from '../../../shared/scan-allowances.mjs'
 import { scanMoney, SCAN_DEFAULTS, SCAN_CONFIG_KEYS, SCAN_PROMPT, SCAN_REASONING_EFFORTS, SCAN_REASONING_MODES } from '../../../shared/card-scanning.mjs'
 const api = useApi()
 const overview = ref<any>(null), error = ref(''), message = ref(''), busy = ref(false)
 const form = reactive({ ...SCAN_DEFAULTS, reasoning_effort: null as string | null, reasoning_mode: null as string | null,
-  revision: 1, enabled: false, api_key: '', clear_api_key: false, password: '', monthly_budget_usd: 0, user_monthly_limit: 100, input_usd_per_million: 0.4, output_usd_per_million: 1.6 })
+  revision: 1, enabled: false, api_key: '', clear_api_key: false, password: '', monthly_budget_usd: 0, tier_monthly_limits: { free: 100, collector: 100, plus: 100, complimentary: 100 } as Record<string, number>, input_usd_per_million: 0.4, output_usd_per_million: 1.6 })
 const reservation = computed(() => Math.ceil(Number(form.input_token_ceiling) * Number(form.input_usd_per_million) + Number(form.max_output_tokens) * Number(form.output_usd_per_million)))
 let alive = true
 function accept(settings: any) {
   Object.assign(form, { revision: settings.revision, enabled: settings.enabled, api_key: '', clear_api_key: false, password: '', monthly_budget_usd: settings.monthly_budget_micros / 1e6,
-    user_monthly_limit: settings.user_monthly_limit, input_usd_per_million: settings.input_price_micros / 1e6, output_usd_per_million: settings.output_price_micros / 1e6,
+    tier_monthly_limits: { ...settings.tier_monthly_limits }, input_usd_per_million: settings.input_price_micros / 1e6, output_usd_per_million: settings.output_price_micros / 1e6,
     ...Object.fromEntries(SCAN_CONFIG_KEYS.map(key => [key, settings[key]])) })
 }
 async function load() {
@@ -68,8 +69,11 @@ onBeforeUnmount(() => { alive = false; form.password = ''; form.api_key = '' })
             <h3>Budget and model pricing</h3>
             <div class="scan-settings-grid">
               <label>Shared monthly budget (USD)<input v-model.number="form.monthly_budget_usd" type="number" min="0" max="1000" step="0.01" required /></label>
-              <label>Scans per member per month<input v-model.number="form.user_monthly_limit" type="number" min="1" max="10000" step="1" required /></label>
+
             </div>
+            <h3 id="tier-limits">Monthly scans by membership tier</h3>
+            <p class="data-note">Set <strong>0 for unlimited</strong> scans per member. These limits do not add scanning access to a tier; collection access and the selected Pokémon game are still required. The shared USD budget always applies.</p>
+            <div class="scan-settings-grid"><label v-for="tier in SCAN_TIERS" :key="tier.code">{{ tier.name }} monthly scans<input v-model.number="form.tier_monthly_limits[tier.code]" type="number" min="0" max="10000" step="1" required /><small class="data-note">{{ tier.note }}</small></label></div>
             <p class="data-note">Allowances reset at the start of each UTC calendar month. All analysis attempts count towards the member allowance; adding or undoing a card does not call OpenAI again.</p>
             <p class="data-note">Enter the current USD token rates for your selected model. Prices do not update automatically when you change the model. The OpenAI invoice is authoritative; cached-input discounts are conservatively ignored.</p>
             <div class="scan-settings-grid"><label>USD per million input tokens<input v-model.number="form.input_usd_per_million" type="number" min="0.000001" max="1000" step="0.000001" required /></label><label>USD per million output tokens<input v-model.number="form.output_usd_per_million" type="number" min="0.000001" max="1000" step="0.000001" required /></label></div>

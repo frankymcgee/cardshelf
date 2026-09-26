@@ -133,13 +133,38 @@ await test('card scanning receipts, spending limits and collection/binder writes
     await t.test('the monthly budget and personal quota prevent dispatch but preserve receipt retries',async()=>{
       const u=upload();await analyse(u);const before=calls;
       const [used]=await sql`SELECT count(*)::integer AS n FROM card_scans WHERE user_id=${owner.id}`;
-      await sql`UPDATE card_scan_settings SET user_monthly_limit=${used.n}`;
+      await sql`UPDATE card_scan_settings SET complimentary_monthly_limit=${used.n}`;
       await expectError(()=>analyse(upload()),429);assert.equal((await analyse(u)).status,'ready');assert.equal(calls,before);
-      await sql`UPDATE card_scan_settings SET user_monthly_limit=100`;
+      await sql`UPDATE card_scan_settings SET complimentary_monthly_limit=100`;
       const [total]=await sql`SELECT coalesce(sum(accounted_micros),0)::integer AS n FROM card_scans WHERE budget_month=date_trunc('month',now() AT TIME ZONE 'UTC')::date`;
       await sql`UPDATE card_scan_settings SET monthly_budget_micros=${total.n+7782}`;
       await expectError(()=>analyse(upload(),other),429);assert.equal(calls,before);assert.equal((await scanAvailability(owner.id)).available,false);
       await sql`UPDATE card_scan_settings SET monthly_budget_micros=5000000`;
+    });
+    await t.test('tier limits persist, zero removes the cap, and old clients cannot erase tier settings',async()=>{
+      const limits={free:5,collector:25,plus:1,complimentary:0};
+      const saved=await changeSettings({tier_monthly_limits:limits});assert.equal(saved.status,200,JSON.stringify(saved.data));
+      assert.deepEqual(saved.data.tier_monthly_limits,limits);
+      assert.deepEqual((await changeSettings()).data.tier_monthly_limits,limits);
+      assert.equal((await changeSettings({user_monthly_limit:2})).status,409);
+      for(const tier_monthly_limits of [{...limits,plus:-1},{...limits,plus:1.5},{...limits,plus:'0'},{...limits,unknown:2},{plus:0}])
+        assert.equal((await changeSettings({tier_monthly_limits})).status,400);
+      let state=await scanAvailability(owner.id);assert.equal(state.unlimited,true);assert.equal(state.remaining,null);assert.equal(state.available,true);
+      const u=upload();await analyse(u);assert.equal((await analyse(u)).id,u.request_id);
+      await sql`UPDATE account_tier_overrides SET tier='plus' WHERE user_id=${owner.id}`;
+      state=await scanAvailability(owner.id);assert.equal(state.monthly_limit,1);assert.equal(state.remaining,0);assert.equal(state.available,false);
+      const before=calls;await expectError(()=>analyse(upload()),429);assert.equal(calls,before);
+      const previousMonth=(await sql`SELECT to_char((now() AT TIME ZONE 'UTC')-interval '1 month','YYYY-MM-01') AS month`)[0].month;
+      await sql`UPDATE card_scans SET budget_month=${previousMonth} WHERE user_id=${owner.id}`;
+      state=await scanAvailability(owner.id);assert.equal(state.remaining,1);
+      await analyse(upload());await expectError(()=>analyse(upload()),429);
+      assert.equal((await changeSettings({tier_monthly_limits:{...limits,plus:0}})).status,200);
+      assert.equal((await scanAvailability(owner.id)).unlimited,true);await analyse(upload());
+      await sql`UPDATE account_tier_overrides SET tier='complimentary' WHERE user_id=${owner.id}`;
+      const [total]=await sql`SELECT coalesce(sum(accounted_micros),0)::integer AS n FROM card_scans WHERE budget_month=date_trunc('month',now() AT TIME ZONE 'UTC')::date`;
+      await sql`UPDATE card_scan_settings SET monthly_budget_micros=${total.n+7782}`;
+      assert.equal((await scanAvailability(owner.id)).available,false);await expectError(()=>analyse(upload()),429);
+      assert.equal((await changeSettings({monthly_budget_usd:5,tier_monthly_limits:{free:100,collector:100,plus:100,complimentary:100}})).status,200);
     });
     await t.test('uncertain provider failures retain reservations; rejected images release money; stale receipts terminate',async()=>{
       const u=upload(),failed=await analyse(u,owner,async()=>{throw new ScanProviderError('provider_unavailable');});assert.equal(failed.status,'failed');
@@ -245,9 +270,14 @@ await test('card scanning receipts, spending limits and collection/binder writes
       const a=await analyse(upload()),b=await analyse(upload());await confirmCardScan(owner.id,a.id,await body());
       await sql`UPDATE account_tier_overrides SET tier='collector' WHERE user_id=${owner.id}`;
       await sql`INSERT INTO stripe_billing_controls(id,environment,subscriptions_enabled,enforcement_enabled) VALUES(1,'production',false,true) ON CONFLICT(id) DO UPDATE SET enforcement_enabled=true,environment='production'`;
+      await sql`UPDATE card_scan_settings SET collector_monthly_limit=0,free_monthly_limit=0`;
       await expectError(()=>analyse(upload()),403);await expectError(async()=>confirmCardScan(owner.id,b.id,await body()),403);
       assert.equal((await undoCardScan(owner.id,a.id)).status,'undone');assert.equal((await scanAvailability(owner.id)).eligible,false);
-      await sql`UPDATE account_tier_overrides SET tier='complimentary' WHERE user_id=${owner.id}`;
+      await sql`DELETE FROM account_tier_overrides WHERE user_id=${owner.id}`;
+      await sql`INSERT INTO free_accounts(user_id) VALUES(${owner.id})`;
+      assert.equal((await scanAvailability(owner.id)).eligible,false);await expectError(()=>analyse(upload()),403);
+      await sql`DELETE FROM free_accounts WHERE user_id=${owner.id}`;
+      await sql`INSERT INTO account_tier_overrides(user_id,tier,reason) VALUES(${owner.id},'complimentary','Restore fixture')`;
     });
     await t.test('account deletion during recognition retains costs without restoring private observations',async()=>{
       const departed=await account(),u=upload();let release,started;
