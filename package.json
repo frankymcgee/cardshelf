@@ -1,6 +1,6 @@
 {
   "name": "cardshelf",
-  "version": "0.38.0",
+  "version": "0.38.1",
   "private": true,
   "type": "module",
   "description": "A standalone, self-hosted card collection and binder planner.",
@@ -23,7 +23,9 @@
     "test:ads-ui": "playwright test --config=tests/browser/ads.config.mjs",
     "test:pricing-ui": "playwright test --config=tests/browser/pricing-admin.config.mjs",
     "test:scanning-ui": "playwright test --config=tests/browser/scanning.config.mjs",
-    "test:affiliates-ui": "playwright test --config=tests/browser/affiliate-shops.config.mjs"
+    "test:affiliates-ui": "playwright test --config=tests/browser/affiliate-shops.config.mjs",
+    "test:affiliates-live": "playwright test --config=tests/browser/affiliate-live.config.mjs",
+    "test:themes-ui": "playwright test --config=tests/browser/themes.config.mjs"
   },
   "dependencies": {
     "postgres": "3.4.7",

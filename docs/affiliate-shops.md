@@ -11,6 +11,9 @@ CardShelf v0.38 adds optional external shopping links to the marketplace, collec
 5. Optionally enter a referral/coupon code for customers to copy into the shop's checkout. CardShelf displays it without promising a discount or applying it automatically. Add an end date if needed; the entire shop is hidden after that UTC date.
 6. Choose placements and games, reorder shops, and inspect the live draft preview. The preview includes paused shops with valid, unexpired links. Clicking a preview opens the external shop.
 7. Enable the shop and **Show affiliate shopping links**, confirm your current administrator password and save. Up to 12 shops are supported. Changes are audited and concurrent edits are rejected so one administrator cannot silently overwrite another.
+8. Check **Saved marketplace visibility**, which reads the same public endpoint as visitors and refreshes after saving. It lists the saved links eligible for Marketplace; **Check saved links** refreshes it manually. Use **View marketplace** to confirm the links under the Browse cards filters. The draft preview can show paused shops and is not proof of publication. My listings and private enquiries intentionally omit affiliate links.
+
+If the saved count is zero, check the main switch, each shop's enable switch, the Marketplace placement and any end date, then save. An unsaved link does not appear publicly. A failed visibility check is reported separately from an empty published list.
 
 Use a pack category or sealed-product landing page as a shop URL to offer packs. Card searches do not confirm an exact printing, product language, price or availability. General marketplace browsing shows every enabled shop; card pages respect the selected games. Private sale management does not display these links.
 

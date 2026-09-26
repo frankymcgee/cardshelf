@@ -1,4 +1,4 @@
-# CardShelf 0.38.0
+# CardShelf 0.38.1
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -217,7 +217,7 @@ enable billing. See [Stripe product setup, limits and acceptance](docs/STRIPE_PR
 
 ## Affiliate shops
 
-More → Administration → Affiliate shops manages up to 12 external shops. Paste programme-issued HTTPS links, optionally add a supported search URL containing `{query}` and a referral/coupon code, then choose placements and games. Links start disabled and have a live preview, ordering controls and optional expiry (end of the selected UTC day). Migration `024_affiliate_shops.sql` starts with no shops configured.
+More → Administration → Affiliate shops manages up to 12 external shops. Paste programme-issued HTTPS links, optionally add a supported search URL containing `{query}` and a referral/coupon code, then choose placements and games. Links start disabled and have a live preview, ordering controls and optional expiry (end of the selected UTC day). Migration `024_affiliate_shops.sql` starts with no shops configured. The saved marketplace visibility panel reports which links visitors can currently see; its count refreshes after saving, separately from the draft preview.
 
 **Start with Amazon** creates paused entries for binders, sleeves and card packs. Paste complete Associates links from SiteStripe or Mobile GetLink; Amazon links are preserved unchanged, labelled as Amazon, and include the required Associate disclosure. No Amazon API key is needed for these text links. Confirm CardShelf's existing price-history functionality with Amazon before enabling links: its participation rules restrict price-tracking sites unless Amazon agrees. See the [Amazon setup notes and official sources](docs/affiliate-shops.md#start-with-amazon-binders-sleeves-and-packs).
 
