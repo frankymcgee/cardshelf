@@ -10,6 +10,7 @@ backups/
 playwright-report/
 test-results/
 .DS_Store
+.cardshelf-upgrade.lock
 
 # Private self-hosted Postal bootstrap, signing keys and SMTP certificates.
 deploy/postal/config/

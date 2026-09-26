@@ -2,27 +2,25 @@
 
 ## Status and prerequisites
 
-This is an initial source-code deployment candidate, not an already deployed
-service. The package's full Docker/Nuxt/PostgreSQL stack could not be executed in
-the authoring environment. Follow the first-deployment checklist and retain the
-resolved dependency lockfile before using it as a release.
+Releases are built and tested in GitHub Actions, then published to the private
+GitHub Container Registry. See [GitHub setup](GITHUB_SETUP.md) for the release gates
+and one-time registry login. Use Linux AMD64 or ARM64, Docker Engine, the Compose v2
+plugin with `up --wait` and `run --pull`, and `flock` (standard on Ubuntu/Debian).
+The production server needs no Node/npm toolchain.
 
-Use a separate Linux server/VM with Docker Engine and the Compose plugin. No
-Frappe components are required. A practical initial allocation to evaluate is
-2 vCPU / 4 GB RAM plus SSD space, but this is an **unbenchmarked starting
-assumption**, not a measured minimum or capacity commitment. Node dependency
-installation/build can require more memory than steady-state serving. Disk use
-will depend on catalogue size, database growth and backup retention.
+A practical starting point to evaluate is 2 vCPU / 4 GB RAM plus SSD space; this is
+not a measured capacity guarantee. Database/catalogue size and backup retention
+will determine storage needs. Source builds require additional memory.
 
 ## 1. Configure
 
-The intended deployment is `https://tcg.webwire.cloud`. Domain configuration here
+The default deployment origin is `https://cardshelf.cloud`. Domain configuration here
 does not modify DNS or deploy anything to a server.
 
 From the extracted package root (or the repository root after publication):
 
 ```sh
-sh scripts/configure.sh https://tcg.webwire.cloud
+sh scripts/configure.sh https://cardshelf.cloud
 ```
 
 The script refuses to overwrite `.env`. Save the displayed first-use setup
@@ -38,7 +36,8 @@ token securely. Never commit `.env` or include it in a public issue.
 | `BOOTSTRAP_TOKEN` | Random first-use setup token; ignored for account creation after setup closes |
 | `TRUST_PROXY` | Trust forwarded client IP only behind your controlled proxy |
 | `CATALOGUE_REQUEST_INTERVAL_MS` | Minimum pause between card import requests; default 300 ms |
-| `APP_VERSION` | Local image tag; defaults to `0.1.1` |
+| `APP_VERSION` | Installed release version, recorded by the upgrade helper |
+| `CARDSHELF_IMAGE` | Published image reference; the upgrade helper pins the exact digest |
 
 Request origins are compared exactly after canonicalising the configured URL.
 If the page loads but mutations show “Request origin is not allowed”, correct
@@ -47,13 +46,17 @@ weaken the origin check or use `*` to work around a configuration mismatch.
 
 ## 2. Select one exposure method
 
+First complete `sudo docker login ghcr.io -u frankymcgee` as described in
+[GitHub setup](GITHUB_SETUP.md). Use the same Docker account for subsequent commands.
+Wait for the release publishing job to succeed; Compose downloads the ready image.
+
 ### Supplied Caddy HTTPS proxy
 
 Point the hostname's DNS records at your server, make TCP ports 80/443 reachable,
 and make sure another service is not already using those ports. Then:
 
 ```sh
-docker compose -f compose.yaml -f compose.https.yaml up -d --build
+docker compose -f compose.yaml -f compose.https.yaml up -d --wait
 ```
 
 Caddy's certificate issuance needs its documented domain/connectivity conditions.
@@ -73,7 +76,7 @@ docker compose -f compose.yaml -f compose.https.yaml logs --tail=100 caddy
 
 ### Existing reverse proxy
 
-Start the base stack with `docker compose up -d --build`. Route the externally
+Start the base stack with `docker compose up -d --wait`. Route the externally
 visible domain to the loopback app endpoint, set the correct `APP_ORIGIN`, and
 let that proxy handle TLS. Set `TRUST_PROXY=true` only when untrusted clients
 cannot bypass it or supply the forwarded IP used for throttling. No WebSocket
@@ -83,7 +86,7 @@ proxy configuration is currently required; this version is not realtime chat.
 
 ```sh
 sh scripts/configure.sh http://localhost:3000
-docker compose up -d --build
+docker compose up -d --wait
 ```
 
 For a remote host, make an SSH tunnel from your computer:
@@ -99,8 +102,8 @@ an unauthenticated internet-facing HTTP service.
 
 ## 3. First deployment checklist
 
-1. Confirm the Docker build completes its **unit tests, typecheck and Nuxt build**.
-   Do not remove those gates to obtain an image if one fails.
+1. Confirm GitHub's release validation and **Publish release images** jobs succeeded.
+   Do not bypass those gates to obtain an image if one fails.
 2. Confirm the app and worker health checks are healthy and migrations succeed.
 3. Complete administrator setup with your private token; verify setup cannot be
    claimed again. Create a second collector to check private-data separation.
@@ -118,18 +121,12 @@ an unauthenticated internet-facing HTTP service.
 These checks are required acceptance work; this package does not claim they
 have already been performed on your server or devices.
 
-## 4. Retain the lockfile
+## 4. Reproducible release images
 
-The authoring environment could not resolve npm packages. The first connected
-build generates `package-lock.json` inside the image. Copy it into your source:
-
-```sh
-docker compose cp app:/app/package-lock.json ./package-lock.json
-```
-
-Commit it. Future Docker builds use `npm ci`. Review dependency audit results on
-a connected machine and pin validated base-image digests for releases. Changing
-a package version or base image should be followed by the same acceptance tests.
+The validated `package-lock.json` is committed with the source. GitHub uses `npm ci`
+and builds production images for Linux AMD64 and ARM64. Do not copy a lockfile from
+the running container over the release's committed lockfile. Dependency and base-image
+changes require the same validation gates before publication.
 
 ## 5. Routine backup
 
@@ -145,8 +142,8 @@ The database need not be stopped for a normal dump.
 A full recovery set consists of the dump, a securely stored `.env`, the source
 and retained lockfile for the application version, plus any proxy configuration
 changes. Caddy's certificate volumes can be preserved separately or certificates
-can be reissued when domain requirements are satisfied. There are no user-uploaded
-files or locally stored card images in this initial version.
+can be reissued when domain requirements are satisfied. Also retain any separately managed Postal configuration, signing keys and volumes
+when using self-hosted mail; see [Postal operation](POSTAL_EMAIL.md).
 
 Dumps contain password hashes, session records and private collection notes.
 Encrypt them at rest/off-server. The supplied script does not encrypt, upload,
@@ -177,23 +174,37 @@ Check accounts and credentials after a restore. A code rollback is not guarantee
 to be schema-compatible; preserve the matching pre-update dump and source version.
 Rehearse restoration on a separate instance before relying on it in a real incident.
 
-## 7. Update from a newer source release
+## 7. Update from GitHub-built releases
 
-First retain `.env`, the database volume and an off-server backup. Replace only
-source files, not `.env` or stored data. From the updated package directory:
+Complete the [one-time switch](GITHUB_SETUP.md#one-time-switch-for-the-existing-server)
+after the first release is published. Routine updates then use:
 
 ```sh
-sh scripts/backup.sh
-docker compose stop app worker
-docker compose build
-docker compose run --rm migrate
-docker compose up -d app worker
+sudo sh scripts/upgrade.sh
 ```
 
-For a first deployment or proxy configuration changes, include the HTTPS override
-as in section 2. A running Caddy container can remain running while the app is
-updated. Check all service health/logs after the update. Do not run the new
-migration against a database that is still being changed by the old app/worker.
+The helper downloads the image while the old site is running, checks its version and
+host deployment compatibility, validates Compose, prepares the private `.env` update,
+and takes a safety backup. Only then does it stop app/worker, migrate the database,
+persist the image digest and wait for healthy replacement containers. It never stops
+the database or proxy and does not recreate volumes. Simultaneous upgrades are refused.
+
+If the release needs different host files, it stops before any downtime and asks you
+to refresh the reviewed source checkout. Local host-file edits must also be reconciled.
+Application-only releases do not need a routine `git pull`. Existing Postal installs
+continue through the same Postal-aware Compose wrapper.
+
+- Pull, metadata, configuration or backup failure: the old site stays running.
+- Migration failure: app/worker remain stopped, `.env` retains the previous image,
+  and the safety backup is available for investigation. Do not blindly start an old
+  app against a potentially partially migrated database.
+- Health-check failure after migration: the new digest remains pinned and the helper
+  exits with an error. Inspect `sudo sh scripts/compose.sh logs --tail=100 app worker`.
+  A code-only rollback is not assumed safe after a schema change.
+
+To build a reviewed local checkout instead, use `sudo sh scripts/upgrade.sh --build`.
+To select a specific published release, pass its version instead of `--build`.
+Keep the matching source/configuration and pre-update dump for recovery.
 
 ## Development without Docker
 
@@ -205,7 +216,7 @@ implicitly execute a dotenv file as shell code.
 export DATABASE_URL='postgresql://cardshelf:your-password@localhost:5432/cardshelf'
 export APP_ORIGIN='http://localhost:3000'
 export BOOTSTRAP_TOKEN='your-generated-64-character-hex-token'
-npm install
+npm ci
 npm run migrate
 npm run dev
 # In a second shell with the same environment:

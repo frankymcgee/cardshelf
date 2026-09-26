@@ -34,7 +34,8 @@ DB_PASSWORD=$(random_hex)
 BOOTSTRAP=$(random_hex)
 INTEGRATION_KEY=$(random_hex)
 cat > .env <<EOF
-APP_VERSION=0.39.2
+APP_VERSION=0.40.0
+CARDSHELF_IMAGE=ghcr.io/frankymcgee/cardshelf:stable
 APP_ORIGIN=$ORIGIN
 APP_DOMAIN=$DOMAIN
 APP_BIND=127.0.0.1

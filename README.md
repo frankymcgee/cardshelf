@@ -1,4 +1,4 @@
-# CardShelf 0.39.2
+# CardShelf 0.40.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -157,27 +157,30 @@ read-only and old setup documents are archived in `docs/history/`.
 
 ## Existing installation upgrade
 
-Use a reviewed main branch after the complete validation workflow passes:
+GitHub now builds and tests the release images. After the **Publish release images**
+job succeeds, update the existing server with:
 
 ```sh
-git pull --ff-only origin main && sudo sh scripts/configure-integrations.sh && sudo sh scripts/upgrade.sh
+sudo sh scripts/upgrade.sh
 ```
 
-Keep the existing `.env`, database volume and integration encryption key. Do not run
-`docker compose down -v`. The upgrade helper builds, takes its local safety backup,
-applies additive migrations, then restarts the application. A failed migration requires
-investigation; the script does not silently delete data or recreate the database.
+For the **first switch to GitHub-built images**, follow the short
+[registry login and setup instructions](docs/GITHUB_SETUP.md#one-time-switch-for-the-existing-server).
+The helper pulls while the site stays online, backs up PostgreSQL, migrates, and restarts
+only app/worker. It pins the exact release digest and waits for healthy containers.
+Keep the existing `.env`, database volume and integration encryption key.
 
-The integration-key helper is idempotent. Never replace a working key: it is needed to
-decrypt saved provider credentials. Keep a separate secured backup of `.env` and move
-database backups off the server. Backup restoration should be rehearsed separately.
+Routine updates need no build or `git pull`. When host deployment files change, the
+helper asks you to update the reviewed checkout before it stops anything. An explicit
+`sudo sh scripts/upgrade.sh --build` retains the slower source-build fallback.
+Do not use `docker compose down -v`; keep secured off-server backups and rehearse recovery.
 
 ## Development and validation
 
 The project uses Node.js 24, Nuxt, PostgreSQL and Docker Compose for deployment.
 
 ```sh
-npm install
+npm ci
 npm test
 npm run typecheck
 npm run build

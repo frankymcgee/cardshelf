@@ -1,3 +1,10 @@
+## 0.40.0 — 2026-09-26
+
+- Build and validate native AMD64/ARM64 release images in GitHub Actions; publish to GHCR only after the main-branch application, Arena and container upgrade checks pass.
+- Pull releases on the server while the site stays online. Preserve automatic backups, migrations and health checks; pin the installed image digest and prevent concurrent upgrades.
+- Detect changed host deployment files before stopping services, retain an explicit source-build fallback, and document the one-time private registry login.
+- Commit the dependency lockfile from the previously validated release and use reproducible `npm ci` builds.
+
 ## 0.39.2 — Marketplace publication validation
 
 - Scope the real publication browser check to marketplace results after navigation, so private administrator preview tiles cannot be mistaken for published products while the route is changing. Preserve the strict active-link count and paused/expired-entry checks.
