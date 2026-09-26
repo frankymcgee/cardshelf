@@ -75,6 +75,8 @@ test('empty and failed optional settings leave marketplace browsing usable',asyn
   for(const failed of [false,true]){
     await page.unrouteAll({behavior:'wait'});await fixtures(page,{empty:true,failed});await page.goto('/marketplace');
     await expect(page.getByRole('heading',{name:'A little space for the next great find.'})).toBeVisible();await expect(page.getByTestId('affiliate-shops')).toHaveCount(0);
+    await page.goto('/admin/affiliate-shops');
+    await expect(page.getByTestId('affiliate-publication')).toContainText(failed?'Unable to check saved links':'No saved affiliate links');
   }
 });
 test('a concurrent save conflict keeps the draft and clears the password',async({page})=>{

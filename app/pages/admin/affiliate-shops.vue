@@ -1,21 +1,29 @@
 <script setup lang="ts">
 import { GAMES } from '../../../shared/games.mjs'
-import { AMAZON_STARTERS, amazonShop } from '../../../shared/affiliate-shops.mjs'
+import { AMAZON_STARTERS, amazonShop, affiliateLinks } from '../../../shared/affiliate-shops.mjs'
 const api = useApi(), notice = useNotice()
 const saved = ref<any>(null), shops = ref<any[]>([]), enabled = ref(false), password = ref(''), busy = ref(false), error = ref('')
 const previewPlacement = ref('marketplace'), previewQuery = ref('Charizard 4 Base Set English')
 const placements = [{ code: 'marketplace', name: 'Marketplace' }, { code: 'cards', name: 'Collection card details' }, { code: 'catalogue', name: 'Public catalogue card details' }]
 const previewShops = computed(() => shops.value.map(shop => ({ ...shop, enabled: true })))
+const published = ref<any[] | null>(null), checking = ref(false), publicationError = ref('')
+const publishedMarketplace = computed(() => affiliateLinks(published.value || [], { placement: 'marketplace' }))
+async function checkPublished() {
+  checking.value = true; publicationError.value = ''
+  try { const result = await api('/api/public/affiliate-shops'); if (!Array.isArray(result.shops)) throw new Error('The saved links could not be read.'); published.value = result.shops }
+  catch (e) { published.value = null; publicationError.value = errorMessage(e) }
+  finally { checking.value = false }
+}
 function accept(value: any) { saved.value = value; enabled.value = value.enabled; shops.value = structuredClone(value.shops).map((shop: any) => ({ ...shop, retailer: shop.retailer || (amazonShop(shop) ? 'amazon' : 'other') })) }
 async function load() { error.value = ''; try { accept(await api('/api/admin/affiliate-shops')) } catch (e) { error.value = errorMessage(e) } }
-onMounted(load)
+onMounted(async () => { await load(); await checkPublished() })
 function add(retailer = 'other', name = '', description = '') { if (shops.value.length < 12) shops.value.push({ id: crypto.randomUUID(), retailer, name, description, url: '', search_url: '', referral_code: '', enabled: false, placements: ['marketplace','cards','catalogue'], games: [], expires_on: '' }) }
 function addAmazon() { if (shops.value.length <= 9) for (const entry of AMAZON_STARTERS) add('amazon', entry.name, entry.description) }
 function move(index: number, delta: number) { const next = index + delta; if (next < 0 || next >= shops.value.length) return; const [shop] = shops.value.splice(index, 1); shops.value.splice(next, 0, shop) }
 async function save() {
   if (busy.value || !saved.value) return
   busy.value = true; error.value = ''
-  try { accept(await api('/api/admin/affiliate-shops', { method: 'POST', body: { enabled: enabled.value, shops: shops.value, revision: saved.value.revision, password: password.value } })); notice.show('Affiliate shops saved.') }
+  try { accept(await api('/api/admin/affiliate-shops', { method: 'POST', body: { enabled: enabled.value, shops: shops.value, revision: saved.value.revision, password: password.value } })); notice.show('Affiliate shops saved.'); await checkPublished() }
   catch (e) { error.value = errorMessage(e) }
   finally { busy.value = false; password.value = '' }
 }
@@ -25,6 +33,17 @@ useSeoMeta({ title: 'Affiliate shops · CardShelf' })
   <header class="page-heading"><div><span class="eyebrow">EXTERNAL SHOPPING</span><h1>Affiliate shops</h1><p>Help collectors find binders, sleeves, cards and packs through your affiliate links.</p></div></header>
   <p v-if="error" class="alert error" role="alert">{{ error }} <button type="button" class="text-button" :disabled="busy" @click="load">Reload saved settings</button></p>
   <form v-if="saved" class="affiliate-settings form-stack" @submit.prevent="save">
+    <section class="panel affiliate-section form-stack" data-testid="affiliate-publication">
+      <h2>Saved marketplace visibility</h2>
+      <p v-if="checking" role="status">Checking saved links…</p>
+      <p v-else-if="publicationError" class="alert error" role="alert">Unable to check saved links: {{ publicationError }}</p>
+      <template v-else-if="published !== null">
+        <p v-if="publishedMarketplace.length" class="alert info">{{ publishedMarketplace.length }} saved {{ publishedMarketplace.length === 1 ? 'link is' : 'links are' }} available on the marketplace’s Browse cards page: {{ publishedMarketplace.map((shop: any) => shop.name).join(', ') }}.</p>
+        <p v-else class="alert warning">No saved affiliate links are currently visible in the marketplace. Turn on the main switch and each shop, select Marketplace, check the end date, then save.</p>
+      </template>
+      <p class="data-note">This checks the same saved links the marketplace loads. The draft preview below also shows paused shops. My listings and private enquiries do not show affiliate links.</p>
+      <div class="button-row"><NuxtLink to="/marketplace" class="button secondary">View marketplace</NuxtLink><button type="button" class="text-button" :disabled="checking || busy" @click="checkPublished">Check saved links</button></div>
+    </section>
     <section class="panel affiliate-section form-stack">
       <label class="checkbox-label"><input v-model="enabled" type="checkbox" :disabled="busy">Show affiliate shopping links</label>
       <p class="data-note">Use the complete tracking URL supplied by each programme, such as CardTrader, TCGplayer or another shop. Commission eligibility is managed by that programme. These are external shopping options: CardShelf does not take payment, place orders or import stock.</p>

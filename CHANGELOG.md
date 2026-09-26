@@ -1,3 +1,9 @@
+## 0.38.1 — Affiliate visibility and consistent colour themes
+
+- Show the saved marketplace affiliate-link count and shop names in administration, using the same public endpoint as visitors. Refresh after saving, distinguish published links from paused draft previews, and provide a direct marketplace link.
+- Use a shared light/dark palette for public website, marketplace and administration surfaces, text, forms, navigation, alerts and pricing controls. Fix undefined panel colour variables and scoped light-only styles while preserving card artwork, custom binder backgrounds and Arena artwork.
+- Add desktop/phone browser checks for rendered contrast, theme persistence and device preference, plus a real browser/HTTP/PostgreSQL affiliate save-and-display test covering paused and expired shops, tracking URLs and the global switch.
+
 ## 0.38.0 — Amazon starter links and configurable affiliate shops
 
 - Add admin-managed external shop links with optional encoded card searches, referral codes, placement/game filters, ordering and expiry.

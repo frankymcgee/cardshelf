@@ -53,6 +53,8 @@ jobs:
       - run: npm run test:ads-ui
       - run: npm run test:pricing-ui
       - run: npm run test:affiliates-ui
+      - run: npm run test:themes-ui
+      - run: npm run test:affiliates-live
       - name: Upload resolved lockfile and server log
         if: always()
         uses: actions/upload-artifact@v4
@@ -61,3 +63,5 @@ jobs:
           path: |
             package-lock.json
             /tmp/cardshelf-server.log
+            test-results/themes
+            test-results/affiliate-live
