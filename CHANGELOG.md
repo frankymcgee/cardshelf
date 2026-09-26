@@ -1,3 +1,7 @@
+## 0.39.2 — Marketplace publication validation
+
+- Scope the real publication browser check to marketplace results after navigation, so private administrator preview tiles cannot be mistaken for published products while the route is changing. Preserve the strict active-link count and paused/expired-entry checks.
+
 ## 0.39.1 — One marketplace grid
 
 - Mix affiliate products and external shops into the same responsive grid as collector listings. Randomize affiliate positions per visit and keep them steady through ordinary updates; preserve collector sorting, pagination, exact tracking URLs and the single keyed ad slot.

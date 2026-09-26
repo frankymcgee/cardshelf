@@ -26,7 +26,8 @@ test('saved active Amazon links really appear in Browse cards and disappear when
     await page.getByLabel('Current administrator password').fill(password);await page.getByRole('button',{name:'Save affiliate shops',exact:true}).click();
     await expect(publication).toContainText('1 saved link is available');await expect(publication).toContainText('Card binders');
     await page.getByRole('link',{name:'View marketplace',exact:true}).click();
-    const panel=page.locator('[data-market-affiliate]');await expect(panel).toBeVisible();
+    await expect(page).toHaveURL(/\/marketplace$/);
+    const panel=page.getByTestId('marketplace-results').locator('[data-market-affiliate]');await expect(panel).toHaveCount(1);await expect(panel).toBeVisible();
     await expect(panel.locator('a')).toHaveCount(1);const link=panel.getByRole('link',{name:'Card binders on Amazon (opens in a new tab)'});
     await expect(link).toHaveAttribute('href',url);await expect(link).toHaveAttribute('rel','sponsored nofollow noopener');
     await expect(page.getByTestId('amazon-disclosure')).toBeVisible();
