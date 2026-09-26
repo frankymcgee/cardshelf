@@ -10,7 +10,6 @@ const version = JSON.parse(readFileSync(new URL('package.json', root), 'utf8')).
 const stamps = [
   ['scripts/configure.sh', /^APP_VERSION=([^\r\n]+)$/gm, 1],
   ['.env.example', /^APP_VERSION=([^\r\n]+)$/gm, 1],
-  ['compose.yaml', /^  image: cardshelf:\$\{APP_VERSION:-([^}\r\n]+)\}$/gm, 1],
   ['README.md', /^# CardShelf ([^\r\n]+)$/gm, 1],
   ['CHANGELOG.md', /^## (\S+) —/g, 1],
   ['app/layouts/default.vue', /\bv(\d+\.\d+\.\d+)\b/g, 2]
@@ -24,3 +23,13 @@ for (const [path, pattern, count] of stamps) {
       `${path} must contain ${count} release stamp(s) matching package.json (${version})`);
   });
 }
+
+
+test('the committed lockfile matches the release manifest', () => {
+  const manifest = JSON.parse(readFileSync(new URL('package.json', root), 'utf8'));
+  const lock = JSON.parse(readFileSync(new URL('package-lock.json', root), 'utf8'));
+  assert.equal(lock.version, version);
+  assert.equal(lock.packages[''].version, version);
+  assert.deepEqual(lock.packages[''].dependencies, manifest.dependencies);
+  assert.deepEqual(lock.packages[''].devDependencies, manifest.devDependencies);
+});

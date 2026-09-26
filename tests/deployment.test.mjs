@@ -36,6 +36,7 @@ test('default deployment origin is cardshelf.cloud with matching release and pro
     assert.equal(env.APP_ORIGIN, 'https://cardshelf.cloud');
     assert.equal(env.APP_DOMAIN, 'cardshelf.cloud');
     assert.equal(env.APP_VERSION, expectedVersion);
+    assert.equal(env.CARDSHELF_IMAGE, 'ghcr.io/frankymcgee/cardshelf:stable');
     assert.equal(env.TRUST_PROXY, 'true');
     assert.equal(env.APP_BIND, '127.0.0.1');
     assert.equal(env.APP_PORT, '3000');

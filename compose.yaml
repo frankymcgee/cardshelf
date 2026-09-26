@@ -1,9 +1,6 @@
 name: cardshelf
 x-app: &app
-  image: cardshelf:${APP_VERSION:-0.39.2}
-  build:
-    context: .
-    target: runtime
+  image: ${CARDSHELF_IMAGE:-ghcr.io/frankymcgee/cardshelf:stable}
   init: true
   read_only: true
   tmpfs:

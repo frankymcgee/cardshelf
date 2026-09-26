@@ -9,6 +9,9 @@ backups
 *.dump
 *.zip
 *.log
+test-results
+playwright-report
+.cardshelf-upgrade.lock
 
 deploy/postal/config
 deploy/postal/.env

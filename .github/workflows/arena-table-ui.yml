@@ -1,10 +1,12 @@
 name: Validate Arena table UI
 on:
   push:
+    branches-ignore: [main]
     paths: ['app/components/arena/**', 'app/pages/arena/matches/**', 'app/assets/css/**', 'shared/arena.mjs', 'shared/arena-effects.mjs', 'tests/browser/**', 'tests/helpers/arena-table-fixtures.mjs', 'package*.json', '.github/workflows/arena-table-ui.yml']
   pull_request:
     paths: ['app/components/arena/**', 'app/pages/arena/matches/**', 'app/assets/css/**', 'shared/arena.mjs', 'shared/arena-effects.mjs', 'tests/browser/**', 'tests/helpers/arena-table-fixtures.mjs', 'package*.json', '.github/workflows/arena-table-ui.yml']
   workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
 jobs:
@@ -16,9 +18,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      - name: Install locked dependencies
+        run: npm ci
       - name: Install test browsers
         run: npx playwright install --with-deps chromium webkit
       - name: Check actual Arena components in Chromium and WebKit
