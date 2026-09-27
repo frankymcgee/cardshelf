@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { automaticScanPocket, scanBinderPockets } from '../../shared/scan-binders.mjs'
+import { prepareCardScanPhoto } from '../utils/scan-photo'
 const api = useApi(), route = useRoute(), router = useRouter(), auth = useAuth()
+const batch = reactive(useScanBatch()), batchMode = ref(route.query.mode === 'batch')
 const availability = ref<any>(null), scan = ref<any>(null), card = ref<any>(null), binders = ref<any[]>([]), binder = ref<any>(null)
 const photo = ref(''), requestId = ref(''), consent = ref(false), busy = ref(false), preparing = ref(false), error = ref(''), message = ref('')
 const printingId = ref(''), condition = ref('UNKNOWN'), quantity = ref(1), binderId = ref(typeof route.query.binder === 'string' ? route.query.binder : ''), binderPage = ref(1), position = ref<number | null>(null)
@@ -8,7 +10,9 @@ const placementMode = ref('auto'), bindersLoading = ref(true)
 const query = ref(''), language = ref(''), searchResults = ref<any[]>([]), searched = ref(false), searching = ref(false), cardLoading = ref(false), binderLoading = ref(false)
 const confirmationBody = ref<any>(null), fileInput = ref<HTMLInputElement>()
 let alive = true, poll: ReturnType<typeof setTimeout> | undefined, cardSequence = 0, binderSequence = 0, scanSequence = 0, searchSequence = 0
-const immutable = computed(() => busy.value || !!confirmationBody.value)
+const immutable = computed(() => busy.value || batch.locked || !!confirmationBody.value)
+function scannerQuery(id = scan.value?.id) { return { ...(batchMode.value ? { mode: 'batch' } : {}), ...(binderId.value ? { binder: binderId.value } : {}), ...(id ? { scan: id } : {}) } }
+function syncScannerUrl(id = scan.value?.id) { return router.replace({ path: '/scan', query: scannerQuery(id) }) }
 const printing = computed(() => card.value?.printings.find((p: any) => p.id === printingId.value))
 const entry = computed(() => card.value?.entries.find((e: any) => e.printing_id === printingId.value && e.condition === condition.value))
 const owned = computed(() => card.value?.entries.filter((e: any) => e.printing_id === printingId.value).reduce((n: number, e: any) => n + e.quantity, 0) || 0)
@@ -28,12 +32,13 @@ watch([printingId, binderPage, binder], () => { position.value = null })
 watch(binderId, () => {
   if (!alive) return
   placementMode.value = 'auto'; loadBinder()
-  router.replace({ path: '/scan', query: { ...(binderId.value ? { binder: binderId.value } : {}), ...(scan.value?.id ? { scan: scan.value.id } : {}) } })
+  syncScannerUrl()
 })
 watch(placementMode, () => { position.value = null; binderPage.value = automaticPocket.value?.page || 1 })
 async function loadAvailability() {
   const data = await api('/api/scans')
   if (alive) availability.value = data
+  return data
 }
 async function loadBinder() {
   const seq = ++binderSequence; binder.value = null; position.value = null; binderPage.value = 1
@@ -50,6 +55,7 @@ async function loadBinder() {
 }
 function applyScan(data: any) {
   scan.value = data
+  batch.syncReceipt(data)
   if (data.status === 'processing') schedulePoll()
   else { clearTimeout(poll); confirmationBody.value = null; loadAvailability().catch(() => {}) }
 }
@@ -64,30 +70,25 @@ async function checkScan() {
   catch (e) { if (alive) { error.value = errorMessage(e); clearTimeout(poll) } }
 }
 async function resume(id: string) {
-  if (busy.value || preparing.value) return
+  if (immutable.value || preparing.value) return
   const seq = ++scanSequence; cardSequence++; searchSequence++; cardLoading.value = false; searching.value = false
   clearTimeout(poll); error.value = ''; card.value = null; printingId.value = ''; confirmationBody.value = null
-  photo.value = ''; requestId.value = id; scan.value = null; searchResults.value = []; searched.value = false
+  photo.value = batchMode.value ? batch.items.find(i => i.id === id)?.image || '' : ''; requestId.value = id; scan.value = null; searchResults.value = []; searched.value = false
+  placementMode.value = 'auto'
   try {
     const data = await api('/api/scans/' + id)
-    if (alive && seq === scanSequence) { applyScan(data); await router.replace({ path: '/scan', query: { ...(binderId.value ? { binder: binderId.value } : {}), scan: id } }) }
+    if (alive && seq === scanSequence) { applyScan(data); await syncScannerUrl(id); if (binderId.value) await loadBinder() }
   } catch (e) { if (alive && seq === scanSequence) error.value = errorMessage(e) }
 }
 async function choosePhoto(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file || busy.value) return
-  scanSequence++; cardSequence++; searchSequence++; cardLoading.value = false; searching.value = false
+  if (!file || immutable.value || preparing.value) return
+  const sequence = ++scanSequence; cardSequence++; searchSequence++; cardLoading.value = false; searching.value = false
   error.value = ''; message.value = ''; preparing.value = true; photo.value = ''; scan.value = null; card.value = null
   confirmationBody.value = null; consent.value = false; clearTimeout(poll)
   try {
-    if (file.size > 12_000_000) throw new Error('Choose a photo smaller than 12 MB.')
-    const data = await new Promise<string>((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(String(r.result)); r.onerror = () => reject(new Error('Could not read this photo.')); r.readAsDataURL(file) })
-    const image = await new Promise<HTMLImageElement>((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error('Use a JPEG, PNG or WebP photo.')); img.src = data })
-    const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight))
-    const canvas = document.createElement('canvas'); canvas.width = Math.round(image.naturalWidth * scale); canvas.height = Math.round(image.naturalHeight * scale)
-    const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('Photo preparation is unavailable in this browser.')
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
-    if (alive) { photo.value = canvas.toDataURL('image/jpeg', 0.88); requestId.value = crypto.randomUUID(); await router.replace({ path: '/scan', query: binderId.value ? { binder: binderId.value } : {} }) }
+    const image = await prepareCardScanPhoto(file)
+    if (alive && sequence === scanSequence) { photo.value = image; requestId.value = crypto.randomUUID(); await syncScannerUrl('') }
   } catch (e) { if (alive) error.value = errorMessage(e) }
   finally { if (alive) preparing.value = false }
 }
@@ -97,7 +98,7 @@ async function analyse() {
   const id = requestId.value
   try {
     const data = await api('/api/scans', { method: 'POST', body: { request_id: id, image: photo.value, confirm_external_processing: true } })
-    if (alive) { applyScan(data); await router.replace({ path: '/scan', query: { ...(binderId.value ? { binder: binderId.value } : {}), scan: id } }) }
+    if (alive) { applyScan(data); await syncScannerUrl(id) }
   } catch (e) {
     if (alive) {
       error.value = errorMessage(e)
@@ -105,7 +106,7 @@ async function analyse() {
       // same receipt; retrying the same photo keeps the original request ID.
       try {
         const data = await api('/api/scans/' + id)
-        if (alive) { error.value = ''; applyScan(data); await router.replace({ path: '/scan', query: { ...(binderId.value ? { binder: binderId.value } : {}), scan: id } }) }
+        if (alive) { error.value = ''; applyScan(data); await syncScannerUrl(id) }
       } catch { /* Original error stays visible. */ }
     }
   } finally { if (alive) { busy.value = false; loadAvailability().catch(() => {}) } }
@@ -128,7 +129,7 @@ async function search() {
   finally { if (alive && seq === searchSequence) searching.value = false }
 }
 async function confirm() {
-  if (busy.value || !scan.value || !printing.value || cardLoading.value || binderLoading.value) return
+  if (busy.value || batch.locked || !scan.value || !printing.value || cardLoading.value || binderLoading.value) return
   if (binderId.value && (!binder.value || !selectedPocket.value)) return
   busy.value = true; error.value = ''
   if (!confirmationBody.value) confirmationBody.value = { printing_id: printingId.value, condition: condition.value, quantity: Number(quantity.value), entry_revision: entry.value?.revision || 0,
@@ -157,47 +158,73 @@ async function confirm() {
   } finally { if (alive) busy.value = false }
 }
 async function undo() {
-  if (busy.value || scan.value?.status !== 'added') return
+  if (busy.value || batch.locked || scan.value?.status !== 'added') return
   busy.value = true; error.value = ''
   try { const data = await api('/api/scans/' + scan.value.id + '/undo', { method: 'POST', body: { confirm: true } }); if (alive) { applyScan(data); message.value = 'The scanned addition was undone.' } }
   catch (e) { if (alive) error.value = errorMessage(e) }
   finally { if (alive) busy.value = false }
 }
 async function nextPhoto() {
-  if (busy.value) return
+  if (busy.value || batch.locked) return
   scanSequence++; cardSequence++; searchSequence++; cardLoading.value = false; searching.value = false
   clearTimeout(poll); scan.value = null; card.value = null; photo.value = ''; consent.value = false; confirmationBody.value = null
   requestId.value = ''; error.value = ''; message.value = ''; searched.value = false; searchResults.value = []
   printingId.value = ''; position.value = null; placementMode.value = 'auto'
   if (fileInput.value) fileInput.value.value = ''
-  await router.replace({ path: '/scan', query: binderId.value ? { binder: binderId.value } : {} })
+  await syncScannerUrl('')
   if (binderId.value) await loadBinder()
 }
+async function setBatchMode(value: boolean) {
+  if (immutable.value || preparing.value || scan.value?.status === 'processing') return
+  batchMode.value = value
+  await nextPhoto()
+  if (value) await batch.restore()
+}
+async function startBatch() {
+  if (immutable.value || preparing.value || scan.value?.status === 'processing') return
+  await nextPhoto()
+  await batch.start(loadAvailability)
+  if (alive) loadAvailability().catch(() => {})
+}
+async function nextBatchReview() {
+  const next = batch.items.find(i => !i.skipped && i.receipt?.status === 'ready' && i.id !== scan.value?.id)
+  if (next) await resume(next.id)
+  else await nextPhoto()
+}
+async function clearBatch() { if (!immutable.value) { await nextPhoto(); batch.clear() } }
+async function skipBatchPhoto(item: any) { if (!immutable.value) { if (!item.skipped && item.id === scan.value?.id) await nextPhoto(); batch.skip(item) } }
+async function refreshScanAccess() { if (!immutable.value) { try { await loadAvailability() } catch (e) { error.value = errorMessage(e) } } }
+const unsentPhotos = computed(() => batch.items.some(i => i.image && !i.receipt && !i.skipped))
+function leaving(event: BeforeUnloadEvent) { if (unsentPhotos.value) { event.preventDefault(); event.returnValue = '' } }
+onBeforeRouteLeave(() => !unsentPhotos.value || window.confirm('Unprocessed photos are only in this tab. Leave and reselect them later? Scan request IDs and saved additions are retained.'))
 onMounted(async () => {
+  window.addEventListener('beforeunload', leaving)
   try {
     const [, data] = await Promise.all([loadAvailability(), api('/api/binders')])
     if (!alive) return
     binders.value = (Array.isArray(data) ? data : data.items || []).filter((b: any) => ['collection', 'tracking'].includes(b.binder_type) && b.game === 'pokemon')
     if (binderId.value) await loadBinder()
+    if (batchMode.value) await batch.restore()
     if (typeof route.query.scan === 'string') await resume(route.query.scan)
   } catch (e) { if (alive) error.value = errorMessage(e) }
   finally { if (alive) bindersLoading.value = false }
 })
-onBeforeUnmount(() => { alive = false; cardSequence++; binderSequence++; clearTimeout(poll); photo.value = '' })
+onBeforeUnmount(() => { alive = false; scanSequence++; cardSequence++; binderSequence++; clearTimeout(poll); photo.value = ''; window.removeEventListener('beforeunload', leaving) })
 </script>
 <template>
   <div class="scanner">
-    <header class="page-heading"><div><span class="eyebrow">YOUR COLLECTION · PHOTO SCANNING</span><h1>Scan a card</h1><p>A photo, a match, another card on your shelf.</p></div><NuxtLink to="/cards" class="button secondary">Back to cards</NuxtLink></header>
-    <ol class="scan-steps" aria-label="Scanning steps"><li :class="{ active: !scan }">1 <span>Take a photo</span></li><li :class="{ active: scan?.status === 'processing' || scan?.status === 'ready' && !card }">2 <span>Find your card</span></li><li :class="{ active: card || scan?.status === 'added' || scan?.status === 'undone' }">3 <span>Confirm & add</span></li></ol>
+    <header class="page-heading"><div><span class="eyebrow">YOUR COLLECTION · PHOTO SCANNING</span><h1>{{ batchMode ? 'Scan a batch' : 'Scan a card' }}</h1><p>{{ batchMode ? 'A stack of cards. One queue. Your final say on every addition.' : 'A photo, a match, another card on your shelf.' }}</p></div><div class="button-row"><button v-if="batchMode || !photo && !scan" class="button secondary" :disabled="immutable || preparing || scan?.status === 'processing'" @click="setBatchMode(!batchMode)">{{ batchMode ? 'Single card scanning' : 'Scan a batch' }}</button><NuxtLink to="/cards" class="button secondary">Back to cards</NuxtLink></div></header>
+    <ol v-if="!batchMode" class="scan-steps" aria-label="Scanning steps"><li :class="{ active: !scan }">1 <span>Take a photo</span></li><li :class="{ active: scan?.status === 'processing' || scan?.status === 'ready' && !card }">2 <span>Find your card</span></li><li :class="{ active: card || scan?.status === 'added' || scan?.status === 'undone' }">3 <span>Confirm & add</span></li></ol>
     <p v-if="error" class="alert error" role="alert">{{ error }}</p><p v-if="message" class="alert success" role="status">{{ message }}</p>
     <p v-if="availability?.message" class="alert info">{{ availability.message }} <NuxtLink v-if="auth.state.value.user?.role === 'admin'" to="/admin/scanning">Manage scanning</NuxtLink></p>
     <p v-if="availability?.enabled && availability.eligible" class="small muted">{{ availability.unlimited ? "Unlimited scans" : availability.remaining + " of " + availability.monthly_limit + " scans left this month" }}. English and Japanese Pokémon cards.</p>
+    <ScanBatchQueue v-if="batchMode" :state="batch" :can-analyse="!!availability?.available || batch.items.some(i => i.submitted && !i.receipt)" :selected-id="scan?.id || ''" :disabled="busy || bindersLoading || !!confirmationBody || scan?.status === 'processing'" @files="batch.addFiles" @start="startBatch" @pause="batch.pauseRequested = true" @review="resume" @skip="skipBatchPhoto" @clear="clearBatch" @refresh="refreshScanAccess" />
     <section v-if="!card && (!scan || ['ready', 'processing'].includes(scan.status))" class="panel scan-destination">
       <label>Add scanned cards to<select v-model="binderId" :disabled="immutable || bindersLoading"><option value="">Collection only</option><option v-if="binderId && !availableBinders.some(b => b.id === binderId)" :value="binderId" disabled>Selected binder unavailable</option><option v-for="b in availableBinders" :key="b.id" :value="b.id">{{ b.title }} · {{ b.binder_type === 'tracking' ? 'Tracking' : 'Collection' }}</option></select></label>
       <p class="data-note">Choose a binder once for this scanning session. After you select the printing, automatic placement finds its existing pocket or the first empty pocket. You can review or change the pocket before confirming.</p>
       <p v-if="!bindersLoading && !availableBinders.length" class="data-note">No available Pokémon binders. <NuxtLink to="/binders">View or create your binders</NuxtLink>.</p>
     </section>
-    <section v-if="!scan" class="panel scan-capture">
+    <section v-if="!scan && !batchMode" class="panel scan-capture">
       <div class="scan-photo" :class="{ 'has-photo': photo }"><img v-if="photo" :src="photo" alt="Your card photo to analyse" /><div v-else class="scan-photo-guide"><AppIcon name="cards" :size="52" /><strong>One card. All four corners.</strong><p>Use even light and avoid reflections.<br />Keep the name and card number readable.</p></div></div>
       <div class="scan-capture-controls"><h2>Start with the front</h2><p class="muted">Take a photo on your phone or choose an existing image.</p>
         <label class="scan-file-label">{{ photo ? 'Retake or choose another photo' : 'Take or choose a photo' }}<input ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" :disabled="busy || preparing || !availability?.available" @change="choosePhoto" /></label>
@@ -207,11 +234,11 @@ onBeforeUnmount(() => { alive = false; cardSequence++; binderSequence++; clearTi
         <p class="data-note">CardShelf does not save the photo. OpenAI processes it externally under its API data policies. Review the match before anything is added.</p>
       </div>
     </section>
-    <section v-else-if="scan.status === 'processing'" class="panel scan-state" aria-live="polite"><h2>Finding your card…</h2><p>Reading the printed details and checking your catalogue.</p><button class="button secondary" @click="checkScan">Check status</button><p class="data-note">You can return to this scan from Recent scans.</p></section>
-    <section v-else-if="scan.status === 'failed'" class="panel scan-state"><h2>Let’s try another photo</h2><p>{{ scan.error }}</p><div class="button-row"><button class="button primary" @click="nextPhoto">Retake photo</button><NuxtLink to="/cards" class="button secondary">Search cards manually</NuxtLink></div></section>
-    <template v-else-if="scan.status === 'ready'">
+    <section v-else-if="scan?.status === 'processing'" class="panel scan-state" aria-live="polite"><h2>Finding your card…</h2><p>Reading the printed details and checking your catalogue.</p><button class="button secondary" @click="checkScan">Check status</button><p class="data-note">You can return to this scan from Recent scans.</p></section>
+    <section v-else-if="scan?.status === 'failed'" class="panel scan-state"><h2>Let’s try another photo</h2><p>{{ scan.error }}</p><div class="button-row"><button class="button primary" @click="nextPhoto">{{ batchMode ? 'Back to queue' : 'Retake photo' }}</button><NuxtLink to="/cards" class="button secondary">Search cards manually</NuxtLink></div></section>
+    <template v-else-if="scan?.status === 'ready'">
       <section class="panel scan-matches">
-        <div class="section-heading"><div><h2>Choose the matching card</h2><p class="muted">Check the artwork, number, set and language against your card.</p></div><button class="text-button" :disabled="immutable" @click="nextPhoto">Retake photo</button></div>
+        <div class="section-heading"><div><h2>Choose the matching card</h2><p class="muted">Check the artwork, number, set and language against your card.</p></div><button class="text-button" :disabled="immutable" @click="nextPhoto">{{ batchMode ? 'Back to queue' : 'Retake photo' }}</button></div>
         <p v-if="scan.observations?.card_count !== 1 || !scan.observations?.readable" class="alert info">The photo could not be read as one clear Pokémon card. Retake it or search below.</p>
         <p v-else-if="!scan.candidates.length" class="alert info">No matching imported card was found. Search below, or ask an administrator to import the card’s set.</p>
         <details v-if="photo" class="scan-original"><summary>Compare with your photo</summary><img :src="photo" alt="Your original card photo" /></details>
@@ -236,13 +263,13 @@ onBeforeUnmount(() => { alive = false; cardSequence++; binderSequence++; clearTi
             <p v-if="binder" class="data-note">{{ binder.binder_type === 'tracking' ? 'Confirmation adds the copies to your collection and marks this checklist pocket collected. Future checklist marks remain independent of your inventory.' : 'The binder shows this printing and its ownership status. Choose another empty pocket if you want an additional placement.' }} Each scan adds the chosen quantity once. A scan cannot replace a different printing.</p>
           </fieldset>
           <p class="data-note">Confirm the exact printing yourself. Photo recognition does not assess condition or authenticity.</p>
-          <button class="button primary" :disabled="busy || !printing || cardLoading || binderLoading || (!!binderId && (!binder || !selectedPocket))">{{ busy ? 'Saving…' : confirmationBody ? 'Retry this same addition' : 'Confirm & add to collection' }}</button>
+          <button class="button primary" :disabled="busy || batch.locked || !printing || cardLoading || binderLoading || (!!binderId && (!binder || !selectedPocket))">{{ busy ? 'Saving…' : confirmationBody ? 'Retry this same addition' : 'Confirm & add to collection' }}</button>
           <button v-if="confirmationBody && !busy" type="button" class="text-button" @click="checkScan">Check whether it saved</button>
         </form>
       </section>
     </template>
-    <section v-else-if="['added', 'undone'].includes(scan.status)" class="panel scan-state" aria-live="polite"><span class="scan-success-icon"><AppIcon :name="scan.status === 'added' ? 'check' : 'refresh'" :size="32" /></span><h2>{{ scan.status === 'added' ? 'Another card on your shelf.' : 'Addition undone.' }}</h2><p>{{ scan.addition.quantity }} × {{ scan.addition.name }} · {{ scan.addition.printing_label }}</p><p v-if="scan.status === 'added' && scan.addition.binder" class="muted" data-testid="scan-binder-receipt">{{ scan.addition.binder.title }}<template v-if="scan.addition.binder.page"> · Page {{ scan.addition.binder.page }}, pocket {{ scan.addition.binder.pocket }}</template><template v-if="scan.addition.binder.binder_type === 'tracking'"> · Marked collected</template>.</p><div class="button-row"><button class="button primary" :disabled="busy" @click="nextPhoto">Scan another card</button><NuxtLink v-if="scan.addition.binder" :to="'/binders/' + scan.addition.binder.id" class="button secondary">Open binder</NuxtLink><button v-if="scan.status === 'added'" class="text-button" :disabled="busy" @click="undo">Undo this addition</button></div><p v-if="scan.status === 'added'" class="data-note">Undo restores this addition while its ownership entry and any pocket or checklist mark changed by this scan remain unchanged.</p></section>
-    <section v-if="availability?.recent?.length" class="scan-recent"><h2>Recent scans</h2><div class="scan-recent-list"><button v-for="s in availability.recent" :key="s.id" :disabled="busy" @click="resume(s.id)"><span><strong>{{ s.addition?.name || 'Card photo' }}</strong><small>{{ new Date(s.created_at).toLocaleString() }}</small></span><span class="badge">{{ ({ processing: 'Analysing', ready: 'Review match', failed: 'Try again', added: 'Added', undone: 'Undone' } as Record<string, string>)[s.status] }}</span></button></div></section>
+    <section v-else-if="['added', 'undone'].includes(scan?.status)" class="panel scan-state" aria-live="polite"><span class="scan-success-icon"><AppIcon :name="scan.status === 'added' ? 'check' : 'refresh'" :size="32" /></span><h2>{{ scan.status === 'added' ? 'Another card on your shelf.' : 'Addition undone.' }}</h2><p>{{ scan.addition.quantity }} × {{ scan.addition.name }} · {{ scan.addition.printing_label }}</p><p v-if="scan.status === 'added' && scan.addition.binder" class="muted" data-testid="scan-binder-receipt">{{ scan.addition.binder.title }}<template v-if="scan.addition.binder.page"> · Page {{ scan.addition.binder.page }}, pocket {{ scan.addition.binder.pocket }}</template><template v-if="scan.addition.binder.binder_type === 'tracking'"> · Marked collected</template>.</p><div class="button-row"><button v-if="batchMode" class="button primary" :disabled="immutable" @click="nextBatchReview">Next card to review</button><button v-else class="button primary" :disabled="busy" @click="nextPhoto">Scan another card</button><NuxtLink v-if="scan.addition.binder" :to="'/binders/' + scan.addition.binder.id" class="button secondary">Open binder</NuxtLink><button v-if="scan.status === 'added'" class="text-button" :disabled="immutable" @click="undo">Undo this addition</button></div><p v-if="scan.status === 'added'" class="data-note">Undo restores this addition while its ownership entry and any pocket or checklist mark changed by this scan remain unchanged.</p></section>
+    <section v-if="availability?.recent?.length" class="scan-recent"><h2>Recent scans</h2><div class="scan-recent-list"><button v-for="s in availability.recent" :key="s.id" :disabled="immutable" @click="resume(s.id)"><span><strong>{{ s.addition?.name || 'Card photo' }}</strong><small>{{ new Date(s.created_at).toLocaleString() }}</small></span><span class="badge">{{ ({ processing: 'Analysing', ready: 'Review match', failed: 'Try again', added: 'Added', undone: 'Undone' } as Record<string, string>)[s.status] }}</span></button></div></section>
   </div>
 </template>
 <style scoped>

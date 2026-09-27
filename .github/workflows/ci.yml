@@ -58,6 +58,7 @@ jobs:
       - run: npm run test:themes-ui
       - run: npm run test:affiliates-live
       - run: npm run test:binder-completion-ui
+      - run: npm run test:scan-batch-ui
       - name: Upload resolved lockfile and server log
         if: always()
         uses: actions/upload-artifact@v4
@@ -69,6 +70,7 @@ jobs:
             test-results/themes
             test-results/affiliate-live
             test-results/binder-completion
+            test-results/scan-batch
 
   release-arena-table:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
