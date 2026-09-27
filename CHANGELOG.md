@@ -1,3 +1,19 @@
+## 0.42.2 — 2026-09-27
+
+- Use accessible dropdown roles in batch browser tests, matching the existing scanner checks, and run the batch suite earlier in CI for quicker diagnostics. No application behaviour changes.
+
+## 0.42.1 — 2026-09-27
+
+- Wait for batch queue initialization before file selection in browser validation, and stop the suite after repeated failures so diagnostics return promptly. Collection, quota and scanning behaviour are unchanged.
+
+## 0.42.0 — 2026-09-27
+
+- Add a 20-photo batch scanning queue with sequential recognition, pause/resume, duplicate-photo detection and a shared binder destination.
+- Keep explicit card, printing, condition and quantity review for each addition. Refresh inventory and binder revisions between reviews and retain existing idempotent confirmation and guarded Undo.
+- Recheck membership, per-tier allowances and shared budget for each upload; stop on errors or exhausted limits. Zero still means unlimited member scans, not an unlimited shared budget.
+- Recover submitted scans by their original receipt IDs without another analysis. Keep photos only in memory; retain private account-bound queue metadata in the current browser tab and support reattaching original photos after reload.
+- Expand Recent scans to 20 receipts and add unit, database and desktop/phone browser coverage. No migration or server configuration changes.
+
 ## 0.41.0 — 2026-09-27
 
 - Add Complete this binder with a deduplicated list of missing printings, pocket locations, search, wishlist filters and bulk wishlist additions.

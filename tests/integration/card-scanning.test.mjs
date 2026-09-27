@@ -12,6 +12,7 @@ import {ScanProviderError} from '../../lib/card-scan-provider.mjs';
 import {scanHash,scanReservation} from '../../lib/card-scan-logic.mjs';
 import {SCAN_DEFAULTS} from '../../shared/card-scanning.mjs';
 import {markCollected} from '../../lib/tracking-binders.mjs';
+import {runScanBatch} from '../../shared/scan-batch.mjs';
 const base=process.env.TEST_BASE_URL,url=process.env.DATABASE_URL;
 if(process.env.ALLOW_TEST_DATABASE!=='yes'||!base||!new URL(url||'http://invalid').pathname.endsWith('_test')||!/^[a-f0-9]{64}$/i.test(process.env.CARDSHELF_INTEGRATION_KEY||''))throw Error('Use a disposable _test database and a synthetic encryption key.');
 const sql=postgres(url,{max:4}),origin=process.env.APP_ORIGIN||base,users=[],scanIds=[];
@@ -122,6 +123,41 @@ await test('card scanning receipts, spending limits and collection/binder writes
       assert.equal((await request('/api/scans/'+a.id,{user:other})).status,404);
       const stored=await row(a.id);assert.equal(Number(stored.accounted_micros),960);assert.equal(stored.settled,true);
       for(const key of ['api_secret','image_hash','input_tokens'])assert.equal(Object.hasOwn(a,key),false);secretFree(a);
+    });
+    await t.test('a batch uses real admission and receipts, saves explicit reviews once, and stops at its allowance',async()=>{
+      const member=await account(),uploads=[upload(),upload(),upload()];let posts=0,lost=true;
+      uploads[1].image='data:image/jpeg;base64,YWJk';uploads[2].image='data:image/jpeg;base64,YWJl';
+      const queue=uploads.map(u=>({id:u.request_id,image:u.image,submitted:false,skipped:false,receipt:null}));
+      const api=async(path,options)=>{
+        if(options?.method==='POST'){
+          posts++;const data=await analyse(options.body,member);
+          if(lost){lost=false;throw {statusCode:502,message:'Synthetic lost response'}}
+          return data;
+        }
+        const r=await request(path,{user:member});if(r.status!==200)throw {statusCode:r.status,data:r.data};return r.data;
+      };
+      const options={api,availability:()=>scanAvailability(member.id),update:(i,p)=>Object.assign(i,p),wait:async()=>{}};
+      await sql`UPDATE card_scan_settings SET complimentary_monthly_limit=2`;
+      try{
+        const outcome=await runScanBatch(queue,options);assert.equal(outcome.status,'stopped');assert.equal(posts,2);assert.equal(queue[0].receipt.status,'ready');assert.equal(queue[1].receipt.status,'ready');assert.equal(queue[2].submitted,false);
+        assert.equal((await sql`SELECT count(*)::integer AS n FROM card_scans WHERE user_id=${member.id}`)[0].n,2);
+        assert.equal((await sql`SELECT count(*)::integer AS n FROM collection_entries WHERE user_id=${member.id}`)[0].n,0,'analysis never auto-adds inventory');
+        await sql`INSERT INTO collection_entries(user_id,printing_id,condition,quantity,wishlist,notes) VALUES(${member.id},${printing},'NM',1,true,'Keep batch notes')`;
+        const [destination]=await sql`INSERT INTO binders(user_id,title,columns,rows,page_count,binder_type) VALUES(${member.id},'Batch destination',2,2,1,'collection') RETURNING id`;
+        let lastBody;
+        for(const [index,i] of queue.slice(0,2).entries()){
+          const [e]=await sql`SELECT revision FROM collection_entries WHERE user_id=${member.id} AND printing_id=${printing} AND condition='NM'`;
+          const [b]=await sql`SELECT revision FROM binders WHERE id=${destination.id}`;
+          lastBody={printing_id:printing,condition:'NM',quantity:index===0?2:1,entry_revision:e.revision,binder:{id:destination.id,revision:b.revision,mode:'auto'},confirm:true};
+          const saved=await request('/api/scans/'+i.id+'/confirm',{user:member,method:'POST',body:lastBody});assert.equal(saved.status,200,JSON.stringify(saved.data));assert.equal(saved.data.addition.binder.position,0);
+        }
+        assert.equal((await request('/api/scans/'+queue[1].id+'/confirm',{user:member,method:'POST',body:lastBody})).status,200);
+        const [saved]=await sql`SELECT quantity,wishlist,notes FROM collection_entries WHERE user_id=${member.id} AND printing_id=${printing} AND condition='NM'`;
+        assert.deepEqual(saved,{quantity:4,wishlist:true,notes:'Keep batch notes'});
+        assert.equal((await sql`SELECT count(*)::integer AS n FROM binder_slots WHERE binder_id=${destination.id}`)[0].n,1);
+        assert.equal((await request('/api/scans/'+queue[1].id+'/undo',{user:member,method:'POST',body:{confirm:true}})).status,200);
+        assert.equal((await sql`SELECT quantity FROM collection_entries WHERE user_id=${member.id} AND printing_id=${printing} AND condition='NM'`)[0].quantity,3);
+      }finally{await sql`UPDATE card_scan_settings SET complimentary_monthly_limit=100`}
     });
     await t.test('only one analysis can occupy the CPU/network slot and spending is reserved before dispatch',async()=>{
       let release,started;const gate=new Promise(r=>release=r),entered=new Promise(r=>started=r);

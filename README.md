@@ -1,4 +1,4 @@
-# CardShelf 0.41.0
+# CardShelf 0.42.2
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -82,6 +82,13 @@ placement finds an existing matching pocket or the first empty pocket automatica
 Choose another empty Collection pocket for an extra placement, or mark a prepared
 Tracking pocket collected. The selected binder is retained between scans, and
 guarded Undo restores the changes made by that scan.
+
+Choose **Scan a batch** to queue up to 20 separate card-front photos. Recognition
+runs sequentially with pause/resume, duplicate-photo detection and existing tier
+allowances (`0` is unlimited). Review each card’s exact printing, condition and
+quantity before saving to the shared binder destination. Queue request IDs survive
+a reload in the same tab; photos do not, so reselect unprocessed originals when
+resuming. Saved receipts recover without another paid analysis.
 
 Scanning starts disabled. **More → Administration → Card scanning** lets administrators save an
 encrypted OpenAI API key, choose the model and reasoning settings, edit the

@@ -1,4 +1,4 @@
-# Card photo scanning (v0.37.0)
+# Card photo scanning (v0.42.0)
 
 CardShelf can send one card-front photo to the OpenAI API, read visible identifying
 text, and suggest matching records from the imported catalogue. English and
@@ -93,6 +93,47 @@ An unsupported model/parameter combination returns a generic configuration error
 it does not retry with another model. Test a representative card after saving.
 
 ## Automatic binder placement
+
+### Batch scanning
+
+Open **Collection → Scan a card → Scan a batch**, or use `/scan?mode=batch`.
+A binder chosen before switching modes stays selected. Choose multiple files or
+use **Take another card photo** to add phone photos one at a time. This release
+accepts up to 20 separate one-card images, not one photo of an entire binder page.
+English/Japanese Pokémon support and the existing recognition model are unchanged.
+
+Review the queue, grant external-processing consent, then select **Analyse queued
+photos**. Each new analysis consumes one member scan, including failed recognition;
+`0` remains unlimited, while the shared USD budget still applies. Access is checked
+before every upload and admission remains enforced by the server. Analysis is
+sequential. **Pause after this photo** finishes/checks the current request and does
+not send the next. Limits, busy responses, network uncertainty and failed recognition
+stop the queue; continuing requires another explicit action. **Refresh scan access**
+checks settings/allowances without losing photos. Recognition never adds inventory.
+
+Select **Review photo** for a result. Confirm its catalogue match, exact printing,
+condition, quantity and binder pocket, then save. **Next card to review** reloads
+current ownership and binder revisions for the next result. Individual additions
+use the same transactions, retry receipts and guarded Undo as single-card scanning.
+There is deliberately no unattended bulk-confirm button or inferred condition.
+
+Identical prepared photos within a queue are ignored. For multiple physical copies,
+set the quantity during review. **Skip photo** excludes a photo without changing
+inventory, and **Restore photo** brings it back. Clearing the queue does not delete
+server receipts, undo additions or alter binders. Recent scans now shows the latest
+20 receipts, covering a full batch.
+
+Photos stay in browser memory, bounded to 24 million data-URL characters after
+preparation. Source-file and per-photo limits remain below. The browser session
+stores only account-bound request IDs, image fingerprints, submitted flags and skip
+flags—not photos, filenames, candidates, quantities or notes. Reload recovery reads
+submitted receipts without uploading again. Reselect unprocessed original photos
+to reattach them to the same IDs. An uncertain request is checked before retrying;
+it never receives a replacement ID automatically. Closing the tab can remove its
+session metadata; saved receipts remain private on the server. If browser storage
+is blocked, the queue warns that same-tab recovery is unavailable.
+
+### Placement for either scanning mode
 
 Choose **Add scanned cards to** before taking the first photo, or **Add to a binder**
 when reviewing a recognised card. Both Pokémon Collection and Tracking binders
@@ -229,3 +270,12 @@ mock/provider override parameters. `npm run test:scanning-ui` exercises the buil
 scan/admin screens in Chromium at desktop and phone sizes with synthetic API
 fixtures. Live OpenAI quality, provider billing and physical mobile camera capture
 require deployment acceptance with your own API key and representative cards.
+
+`npm run test:scan-batch-ui` adds desktop/phone light/dark queue checks, duplicates,
+pause/resume, lost responses, quotas, reload recovery, explicit finish selection,
+Tracking marks/Undo and full-binder protection. A real browser/database test restores
+synthetic receipts and saves two reviewed additions once each without contacting
+OpenAI. Unit tests cover sequential dispatch, strict private snapshots and recovery;
+the integration suite runs the queue with real quota admission and scan transactions
+while injecting recognition in process. No migration, secret or host configuration
+change is needed for v0.42.0.

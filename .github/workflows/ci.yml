@@ -51,6 +51,7 @@ jobs:
       - run: npm run test:integration
       - name: Install scanner browser
         run: npx playwright install --with-deps chromium
+      - run: npm run test:scan-batch-ui
       - run: npm run test:scanning-ui
       - run: npm run test:ads-ui
       - run: npm run test:pricing-ui
@@ -69,6 +70,7 @@ jobs:
             test-results/themes
             test-results/affiliate-live
             test-results/binder-completion
+            test-results/scan-batch
 
   release-arena-table:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
