@@ -8,6 +8,7 @@ async function load() {
   try { const value = await api('/api/prices/summary', { query: props.binderId ? { binder_id: props.binderId } : {} }); if (alive && request === sequence) { data.value = value; error.value = ''; } }
   catch (e) { if (alive && request === sequence) error.value = errorMessage(e); }
 }
+watch(() => props.binderId, () => { data.value = null; error.value = ''; });
 watch(() => [props.binderId, props.refreshKey], load, { immediate: true });
 onBeforeUnmount(() => { alive = false; sequence++; });
 async function refresh() {
@@ -36,6 +37,7 @@ const total = computed(() => data.value?.valuation.aud_total == null ? 'Not pric
       <p v-if="data.valuation.stale_reference_quantity || data.valuation.failed_reference_quantity" class="alert warning">Included approximate estimates: {{ data.valuation.stale_reference_quantity }} copies have stale/unknown source dates; {{ data.valuation.failed_reference_quantity }} have a failed latest refresh. These counts can overlap. Amounts remain visible but may be inaccurate.</p>
       <div v-if="binderId && data.owned_reference" class="panel owned-binder-estimate"><strong>Owned cards represented in this layout: {{ money(data.owned_reference.aud_total) }}</strong><p class="small">{{ data.owned_reference.priced_quantity }} / {{ data.owned_reference.quantity }} represented owned copies priced<template v-if="data.owned_reference.approximate_quantity"> · {{ money(data.owned_reference.approximate_aud_total) }} from guide-price approximations</template>. This is not a physical-copy allocation.</p></div>
       <p v-if="data.rates.length" class="muted small">AUD conversion: <span v-for="(rate, i) in data.rates" :key="rate.currency">{{ i ? ' · ' : '' }}{{ rate.currency }} × {{ Number(rate.aud_rate).toFixed(4) }} ({{ String(rate.rate_date).slice(0,10) }})</span></p>
+      <CollectionValueHistory v-if="data.history" :history="data.history" :binder="!!binderId" />
       <p class="data-note">Recent matched TCGplayer prices are preferred. Where unavailable or unusable, Cardmarket and additional-game guide references contribute explicitly labelled approximations, including last-known values after a failed or stale check. Retail guides are not guaranteed sale prices. Exact printing, edition, sale language, condition and provider mapping may be wrong. Missing prices and missing or outdated AUD exchange rates are still excluded; no price or conversion rate is invented.</p>
       <p v-if="binderId" class="data-note">This is the cost reference for the planned layout, not proof of cards physically in this binder. Repeated pockets count as repeated planned purchases; collection totals use actual owned quantities.</p>
       <p class="muted small">{{ data.enabled ? 'Tracked cards are checked approximately every ' + data.refresh_hours + ' hours as the worker processes the queue.' : 'Automatic price tracking is disabled.' }} Refreshing cannot make the upstream source newer.</p>
