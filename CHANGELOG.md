@@ -1,3 +1,9 @@
+## 0.42.3 — 2026-09-27
+
+- Remove duplicate feature-branch push validation; pull requests keep their application, Arena and native container checks, and main-branch pushes keep the full release pipeline.
+- Cancel superseded PR runs in both Arena workflows using separate concurrency groups that do not interrupt release calls or manual runs.
+- Document automatic and manual validation triggers. Application behaviour, release gates and host configuration are unchanged.
+
 ## 0.42.2 — 2026-09-27
 
 - Use accessible dropdown roles in batch browser tests, matching the existing scanner checks, and run the batch suite earlier in CI for quicker diagnostics. No application behaviour changes.

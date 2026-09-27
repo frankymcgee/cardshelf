@@ -1,6 +1,6 @@
 # GitHub builds and container releases
 
-CardShelf's private source repository is `frankymcgee/cardshelf`. GitHub Actions
+CardShelf's source repository is `frankymcgee/cardshelf`. GitHub Actions
 builds releases and publishes them to `ghcr.io/frankymcgee/cardshelf`. The server
 downloads a finished image; it does not install npm packages or compile Nuxt.
 
@@ -23,6 +23,25 @@ there is no dependency resolution or lockfile rewriting on the production server
 Docker layer caches are separate for the two architectures. Main release runs are
 serialized to prevent overlapping promotions. The publishing job alone receives
 `packages: write`; it uses GitHub's automatic `GITHUB_TOKEN`, with no added PAT secret.
+
+## Validation triggers
+
+| Event | Automatic validation |
+| --- | --- |
+| Push a feature branch | Open or update a pull request to validate it. There is no separate branch-push run. |
+| Open, reopen or update a pull request | One application workflow and the applicable Arena workflows. Existing browser suites and both native image checks remain enabled. |
+| Push or merge into `main` | The full release workflow, including both Arena suites, native image checks and publication. |
+| Run a workflow manually | The selected workflow runs on the selected branch. Only the main-branch release workflow can publish images. |
+
+A new PR revision cancels older validation for the same PR and workflow, including
+both Arena suites. Other PRs are independent. Main-branch releases retain their
+existing serialization and are not interrupted by PR updates. Reusable Arena
+workflows use separate concurrency groups, so they cannot cancel their caller or
+each other; release calls and manual runs are isolated by run ID.
+
+Each workflow still has a different purpose: seeing application, Arena table and
+Arena match checks on one PR is expected. The removed duplication was running the
+same checks for both the feature-branch push and its pull-request update.
 
 ## One-time switch for the existing server
 

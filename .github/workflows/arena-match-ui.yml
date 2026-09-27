@@ -1,5 +1,9 @@
 name: Validate signed-in Arena match UI
 on: [pull_request, workflow_dispatch, workflow_call]
+# Keep this prefix distinct from the table suite and the parent release workflow.
+concurrency:
+  group: cardshelf-arena-match-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: read
 jobs:
