@@ -1,4 +1,4 @@
-# CardShelf 0.42.2
+# CardShelf 0.42.3
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -205,6 +205,10 @@ explicit `ALLOW_TEST_DATABASE=yes` safeguard, migrations, and a built running se
 See `.github/workflows/ci.yml` for the exact isolated workflow. Never run integration
 fixtures against the live site/database. Provider contract tests use synthetic responses;
 complete real Stripe Test-mode acceptance before allowing Live charges.
+
+Automatic feature validation runs on pull requests, without a duplicate branch-push
+run. New PR revisions cancel superseded application and Arena validation. Merges to
+`main` retain the complete release gates. See [validation triggers](docs/GITHUB_SETUP.md#validation-triggers).
 
 This source update retains the existing CI gates. Tests belonging solely to the retired
 Square connector are removed with that integration; provider-neutral access/referral and

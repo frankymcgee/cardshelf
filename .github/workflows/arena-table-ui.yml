@@ -1,12 +1,14 @@
 name: Validate Arena table UI
 on:
-  push:
-    branches-ignore: [main]
-    paths: ['app/components/arena/**', 'app/pages/arena/matches/**', 'app/assets/css/**', 'shared/arena.mjs', 'shared/arena-effects.mjs', 'tests/browser/**', 'tests/helpers/arena-table-fixtures.mjs', 'package*.json', '.github/workflows/arena-table-ui.yml']
   pull_request:
     paths: ['app/components/arena/**', 'app/pages/arena/matches/**', 'app/assets/css/**', 'shared/arena.mjs', 'shared/arena-effects.mjs', 'tests/browser/**', 'tests/helpers/arena-table-fixtures.mjs', 'package*.json', '.github/workflows/arena-table-ui.yml']
   workflow_dispatch:
   workflow_call:
+# Only PR revisions share a group. Release calls and manual runs stay independent
+# of each other and of the parent release workflow's concurrency group.
+concurrency:
+  group: cardshelf-arena-table-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: read
 jobs:
