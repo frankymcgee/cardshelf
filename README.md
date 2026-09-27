@@ -1,8 +1,15 @@
-# CardShelf 0.40.0
+# CardShelf 0.41.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
 binders, quick tracking, artwork effects, binder themes and a member marketplace.
+
+## Complete your binder
+
+Open a binder and choose **Complete this binder** to see missing printings, add
+selected cards to your wishlist together, and find exact matches in active member
+listings. Collection binders use owned printings; Tracking binders retain their
+independent checklist marks. See [the completion workflow](docs/BINDER_COMPLETION.md).
 
 ## Pricing and membership scan allowances
 
