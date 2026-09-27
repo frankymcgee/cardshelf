@@ -1,4 +1,4 @@
-# CardShelf 0.42.3
+# CardShelf 0.43.1
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -215,6 +215,12 @@ Square connector are removed with that integration; provider-neutral access/refe
 integration-key tests plus Stripe payment tests remain, with new activation regressions.
 
 ## Operational boundaries
+
+Collection overview and Collection binders include **7 / 30 / 90 day value graphs**.
+Snapshots retain that day's quantities, prices, AUD rates and pricing coverage; history
+starts with recorded observations after upgrading. Card details also chart each provider,
+finish, metric and currency separately. See [value history](docs/VALUE_HISTORY.md) for
+the recording schedule, privacy boundaries and change breakdown.
 
 - A catalogue printing, a planned pocket, a quick tracking mark and an owned physical copy
   are distinct records. Planning/marking a binder does not invent inventory quantities.

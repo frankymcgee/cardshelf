@@ -94,7 +94,7 @@ async function refresh() {
         </template>
         <span v-else class="muted small">{{ additionalGame ? 'No matched printing quote is available. Any guide value shown above is approximate.' : missingPrintingMessage(printing, data) }}</span>
       </div>
-      <details v-if="data.history.length"><summary>Recorded price history</summary><div class="table-scroll"><table><thead><tr><th>Source update</th><th>Market / category</th><th>Metric</th><th>Price</th></tr></thead><tbody><tr v-for="(history, index) in data.history.slice(0, 30)" :key="index"><td>{{ date(history.source_updated_at) }}</td><td>{{ history.source }} / {{ history.variant }}</td><td>{{ history.source === 'Cardmarket' ? cardmarketMetricLabel(history.metric) : history.metric }}</td><td>{{ money(history.amount, history.currency) }} {{ history.currency }}</td></tr></tbody></table></div><p class="data-note">Up to 30 recent observations shown. A 7-day or 30-day average is one provider observation, not a reconstructed sale history. Historical observations are not added together; at most one current or last-known reference contributes per owned copy.</p></details>
+      <CardPriceHistory :history="data.history" />
     </template>
     <p v-else-if="!error" class="muted small">Loading prices…</p>
     <p class="data-note">Indicative market prices, not an appraisal, sale guarantee or condition-specific value. Pokémon uses TCGdex; additional games use their named free catalogue feeds. No extra API key is needed. English and Japanese card records are never substituted for one another.</p>

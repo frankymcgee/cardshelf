@@ -11,7 +11,7 @@ permissions:
   contents: read
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:17-bookworm
@@ -33,10 +33,46 @@ jobs:
       EMAIL_WORKER_ENABLED: 'false'
       CARDSHELF_INTEGRATION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
+          package-manager-cache: false
+      - name: Prepare artifact transfer checks
+        run: |
+          mkdir -p "$RUNNER_TEMP/artifact-check"
+          for arch in amd64 arm64; do
+            printf '%s\n' "$GITHUB_SHA-$arch" > "$RUNNER_TEMP/artifact-check/payload-$arch.txt"
+            tar -czf "$RUNNER_TEMP/artifact-check/image-$arch.tar.gz" -C "$RUNNER_TEMP/artifact-check" "payload-$arch.txt"
+          done
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: artifact-check-amd64
+          path: ${{ runner.temp }}/artifact-check/image-amd64.tar.gz
+          archive: true
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: artifact-check-arm64
+          path: ${{ runner.temp }}/artifact-check/image-arm64.tar.gz
+          archive: true
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: artifact-check-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/artifact-roundtrip
+      - name: Verify archive names, layout and bytes after transfer
+        run: |
+          for arch in amd64 arm64; do
+            cmp "$RUNNER_TEMP/artifact-check/image-$arch.tar.gz" "$RUNNER_TEMP/artifact-roundtrip/image-$arch.tar.gz"
+            tar -xzf "$RUNNER_TEMP/artifact-roundtrip/image-$arch.tar.gz" -C "$RUNNER_TEMP/artifact-roundtrip"
+            cmp "$RUNNER_TEMP/artifact-check/payload-$arch.txt" "$RUNNER_TEMP/artifact-roundtrip/payload-$arch.txt"
+          done
       - name: Install locked dependencies
         run: npm ci
       - run: npm test
@@ -63,9 +99,10 @@ jobs:
       - run: npm run test:themes-ui
       - run: npm run test:affiliates-live
       - run: npm run test:binder-completion-ui
+      - run: npm run test:value-history-ui
       - name: Upload resolved lockfile and server log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: build-evidence
           path: |
@@ -75,6 +112,7 @@ jobs:
             test-results/affiliate-live
             test-results/binder-completion
             test-results/scan-batch
+            test-results/value-history
 
   release-arena-table:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -102,7 +140,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Release metadata
@@ -112,9 +150,9 @@ jobs:
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "contract=$(sh scripts/deployment-contract.sh)" >> "$GITHUB_OUTPUT"
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Build native release image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           target: runtime
@@ -141,10 +179,11 @@ jobs:
         run: docker save "cardshelf:ci-$IMAGE_ARCH" | gzip > "$RUNNER_TEMP/image-$IMAGE_ARCH.tar.gz"
       - name: Retain tested image for publishing
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-image-${{ matrix.arch }}
           path: ${{ runner.temp }}/image-${{ matrix.arch }}.tar.gz
+          archive: true
           compression-level: 0
           retention-days: 2
           if-no-files-found: error
@@ -153,22 +192,22 @@ jobs:
     name: Publish release images
     needs: image
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: release-image-*
           merge-multiple: true
           path: ${{ runner.temp }}/release-images
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

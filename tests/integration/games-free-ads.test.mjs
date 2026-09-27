@@ -110,6 +110,7 @@ await test('multi-game access, public reference data and Free-only sponsorship',
       assert.equal((await request('/api/binders',{method:'POST',cookie:freeCookie,body:{title:'Blocked',binder_type:'tracking',columns:3,rows:3,page_count:1}})).status,403);
       assert.equal((await request('/api/account/games',{method:'POST',cookie:freeCookie,body:{game:'pokemon',revision:0,confirm_read_only:true}})).status,403);
       assert.equal((await request('/api/collection',{method:'PUT',cookie:freeCookie,body:{printing_id:pokemonPrinting,condition:'NM',quantity:1,wishlist:false,notes:'',revision:0}})).status,403);
+      assert.equal((await request('/api/prices/summary',{cookie:freeCookie})).status,403,'private value history follows the prices entitlement');
       assert.equal((await request('/api/public/catalogue/cards/'+encodeURIComponent(cardIds[2])+'/prices',{cookie:freeCookie})).status,200);
       assert.equal((await request('/api/collection/export?format=json',{cookie:freeCookie})).status,200);
     });

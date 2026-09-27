@@ -43,6 +43,27 @@ Each workflow still has a different purpose: seeing application, Arena table and
 Arena match checks on one PR is expected. The removed duplication was running the
 same checks for both the feature-branch push and its pull-request update.
 
+## Action runtimes and runner images
+
+All external actions are pinned to reviewed commit SHAs with release comments.
+Checkout v7.0.1, setup-node v7.0.0, upload-artifact v7.0.1,
+download-artifact v8.0.1, Buildx setup v4.4.1, build-push v7.4.0 and
+Docker login v4.6.0 declare the Node 24 action runtime. Application jobs also use
+Node 24. Hosted jobs use `ubuntu-24.04`; the native image matrix retains
+`ubuntu-24.04` and `ubuntu-24.04-arm`, independently of the `ubuntu-latest` rollout.
+
+Artifact uploads retain ZIP archiving (`archive: true` for release image archives),
+so the release-image artifact names and extracted tarball paths stay unchanged.
+The application job checks two tiny compressed fixtures through upload/download,
+pattern selection and `merge-multiple`, comparing archive and extracted bytes.
+Main-branch publishing still downloads and loads the actual tested native images.
+The new downloader's default digest mismatch failure remains enabled.
+
+When updating pins, review each major version's inputs and runtime requirements;
+do not assume upgrading the application's Node version upgrades action runtimes.
+See [Node 20 action deprecation](https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/)
+and [the Ubuntu 26.04 rollout](https://github.com/actions/runner-images/issues/14748).
+
 ## One-time switch for the existing server
 
 After this PR is merged and **Publish release images** succeeds, run from the

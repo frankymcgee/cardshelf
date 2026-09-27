@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   match-ui:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
       postgres:
@@ -31,7 +31,7 @@ jobs:
       CARDSHELF_INTEGRATION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       EMAIL_WORKER_ENABLED: 'false'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Free runner storage for browser traces
         run: |
           df -h / /tmp "$GITHUB_WORKSPACE"
@@ -40,9 +40,10 @@ jobs:
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet
           sudo apt-get clean
           df -h / /tmp "$GITHUB_WORKSPACE"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
+          package-manager-cache: false
       - name: Install locked dependencies
         run: npm ci
       - name: Install test browsers
@@ -67,7 +68,7 @@ jobs:
           du -sh node_modules .output test-results playwright-report "$RUNNER_TEMP" /tmp 2>/dev/null || true
       - name: Upload signed-in browser evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: arena-match-ui-evidence
           path: |

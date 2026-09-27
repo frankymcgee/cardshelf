@@ -7,6 +7,7 @@ import { providerPrintings,safeImageUrl } from '../lib/variants.mjs';
 import { ensure } from '../lib/errors.mjs';
 import { storePricing,schedulePriceRefresh,pricingConfiguration } from '../lib/prices.mjs';
 import { runPriceJob,refreshFx } from '../lib/price-worker.mjs';
+import { recordDueValueHistory } from '../lib/value-history.mjs';
 import { runGameImport } from '../lib/game-catalogue.mjs';
 import * as v from '../lib/validate.mjs';
 const HEARTBEAT='/tmp/cardshelf-worker-heartbeat',sql=db();
@@ -114,6 +115,7 @@ try {
             WHERE id=${job.id} AND lease_token=${job.lease_token}`;
         } finally {clearInterval(leaseTimer);}
       } else await sleep(3000);
+      await recordDueValueHistory();
     } catch(error) {console.error('Worker loop:',error.message);await sleep(5000);}
   }
 } finally {await closeDatabase();}

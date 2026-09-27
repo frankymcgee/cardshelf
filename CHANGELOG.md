@@ -1,3 +1,17 @@
+## 0.43.1 — 2026-09-27
+
+- Use the theme's high-contrast accent for graph lines, remove repeated currency codes, and show readable price-series labels and source dates. Keep the full selected series visible on narrow screens.
+- Verify chart contrast against the painted light/dark surfaces and retain desktop/phone graph coverage.
+
+## 0.43.0 — 2026-09-27
+
+- Add private daily collection and Collection binder value snapshots, with 7/30/90-day graphs, exact observation inspection and accessible tables in light and dark themes.
+- Separate estimate changes caused by prices/FX, added or removed copies, and changed price coverage or sources. Preserve each day's actual holdings and FX basis; never reconstruct past ownership or replace missing prices with zero.
+- Add source/currency/finish/metric-specific card price graphs in signed-in and public card details. Planned binder values remain separate from physical ownership; Tracking binders remain unvalued checklists.
+- Record observations in bounded worker batches and on summary views, keep one updatable observation for today, retain closed days for up to 366 days, and cascade private history on account/binder deletion.
+- Resolve #51 by pinning all seven GitHub/Docker actions to reviewed Node 24 releases and Ubuntu runners to 24.04. Keep PR workflow deduplication, concurrency and native release gates; verify archive transfer names, merged paths and bytes with a small artifact round trip.
+- Add unit, PostgreSQL/API and desktop/phone browser validation. No host configuration change is required; member marketplace listings remain cards-only.
+
 ## 0.42.3 — 2026-09-27
 
 - Remove duplicate feature-branch push validation; pull requests keep their application, Arena and native container checks, and main-branch pushes keep the full release pipeline.
