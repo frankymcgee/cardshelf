@@ -2,7 +2,7 @@ import {fileURLToPath} from 'node:url';
 import {defineConfig} from '@playwright/test';
 const external=process.env.TEST_BASE_URL;
 export default defineConfig({
-  testDir:'.',testMatch:['scan-batch.spec.mjs','scan-batch-live.spec.mjs'],timeout:60000,retries:0,workers:1,
+  testDir:'.',testMatch:['scan-batch.spec.mjs','scan-batch-live.spec.mjs'],timeout:45000,maxFailures:3,retries:0,workers:1,
   outputDir:'../../test-results/scan-batch',reporter:'list',
   use:{baseURL:external||'http://127.0.0.1:4194',screenshot:'only-on-failure',trace:'retain-on-failure',launchOptions:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE}:{}},
   projects:[{name:'desktop',use:{browserName:'chromium',viewport:{width:1366,height:900}}},{name:'phone',use:{browserName:'chromium',viewport:{width:390,height:844},isMobile:true,hasTouch:true}}],

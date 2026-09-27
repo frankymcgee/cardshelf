@@ -58,9 +58,10 @@ async function fixtures(page,{theme='light',limit=0,lostUpload=false,lostSave=fa
   return {calls,errors,receipts,binder,release:()=>release?.(),quantity:()=>quantity};
 }
 const analyse=async page=>{await page.getByRole('checkbox',{name:'Send the queued card photos to OpenAI for recognition.'}).check();await page.getByRole('button',{name:'Analyse queued photos',exact:true}).click()};
+async function upload(page,files){const input=page.getByLabel('Choose card photos',{exact:true});await expect(input).toBeEnabled();await input.setInputFiles(files)}
 async function queue(page,files=photos.slice(0,2),path='/scan?mode=batch&binder='+binderId){
   await page.goto(path);await expect(page.getByRole('heading',{name:'Scan a batch',exact:true})).toBeVisible();
-  await page.getByLabel('Choose card photos',{exact:true}).setInputFiles(files);await expect(page.locator('.batch-item')).toHaveCount(files.length);
+  await upload(page,files);await expect(page.locator('.batch-item')).toHaveCount(files.length);
 }
 async function review(page,index=1,owned=2){
   await page.getByRole('button',{name:'Review photo '+index,exact:true}).click();await page.locator('.scan-candidate').click();
@@ -84,7 +85,7 @@ test('the single scanner exposes batch mode and keeps the selected binder',async
   await fixtures(page);await page.goto('/scan?binder='+binderId);await page.getByRole('button',{name:'Scan a batch',exact:true}).click();await expect(page).toHaveURL(/mode=batch/);await expect(page.getByLabel('Add scanned cards to',{exact:true})).toHaveValue(binderId);
 });
 test('duplicate photos are ignored and session storage excludes image data and filenames',async({page})=>{
-  await fixtures(page);await queue(page,[photos[0]]);await page.getByLabel('Choose card photos',{exact:true}).setInputFiles([photos[0]]);await expect(page.locator('.batch-notice')).toContainText('duplicate');await expect(page.locator('.batch-item')).toHaveCount(1);
+  await fixtures(page);await queue(page,[photos[0]]);await upload(page,[photos[0]]);await expect(page.locator('.batch-notice')).toContainText('duplicate');await expect(page.locator('.batch-item')).toHaveCount(1);
   const saved=await page.evaluate(key=>sessionStorage.getItem(key),'cardshelf.scan-batch.v1:'+owner);expect(saved).not.toContain('data:image');expect(saved).not.toContain('private-card');expect(saved).not.toContain('candidates');
 });
 test('pause waits for the current photo then an explicit continue processes the rest',async({page})=>{
@@ -100,7 +101,7 @@ test('lost analysis and save responses recover without additional calls',async({
 test('reload checks receipts without re-analysis and restores unprocessed photos by fingerprint',async({page})=>{
   const state=await fixtures(page);await queue(page);await page.getByRole('button',{name:'Skip photo 2',exact:true}).click();await analyse(page);await expect(page.getByRole('button',{name:'Review photo 1',exact:true})).toBeEnabled();await page.reload();
   await expect(page.locator('.batch-notice')).toContainText('Queue restored');expect(posts(state)).toHaveLength(1);await page.getByRole('button',{name:'Restore photo 2',exact:true}).click();
-  await expect(page.locator('.batch-item').nth(1)).toContainText('Reselect original photo');await page.getByLabel('Choose card photos',{exact:true}).setInputFiles([photos[1]]);await expect(page.locator('.batch-item')).toHaveCount(2);await analyse(page);await expect(page.getByRole('button',{name:'Review photo 2',exact:true})).toBeEnabled();expect(posts(state)).toHaveLength(2);
+  await expect(page.locator('.batch-item').nth(1)).toContainText('Reselect original photo');await upload(page,[photos[1]]);await expect(page.locator('.batch-item')).toHaveCount(2);await analyse(page);await expect(page.getByRole('button',{name:'Review photo 2',exact:true})).toBeEnabled();expect(posts(state)).toHaveLength(2);
 });
 test('Tracking review marks its exact pocket and Undo restores the previous mark',async({page})=>{
   const state=await fixtures(page,{tracking:true});await queue(page,[photos[0]]);await analyse(page);await review(page);await expect(page.getByTestId('scan-placement')).toContainText('Page 1, pocket 3');await page.getByRole('button',{name:'Confirm & add to collection',exact:true}).click();await expect(page.getByTestId('scan-binder-receipt')).toContainText('Marked collected');expect(state.binder.slots[0].is_collected).toBe(true);await page.getByRole('button',{name:'Undo this addition'}).click();await expect(page.getByRole('heading',{name:'Addition undone.'})).toBeVisible();expect(state.binder.slots[0].is_collected).toBe(false);
@@ -109,8 +110,8 @@ test('a full mismatched binder blocks saving without changing inventory',async({
   const state=await fixtures(page,{full:true});await queue(page,[photos[0]]);await analyse(page);await review(page);await expect(page.getByRole('button',{name:'Confirm & add to collection',exact:true})).toBeDisabled();expect(state.quantity()).toBe(2);expect(state.calls.filter(c=>c.path.endsWith('/confirm'))).toHaveLength(0);
 });
 test('file type and 20-photo bounds reject uploads before any paid request',async({page})=>{
-  const state=await fixtures(page);await page.goto('/scan?mode=batch');await page.getByLabel('Choose card photos',{exact:true}).setInputFiles({name:'image.heic',mimeType:'image/heic',buffer:Buffer.from('unsupported')});await expect(page.locator('.batch-panel .alert.error')).toContainText('Convert HEIC');
-  await page.getByLabel('Choose card photos',{exact:true}).setInputFiles(Array.from({length:21},(_,i)=>({...photos[0],name:'photo-'+i+'.png'})));await expect(page.locator('.batch-panel .alert.error')).toContainText('no more than 20');expect(posts(state)).toHaveLength(0);
+  const state=await fixtures(page);await page.goto('/scan?mode=batch');await upload(page,{name:'image.heic',mimeType:'image/heic',buffer:Buffer.from('unsupported')});await expect(page.locator('.batch-panel .alert.error')).toContainText('Convert HEIC');
+  await upload(page,Array.from({length:21},(_,i)=>({...photos[0],name:'photo-'+i+'.png'})));await expect(page.locator('.batch-panel .alert.error')).toContainText('no more than 20');expect(posts(state)).toHaveLength(0);
 });
 test('failed recognition halts remaining uploads and clearing never changes receipts',async({page})=>{
   const state=await fixtures(page,{failed:true});await queue(page);await analyse(page);await expect(page.locator('.batch-panel .alert.error')).toContainText('Recognition failed');expect(posts(state)).toHaveLength(1);

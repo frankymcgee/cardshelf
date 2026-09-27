@@ -1,3 +1,7 @@
+## 0.42.1 — 2026-09-27
+
+- Wait for batch queue initialization before file selection in browser validation, and stop the suite after repeated failures so diagnostics return promptly. Collection, quota and scanning behaviour are unchanged.
+
 ## 0.42.0 — 2026-09-27
 
 - Add a 20-photo batch scanning queue with sequential recognition, pause/resume, duplicate-photo detection and a shared binder destination.
