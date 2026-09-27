@@ -3,7 +3,7 @@ const binderId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', printingId = 'bbbbbbbb-
 const today = new Date().toISOString().slice(0, 10), day = age => new Date(Date.parse(today) - age * 86400000).toISOString().slice(0, 10);
 const card = { id: 'en:fixture-001', game: 'pokemon', name: 'History Pikachu', local_id: '001', language: 'en', set_name: 'Fixture set', rarity: 'Rare', faces: [], rules_text: '', image_url: null, entries: [],
   printings: [{ id: printingId, key: 'normal', label: 'Normal', source: 'tcgdex', entries: [] }] };
-const valuation = amount => ({ aud_total: amount, quantity: 12, priced_quantity: amount == null ? 0 : 10, unpriced_quantity: amount == null ? 12 : 2, stale_quantity: 0, fx_missing_quantity: 0, approximate_quantity: 2, approximate_aud_total: 20, matched_aud_total: amount == null ? 0 : amount - 20, stale_reference_quantity: 1, failed_reference_quantity: 0 });
+const valuation = amount => ({ aud_total: amount, quantity: 12, priced_quantity: amount == null ? 0 : 10, unpriced_quantity: amount == null ? 12 : 2, stale_quantity: 0, fx_missing_quantity: 0, approximate_quantity: amount == null ? 0 : 2, approximate_aud_total: amount == null ? 0 : 20, matched_aud_total: amount == null ? 0 : amount - 20, stale_reference_quantity: amount == null ? 0 : 1, failed_reference_quantity: 0 });
 function summary(mode = 'normal') {
   let points = [[80, 40], [20, 100], [6, 120], [5, 130], [4, null], [2, 170], [1, 175], [0, 180]].map(([age, amount]) => ({ snapshot_date: day(age), recorded_at: day(age) + 'T12:00:00Z', valuation: valuation(amount) }));
   if (mode === 'first') points = points.slice(-1);
@@ -52,12 +52,24 @@ async function fixtures(page, { theme = 'light', mode = 'normal', tracking = fal
   return { errors, calls, setMode(value) { currentMode = value; } };
 }
 async function fits(page) { expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true); }
+async function readableLine(chart) {
+  const contrast = await chart.locator('.history-line').first().evaluate(el => {
+    const rgba = value => { const parts = value.match(/[\d.]+/g)?.map(Number) || []; return [parts[0] || 0, parts[1] || 0, parts[2] || 0, parts[3] ?? 1]; };
+    const blend = (top, bottom) => top.slice(0, 3).map((value, i) => value * top[3] + bottom[i] * (1 - top[3]));
+    const layers = []; for (let node = el; node; node = node.parentElement) layers.push(rgba(getComputedStyle(node).backgroundColor));
+    let background = [255, 255, 255]; for (const layer of layers.reverse()) background = blend(layer, background);
+    const foreground = blend(rgba(getComputedStyle(el).stroke), background);
+    const luminance = values => values.map(v => v / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4).reduce((sum, v, i) => sum + v * [.2126, .7152, .0722][i], 0);
+    const a = luminance(foreground), b = luminance(background); return (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
+  });
+  expect(contrast, 'drawn chart line has at least 3:1 contrast against its painted surface').toBeGreaterThanOrEqual(3);
+}
 for (const theme of ['light', 'dark']) {
   test(theme + ' collection graph shows daily gaps, keyboard inspection and range changes', async ({ page }, info) => {
     const { errors } = await fixtures(page, { theme }); await page.goto('/app');
     const chart = page.getByRole('region', { name: 'Collection value history', exact: true });
     await expect(chart.getByRole('img')).toBeVisible(); await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
-    await expect(chart.locator('.history-line')).toHaveCount(2);
+    await expect(chart.locator('.history-line')).toHaveCount(2); await readableLine(chart);
     await chart.getByRole('button', { name: '7 days', exact: true }).click(); await expect(chart.getByRole('button', { name: '7 days', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await expect(chart.locator('.chart-observation')).toContainText('$180.00');
     await chart.getByRole('slider', { name: 'Inspect observation' }).focus(); await page.keyboard.press('ArrowLeft');
@@ -71,9 +83,10 @@ for (const theme of ['light', 'dark']) {
   test(theme + ' public card graph separates source, currency and printing with exact values', async ({ page }, info) => {
     const { errors } = await fixtures(page, { theme }); await page.goto('/explore/' + encodeURIComponent(card.id));
     const chart = page.getByRole('region', { name: 'Card price history', exact: true }), select = page.getByRole('combobox', { name: 'Price series' });
-    await select.selectOption({ label: 'TCGplayer · normal · marketPrice · USD' }); await expect(chart.locator('.chart-observation')).toContainText('USD'); await expect(chart.locator('.chart-observation')).toContainText('17.00');
-    await select.selectOption({ label: 'Cardmarket · card-reference · trend · EUR' }); await expect(chart.locator('.chart-observation')).toContainText('EUR'); await expect(chart.locator('.chart-observation')).toContainText('10.00');
-    await expect(chart.locator('.history-dot')).toHaveCount(3); await fits(page);
+    await select.selectOption({ label: 'TCGplayer · Normal · Market price · USD' }); await expect(chart.locator('.chart-observation')).toContainText('USD'); await expect(chart.locator('.chart-observation')).toContainText('17.00');
+    await select.selectOption({ label: 'Cardmarket · Card-level reference · Trend price · EUR' }); await expect(chart.locator('.chart-observation')).toContainText('EUR'); await expect(chart.locator('.chart-observation')).toContainText('€10.00');
+    await expect(page.locator('.selected-series')).toHaveText('Cardmarket · Card-level reference · Trend price · EUR');
+    await expect(chart.locator('.history-dot')).toHaveCount(3); await readableLine(chart); await fits(page);
     await page.locator('.card-history').screenshot({ path: info.outputPath(theme + '-card-history.png') }); expect(errors).toEqual([]);
   });
 }

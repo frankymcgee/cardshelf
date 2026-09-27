@@ -1,3 +1,8 @@
+## 0.43.1 — 2026-09-27
+
+- Use the theme's high-contrast accent for graph lines, remove repeated currency codes, and show readable price-series labels and source dates. Keep the full selected series visible on narrow screens.
+- Verify chart contrast against the painted light/dark surfaces and retain desktop/phone graph coverage.
+
 ## 0.43.0 — 2026-09-27
 
 - Add private daily collection and Collection binder value snapshots, with 7/30/90-day graphs, exact observation inspection and accessible tables in light and dark themes.

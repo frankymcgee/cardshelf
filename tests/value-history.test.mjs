@@ -72,6 +72,6 @@ test('chart lines break at missing days and null prices but preserve real zero o
 test('card history never merges sources, currencies, finishes or metrics and keeps latest daily observations', () => {
   const observations = [quote, { ...quote, amount: 13, source_updated_at: '2026-09-27T22:00:00Z' }, { ...quote, variant: 'holo' }, { ...quote, currency: 'EUR' }, { ...quote, source: 'Cardmarket' }, { ...quote, metric: 'avg7' }, { ...quote, amount: NaN }, { ...quote, source_updated_at: null }];
   const series = cardHistorySeries(observations);
-  assert.equal(series.length, 5); assert.equal(series.find(s => s.label === 'TCGplayer · normal · marketPrice · USD').points[0].value, 13);
+  assert.equal(series.length, 5); assert.equal(series.find(s => s.label === 'TCGplayer · Normal · Market price · USD').points[0].value, 13);
   assert.ok(series.every(s => s.points.length === 1));
 });
