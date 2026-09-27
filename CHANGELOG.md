@@ -1,3 +1,7 @@
+## 0.42.2 — 2026-09-27
+
+- Use accessible dropdown roles in batch browser tests, matching the existing scanner checks, and run the batch suite earlier in CI for quicker diagnostics. No application behaviour changes.
+
 ## 0.42.1 — 2026-09-27
 
 - Wait for batch queue initialization before file selection in browser validation, and stop the suite after repeated failures so diagnostics return promptly. Collection, quota and scanning behaviour are unchanged.

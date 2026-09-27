@@ -66,7 +66,7 @@ async function queue(page,files=photos.slice(0,2),path='/scan?mode=batch&binder=
 async function review(page,index=1,owned=2){
   await page.getByRole('button',{name:'Review photo '+index,exact:true}).click();await page.locator('.scan-candidate').click();
   await expect(page.getByRole('button',{name:'Confirm & add to collection',exact:true})).toBeDisabled();
-  await page.getByLabel('Printing / finish',{exact:true}).selectOption(holo);await expect(page.locator('.scan-ownership')).toContainText('You own '+owned);
+  await page.getByRole('combobox',{name:'Printing / finish',exact:true}).selectOption(holo);await expect(page.locator('.scan-ownership')).toContainText('You own '+owned);
 }
 const posts=state=>state.calls.filter(c=>c.path==='/api/scans'&&c.method==='POST');
 async function fits(page){expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true)}
@@ -76,13 +76,13 @@ for(const theme of ['light','dark'])test(theme+' multi-photo queue, explicit pri
   await fits(page);await page.screenshot({path:info.outputPath(theme+'-queue.png'),fullPage:true});await review(page);
   await expect(page.getByTestId('scan-placement')).toContainText('Page 1, pocket 1');await page.getByLabel('Copies to add').fill('2');
   await page.getByRole('button',{name:'Confirm & add to collection',exact:true}).click();await expect(page.getByRole('heading',{name:'Another card on your shelf.'})).toBeVisible();
-  await page.getByRole('button',{name:'Next card to review'}).click();await page.locator('.scan-candidate').click();await page.getByLabel('Printing / finish',{exact:true}).selectOption(holo);
+  await page.getByRole('button',{name:'Next card to review'}).click();await page.locator('.scan-candidate').click();await page.getByRole('combobox',{name:'Printing / finish',exact:true}).selectOption(holo);
   await expect(page.locator('.scan-ownership')).toContainText('You own 4');await expect(page.getByTestId('scan-placement')).toContainText('already set up');
   await page.getByRole('button',{name:'Confirm & add to collection',exact:true}).click();await expect(page.getByRole('heading',{name:'Another card on your shelf.'})).toBeVisible();
   expect(state.quantity()).toBe(5);const saves=state.calls.filter(c=>c.path.endsWith('/confirm'));expect(saves.map(c=>c.body.entry_revision)).toEqual([7,8]);expect(saves.map(c=>c.body.binder.revision)).toEqual([4,5]);expect(state.binder.slots).toHaveLength(1);expect(state.errors).toEqual([]);
 });
 test('the single scanner exposes batch mode and keeps the selected binder',async({page})=>{
-  await fixtures(page);await page.goto('/scan?binder='+binderId);await page.getByRole('button',{name:'Scan a batch',exact:true}).click();await expect(page).toHaveURL(/mode=batch/);await expect(page.getByLabel('Add scanned cards to',{exact:true})).toHaveValue(binderId);
+  await fixtures(page);await page.goto('/scan?binder='+binderId);await page.getByRole('button',{name:'Scan a batch',exact:true}).click();await expect(page).toHaveURL(/mode=batch/);await expect(page.getByRole('combobox',{name:'Add scanned cards to',exact:true})).toHaveValue(binderId);
 });
 test('duplicate photos are ignored and session storage excludes image data and filenames',async({page})=>{
   await fixtures(page);await queue(page,[photos[0]]);await upload(page,[photos[0]]);await expect(page.locator('.batch-notice')).toContainText('duplicate');await expect(page.locator('.batch-item')).toHaveCount(1);

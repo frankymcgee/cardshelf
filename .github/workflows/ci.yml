@@ -51,6 +51,7 @@ jobs:
       - run: npm run test:integration
       - name: Install scanner browser
         run: npx playwright install --with-deps chromium
+      - run: npm run test:scan-batch-ui
       - run: npm run test:scanning-ui
       - run: npm run test:ads-ui
       - run: npm run test:pricing-ui
@@ -58,7 +59,6 @@ jobs:
       - run: npm run test:themes-ui
       - run: npm run test:affiliates-live
       - run: npm run test:binder-completion-ui
-      - run: npm run test:scan-batch-ui
       - name: Upload resolved lockfile and server log
         if: always()
         uses: actions/upload-artifact@v4

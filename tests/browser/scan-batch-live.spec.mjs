@@ -29,7 +29,7 @@ test('restored batch reviews persist once and reuse the exact binder pocket agai
     await page.addInitScript(({key,snapshot})=>{if(!sessionStorage.getItem(key))sessionStorage.setItem(key,snapshot)},{key:'cardshelf.scan-batch.v1:'+owner,snapshot});
     await page.goto('/scan?mode=batch&binder='+binder.id);await expect(page.locator('.batch-notice')).toContainText('Queue restored');
     for(let i=0;i<2;i++){
-      await page.getByRole('button',{name:'Review photo '+(i+1),exact:true}).click();await page.locator('.scan-candidate').click();await page.getByLabel('Printing / finish',{exact:true}).selectOption(holo.id);
+      await page.getByRole('button',{name:'Review photo '+(i+1),exact:true}).click();await page.locator('.scan-candidate').click();await page.getByRole('combobox',{name:'Printing / finish',exact:true}).selectOption(holo.id);
       await expect(page.locator('.scan-ownership')).toContainText('You own '+(2+i));await expect(page.getByTestId('scan-placement')).toContainText('Page 1, pocket 1');
       await page.getByRole('button',{name:'Confirm & add to collection',exact:true}).click();await expect(page.getByRole('heading',{name:'Another card on your shelf.'})).toBeVisible();
     }
