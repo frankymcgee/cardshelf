@@ -55,15 +55,36 @@ async function openBinder(page, options) {
 }
 async function pixelCoverage(art) {
   await art.scrollIntoViewIfNeeded();
-  const on = await sharp(await art.screenshot()).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  const off = await sharp(await art.screenshot({ style: '.foil-layer { visibility: hidden !important; }' })).removeAlpha().raw().toBuffer();
+  await expect.poll(() => art.locator('img').evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  const layers = art.locator('.foil-layer');
+  await expect(layers).toHaveCount(3);
+  // Keep the baseline state in place until Chromium has painted it. A temporary
+  // screenshot style can race the compositor and capture the foiled image twice.
+  const painted = () => art.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await expect(layers.first()).toHaveCSS('visibility', 'visible');
+  await painted();
+  const onImage = await art.screenshot();
+  const styles = await layers.evaluateAll(nodes => nodes.map(node => node.getAttribute('style')));
+  let offImage;
+  try {
+    await layers.evaluateAll(nodes => nodes.forEach(node => node.style.setProperty('visibility', 'hidden', 'important')));
+    for (const layer of await layers.all()) await expect(layer).toHaveCSS('visibility', 'hidden');
+    await painted();
+    offImage = await art.screenshot();
+  } finally {
+    await layers.evaluateAll((nodes, previous) => nodes.forEach((node, i) => previous[i] == null ? node.removeAttribute('style') : node.setAttribute('style', previous[i])), styles);
+    await painted();
+  }
+  const on = await sharp(onImage).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const off = await sharp(offImage).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  expect(off.info).toEqual(on.info);
   const { width, height, channels } = on.info;
   function difference([x0, y0, x1, y1]) {
     let sum = 0, pixels = 0, changed = 0;
     for (let y = Math.ceil(y0 * height); y < Math.floor(y1 * height); y++) {
       for (let x = Math.ceil(x0 * width); x < Math.floor(x1 * width); x++) {
         const i = (y * width + x) * channels;
-        const delta = (Math.abs(on.data[i] - off[i]) + Math.abs(on.data[i + 1] - off[i + 1]) + Math.abs(on.data[i + 2] - off[i + 2])) / 3;
+        const delta = (Math.abs(on.data[i] - off.data[i]) + Math.abs(on.data[i + 1] - off.data[i + 1]) + Math.abs(on.data[i + 2] - off.data[i + 2])) / 3;
         sum += delta; pixels++; if (delta > 3) changed++;
       }
     }
