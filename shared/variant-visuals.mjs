@@ -23,3 +23,14 @@ export function namedCardClass(name) {
 export function singlePrinting(card) {
   return Array.isArray(card?.visual_printings) && card.visual_printings.length === 1 ? card.visual_printings[0] : null;
 }
+// The mechanic chooses a decorative texture only AFTER a foil printing is known.
+// In particular, an EX name must never turn Normal or unspecified artwork into foil.
+export function foilTreatment(card, printing) {
+  const finish = printingVisual(printing).type;
+  if (finish === 'reverse') return 'reverse';
+  if (finish !== 'holo') return 'none';
+  const mechanic = !card?.game || card.game === 'pokemon' ? namedCardClass(card?.name)?.type : null;
+  if (mechanic === 'ex' || mechanic === 'classic-ex') return 'ex';
+  if (mechanic) return 'full';
+  return 'holo';
+}

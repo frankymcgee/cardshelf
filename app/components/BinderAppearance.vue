@@ -87,6 +87,7 @@ async function save() {
           <label>Blur · {{ draft.wallpaper_blur }} px<input v-model.number="draft.wallpaper_blur" type="range" min="0" max="12" /></label>
         </template>
         <label>Variant effects<select v-model="draft.effects_mode"><option value="off">Off — keep badges only</option><option value="subtle">Subtle — static foil</option><option value="animated">Shimmer on hover / focus</option></select></label>
+        <p class="data-note">Holo shimmers over the artwork. Reverse Holo adds patterned foil around it. Holo ex/EX cards get a full-face prismatic finish. Touchscreens show static foil.</p>
         <label class="checkbox-label"><input v-model="draft.print_background" type="checkbox" />Include background in print previews by default</label>
         <p class="data-note">Read-only sharing includes this background. Upload an image you have permission to use, without personal details. ex/EX/GX/V badges do not imply a foil finish.</p>
         <p v-if="conflict" class="alert warning">This binder changed. Reload the current appearance before saving; your unsaved appearance edits will be discarded.</p>

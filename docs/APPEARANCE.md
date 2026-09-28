@@ -1,11 +1,17 @@
-# CardShelf 0.3.0 — variant visuals and binder appearance
+# CardShelf — variant visuals and binder appearance
 
 ## Variant effects
 
-Holo uses a soft artwork-window sheen; Reverse Holo uses a patterned outer-card foil.
+Holo uses layered rainbow sheen, fine sparkle and a light reflection within the
+artwork window. Reverse Holo uses a diamond foil pattern across the surrounding
+card stock, leaving that artwork window clear. Known Holo ex/EX printings use a
+full-face prismatic finish with etched facets and star glints; other named Holo
+mechanics use full-face rainbow sheen. Reverse Holo always keeps its artwork cutout.
 These are decorative approximations, not exact physical foil masks for each card era.
 Named ex / EX / GX / V / VMAX / VSTAR / BREAK suffixes receive separate text badges.
 A named mechanic never implies a finish, rarity, price, authenticity or condition.
+Normal and unspecified EX cards keep their badges without a foil overlay. There
+are no mechanic-specific border outlines; the finish is rendered over the image.
 Latin names such as Calyrex are not mistaken for ex. Full art, gold and promotional
 status are not guessed from card images or rarity strings.
 
@@ -19,7 +25,8 @@ a readable fallback with no foil animation. Ownership and pricing logic are unch
 
 Per-binder effects: Off (badges remain), Subtle (static), or Shimmer on hover/focus.
 Only hovered/focused cards animate, only with a fine pointer; reduced-motion requests
-disable the animation. There is no motion-sensor access, tilt script or continuous
+disable the animation. Touchscreens retain the same visible static foil treatment.
+There is no motion-sensor access, tilt script or continuous
 animation across every card. Printing never adds foil effects to the placeholders.
 
 ## Binder appearance
@@ -103,3 +110,9 @@ Primary implementation references:
 - https://sharp.pixelplumbing.com/api-output/
 - https://github.com/lovell/sharp/releases/tag/v0.35.4
 - https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/prefers-reduced-motion
+
+The variant-effects browser suite (`npm run test:variant-effects-ui`) exercises
+the production binder and card dialog with local demonstration artwork. It checks
+rendered pixels inside and outside the artwork mask, normal/unknown and missing
+images, the appearance controls, keyboard/hover isolation, touch, reduced motion
+and print output. Fixtures are demonstrations, not real catalogue or deployment data.

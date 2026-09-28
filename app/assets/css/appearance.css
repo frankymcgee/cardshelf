@@ -12,16 +12,28 @@
 .variant-badge.class-v,.variant-badge.class-vmax,.variant-badge.class-vstar,.variant-badge.class-break{background:#f7ecc8;color:#655013;border-color:#c3ac66}
 .artwork-labels{position:absolute;top:5px;left:5px;right:22px;z-index:2;pointer-events:none}
 .artwork-labels .variant-badge{font-size:clamp(7px,.7vw,9px)!important;padding:2px 4px;box-shadow:0 1px 3px #0003}
-.foil-layer{position:absolute;inset:0;pointer-events:none;z-index:1;border-radius:inherit;background-size:220% 220%;background-position:35% 50%;opacity:.28;mix-blend-mode:screen}
-.visual-holo .foil-layer{clip-path:inset(16% 9% 42% 9% round 2%);background-image:repeating-linear-gradient(118deg,#77baff33 0%,#fff9 9%,#eb92ff55 17%,#6cffe155 24%,#fff1 33%)}
-.visual-reverse .foil-layer{clip-path:polygon(evenodd,0 0,100% 0,100% 100%,0 100%,0 0,9% 16%,9% 58%,91% 58%,91% 16%,9% 16%);background-image:repeating-linear-gradient(135deg,#fff9 0 2px,#9cffdf44 2px 9px,#84bcff44 9px 17px),linear-gradient(35deg,#80d7ff,#ecb0ff,#92ffd1);opacity:.34}
-.effects-on.visual-class-ex,.effects-on.visual-class-classic-ex{box-shadow:inset 0 0 0 2px #e79f68}
-.effects-on.visual-class-gx{box-shadow:inset 0 0 0 2px #b590e7}
-.effects-on.visual-class-v,.effects-on.visual-class-vmax,.effects-on.visual-class-vstar{box-shadow:inset 0 0 0 2px #dac487}
-.effects-on[class*="visual-class-"] .foil-layer{clip-path:none;opacity:.18}
-@keyframes cardshelf-foil{0%{background-position:0% 25%}100%{background-position:100% 75%}}
+/* Each layer blends directly with the artwork, within the same finish mask.
+   Keep the layers separate: a translucent wrapper flattens the blend into a wash. */
+.foil-holo{--foil-mask:inset(16% 9% 42% 9% round 2%)}
+.foil-reverse{--foil-mask:polygon(evenodd,2% 2%,98% 2%,98% 98%,2% 98%,2% 2%,9% 16%,9% 58%,91% 58%,91% 16%,9% 16%)}
+.foil-ex,.foil-full{--foil-mask:inset(2% round 2%)}
+.foil-layer{position:absolute;inset:0;pointer-events:none;z-index:1;border-radius:inherit;clip-path:var(--foil-mask);background-repeat:repeat}
+.foil-spectrum{background-image:repeating-linear-gradient(115deg,#69dcff 0%,#9191ff 12%,#ed8cea 24%,#ffd18a 36%,#d9f49b 48%,#80ead7 60%,#69dcff 72%);background-size:250% 250%;background-position:42% 50%;mix-blend-mode:overlay;opacity:.68}
+.foil-texture{background-image:radial-gradient(ellipse at center,#fff 0 5%,#c5eaff99 8%,transparent 28%),radial-gradient(ellipse at center,#fff 0 3%,transparent 23%);background-size:17px 23px,29px 31px;background-position:3px 7px,13px 2px;mix-blend-mode:screen;opacity:.32}
+.foil-glare{background-image:linear-gradient(115deg,transparent 25%,#b9edff22 38%,#fff9 47%,#fff2 53%,transparent 65%);background-size:250% 250%;background-position:42% 50%;mix-blend-mode:screen;opacity:.5}
+/* Reverse foil has a fine diamond weave on the card stock, leaving the art clear. */
+.foil-reverse .foil-spectrum{opacity:.62;mix-blend-mode:multiply}
+.foil-reverse .foil-texture{background-image:repeating-linear-gradient(45deg,transparent 0 9px,#fff9 9px 10px,transparent 10px 19px),repeating-linear-gradient(-45deg,transparent 0 9px,#fff7 9px 10px,transparent 10px 19px);background-size:27px 27px;opacity:.38}
+.foil-reverse .foil-glare{opacity:.38}
+/* EX/ex gets broad rainbow diffraction, etched facets and scattered star glints. */
+.foil-ex .foil-spectrum,.foil-full .foil-spectrum{background-image:repeating-linear-gradient(125deg,#77e8ff 0%,#9c8eff 10%,#fa93d5 20%,#ffcd88 30%,#d2f393 40%,#83e9df 50%,#77e8ff 60%),repeating-linear-gradient(35deg,#fff2 0 1px,#18245c22 1px 3px);background-size:180% 180%,100% 100%;background-blend-mode:soft-light;mix-blend-mode:multiply;opacity:.48}
+.foil-ex .foil-texture{background-image:repeating-conic-gradient(from 45deg,#fff0 0% 25%,#e6faff80 25% 50%),radial-gradient(ellipse 1px 5px at 50% 50%,#fff 30%,transparent 100%),radial-gradient(ellipse 5px 1px at 50% 50%,#fff 30%,transparent 100%);background-size:18px 18px,47px 59px,47px 59px;background-position:center,11px 17px,11px 17px;mix-blend-mode:screen;opacity:.18}
+.foil-ex .foil-glare,.foil-full .foil-glare{background-image:linear-gradient(120deg,transparent 20%,#a4ddff22 36%,#fff9 45%,#ffd6fb55 50%,transparent 62%);opacity:.32}
+@keyframes cardshelf-foil{0%{background-position:20% 35%}100%{background-position:80% 65%}}
+@keyframes cardshelf-glare{0%{background-position:10% 25%;opacity:.22}100%{background-position:90% 75%;opacity:.6}}
 @media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){
-  .pocket:hover .effects-animated .foil-layer,.pocket:focus-visible .effects-animated .foil-layer,.effects-animated:hover .foil-layer{animation:cardshelf-foil 3s ease-in-out alternate infinite}
+  :is(.effects-animated:hover,.effects-animated:focus-within,:where(button,a):focus-visible .effects-animated)>.foil-spectrum{animation:cardshelf-foil 3.5s ease-in-out alternate infinite}
+  :is(.effects-animated:hover,.effects-animated:focus-within,:where(button,a):focus-visible .effects-animated)>.foil-glare{animation:cardshelf-glare 3.5s ease-in-out alternate infinite}
 }
 @media(prefers-reduced-motion:reduce){.foil-layer{animation:none!important;transition:none!important}}
 @media(forced-colors:active){.foil-layer{display:none}.variant-badge{border:1px solid CanvasText}}

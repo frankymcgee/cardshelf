@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { appearanceDefaults, resolvedAppearance, contrastingText, wallpaperUrl } from '../shared/appearance.mjs';
 import { appearanceInput, decodeWallpaper } from '../lib/appearance-validation.mjs';
-import { printingVisual, namedCardClass, singlePrinting } from '../shared/variant-visuals.mjs';
+import { printingVisual, namedCardClass, singlePrinting, foilTreatment } from '../shared/variant-visuals.mjs';
 const defaults=appearanceDefaults();
 const png=Buffer.from([137,80,78,71,13,10,26,10]);
 const input={content_type:'image/png',data_base64:png.toString('base64')};
@@ -64,4 +64,19 @@ test('normal names, rarity descriptors and unsupported suffixes do not receive m
 });
 test('generic catalogue artwork has no assumed finish when printings are ambiguous',()=>{
   const p={key:'holo'};assert.equal(singlePrinting({visual_printings:[p]}),p);assert.equal(singlePrinting({visual_printings:[p,{key:'normal'}]}),null);assert.equal(singlePrinting({}),null);
+});
+test('foil textures combine the exact printing with the named Pokemon mechanic',()=>{
+  assert.equal(foilTreatment({name:'Pikachu'},{key:'holo'}),'holo');
+  for(const name of ['Charizard ex','Charizard-EX','リザードンex']) assert.equal(foilTreatment({name},{key:'holo'}),'ex');
+  for(const name of ['Mewtwo GX','Eevee VMAX','Pikachu V','Lugia VSTAR','Raichu BREAK']) assert.equal(foilTreatment({name},{key:'holo'}),'full');
+  assert.equal(foilTreatment({name:'Calyrex'},{key:'holo'}),'holo');
+  assert.equal(foilTreatment({name:'Example EX',game:'mtg'},{key:'holo'}),'holo');
+  assert.equal(foilTreatment({name:'Charizard-EX'},{key:'reverse'}),'reverse');
+});
+test('EX names never add foil to normal, unknown or ambiguous printings',()=>{
+  for(const printing of [null,{key:'normal'},{key:'unspecified'},{key:'firstEdition'},
+    {key:'holo',source:'manual',verified:false,label:'Holo'}]) assert.equal(foilTreatment({name:'Charizard EX'},printing),'none');
+  const card={name:'Charizard EX',visual_printings:[{key:'normal'},{key:'holo'}]};
+  assert.equal(foilTreatment(card,singlePrinting(card)),'none');
+  assert.equal(foilTreatment(card,{source:'manual',verified:true,label:'Holo'}),'ex');
 });
