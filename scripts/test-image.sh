@@ -51,6 +51,9 @@ ENV
 sh scripts/compose.sh up -d --wait --wait-timeout 180
 before_db=$(sh scripts/compose.sh ps -q db)
 before_app=$(sh scripts/compose.sh ps -q app)
+# Exercise the pruned Web Push runtime and persistence across the real upgrade.
+push_key_before=$(sh scripts/compose.sh exec -T app node --input-type=module -e 'import {pushIdentity} from "./lib/push.mjs"; import {closeDatabase} from "./lib/db.mjs"; console.log((await pushIdentity()).public_key); await closeDatabase();')
+[[ -n "$push_key_before" ]]
 # A changed host contract must be rejected before stopping the healthy site.
 cp compose.yaml compose.yaml.original
 printf '\n# incompatible local deployment fixture\n' >> compose.yaml
@@ -63,6 +66,8 @@ grep -q 'different server deployment files' contract-error.log
 mv compose.yaml.original compose.yaml
 # Exercise the exact operator command, including pull, backup and migration.
 CARDSHELF_IMAGE_REPOSITORY="$repository" sh scripts/upgrade.sh
+push_key_after=$(sh scripts/compose.sh exec -T app node --input-type=module -e 'import {pushIdentity} from "./lib/push.mjs"; import {closeDatabase} from "./lib/db.mjs"; console.log((await pushIdentity()).public_key); await closeDatabase();')
+[[ "$push_key_after" == "$push_key_before" ]]
 pinned=$(sed -n 's/^CARDSHELF_IMAGE=//p' .env)
 [[ "$pinned" == "$repository@sha256:"* ]]
 [[ $(sed -n 's/^APP_VERSION=//p' .env) == "$version" ]]

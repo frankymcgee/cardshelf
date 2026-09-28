@@ -21,6 +21,7 @@ export const COLLECTION_LINKS = Object.freeze([
 export const MORE_GROUPS = Object.freeze([
   { id:'account', title:'Your account', links:[
     {to:'/account',label:'Account',description:'Profile and password.',icon:'shield'},
+    {to:'/notifications',label:'App & notifications',description:'Install CardShelf and choose push notifications for this device.',icon:'bell'},
     {to:'/emails',label:'Email preferences',description:'Your marketplace and membership email preferences.',icon:'mail'},
     {to:'/membership',label:'Membership',description:'Your plan and subscription.',icon:'star'},
     {to:'/referrals',label:'Referrals',description:'Referral access and rewards.',icon:'share'}

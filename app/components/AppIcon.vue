@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const props = withDefaults(defineProps<{ name: string; size?: number }>(), { size: 20 })
 const paths: Record<string, string> = {
+  bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4',
   mail: 'M3 5h18v14H3Zm0 1 9 7 9-7',
   home: 'M3 10 12 3l9 7v11h-6v-7H9v7H3Z',
   cards: 'M7 3h13v17H7ZM3 7v15h13',

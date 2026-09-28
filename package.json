@@ -1,6 +1,6 @@
 {
   "name": "cardshelf",
-  "version": "0.44.2",
+  "version": "0.45.0",
   "private": true,
   "type": "module",
   "description": "A standalone, self-hosted card collection and binder planner.",
@@ -29,20 +29,22 @@
     "test:binder-completion-ui": "playwright test --config=tests/browser/binder-completion.config.mjs",
     "test:scan-batch-ui": "playwright test --config=tests/browser/scan-batch.config.mjs",
     "test:variant-effects-ui": "playwright test --config=tests/browser/variant-effects.config.mjs",
-    "test:value-history-ui": "playwright test --config=tests/browser/value-history.config.mjs"
+    "test:value-history-ui": "playwright test --config=tests/browser/value-history.config.mjs",
+    "test:push-ui": "playwright test --config tests/browser/push.config.mjs"
   },
   "dependencies": {
+    "nodemailer": "10.0.10",
     "postgres": "3.4.7",
     "sharp": "0.35.4",
-    "nodemailer": "10.0.10"
+    "web-push": "3.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "1.57.0",
+    "@types/node": "24.10.1",
     "nuxt": "4.5.2",
+    "typescript": "5.9.3",
     "vue": "3.5.41",
     "vue-router": "4.6.3",
-    "typescript": "5.9.3",
-    "vue-tsc": "3.1.1",
-    "@types/node": "24.10.1",
-    "@playwright/test": "1.57.0"
+    "vue-tsc": "3.1.1"
   }
 }

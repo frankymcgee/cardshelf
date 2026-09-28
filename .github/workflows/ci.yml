@@ -31,6 +31,7 @@ jobs:
       ALLOW_TEST_DATABASE: 'yes'
       # Keep queue processing explicit in tests; never contact a live mail provider.
       EMAIL_WORKER_ENABLED: 'false'
+      PUSH_WORKER_ENABLED: 'false'
       CARDSHELF_INTEGRATION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -101,6 +102,7 @@ jobs:
       - run: npm run test:binder-completion-ui
       - run: npm run test:value-history-ui
       - run: npm run test:variant-effects-ui
+      - run: npm run test:push-ui
       - name: Upload resolved lockfile and server log
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -115,6 +117,7 @@ jobs:
             test-results/scan-batch
             test-results/value-history
             test-results/variant-effects
+            test-results/push
 
   release-arena-table:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
