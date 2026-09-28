@@ -1,3 +1,10 @@
+## 0.44.0 — 2026-09-28
+
+- Replace faint variant washes and mechanic border outlines with layered artwork foil: rainbow sparkle for Holo, diamond-patterned card stock for Reverse Holo, and full-face prismatic facets and star glints for Holo ex/EX cards.
+- Preserve exact printing selection, neutral Normal/unknown artwork, variant badges and missing-image fallbacks. Keep reverse artwork clear even on named mechanics.
+- Keep the existing Off, Subtle and Shimmer controls; animate only the hovered or keyboard-focused card on a fine pointer. Touch and reduced-motion views retain static foil, and print/forced-colour views omit effects.
+- Add desktop/phone browser checks for rendered foil coverage, printing changes and effect controls. No migration, external assets or dependencies are required.
+
 ## 0.43.1 — 2026-09-27
 
 - Use the theme's high-contrast accent for graph lines, remove repeated currency codes, and show readable price-series labels and source dates. Keep the full selected series visible on narrow screens.
