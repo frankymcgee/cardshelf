@@ -10,6 +10,7 @@ import * as Vue from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import { parse, compileScript } from '@vue/compiler-sfc';
 import * as contract from '../shared/arena.mjs';
+import { useCardImage } from '../app/composables/useCardImage.mjs';
 import * as artwork from '../shared/arena-art.mjs';
 const require = createRequire(import.meta.url);
 const source = file => fs.readFileSync(new URL('../' + file, import.meta.url), 'utf8');
@@ -21,7 +22,7 @@ function state(file, api = async () => ({}), props = {}) {
   const add = node => { if (ts.isIdentifier(node)) names.push(node.text); else if (ts.isObjectBindingPattern(node) || ts.isArrayBindingPattern(node)) for (const entry of node.elements) if (ts.isBindingElement(entry)) add(entry.name); };
   for (const node of ast.statements) { if (ts.isVariableStatement(node)) for (const declaration of node.declarationList.declarations) add(declaration.name); if (ts.isFunctionDeclaration(node) && node.name) names.push(node.name.text); }
   const js = ts.transpileModule(script, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
-  const scope = { ...contract, ref: value => ({ value }), computed: fn => ({ get value() { return fn(); } }), watch() {}, onMounted() {}, onBeforeUnmount() {}, defineProps: () => props, defineEmits: () => () => {}, useApi: () => api, useAuth: () => ({ state: { value: { user: { id: 'user' } } } }), useRoute: () => ({ params: { id: 'table' } }), definePageMeta() {}, useSeoMeta() {}, errorMessage: error => error.message, navigateTo: async () => {}, crypto: { randomUUID }, sessionStorage: { getItem() {}, setItem() {}, removeItem() {} }, setTimeout() {}, clearTimeout() {}, clearInterval() {}, window: {}, document: { hidden: false }, console };
+  const scope = { ...contract, useCardImage, ref: value => ({ value }), computed: fn => ({ get value() { return fn(); } }), watch() {}, onMounted() {}, onBeforeUnmount() {}, defineProps: () => props, defineEmits: () => () => {}, useApi: () => api, useAuth: () => ({ state: { value: { user: { id: 'user' } } } }), useRoute: () => ({ params: { id: 'table' } }), definePageMeta() {}, useSeoMeta() {}, errorMessage: error => error.message, navigateTo: async () => {}, crypto: { randomUUID }, sessionStorage: { getItem() {}, setItem() {}, removeItem() {} }, setTimeout() {}, clearTimeout() {}, clearInterval() {}, window: {}, document: { hidden: false }, console };
   return vm.runInNewContext('(function(){' + js + '; return {' + names.join(',') + '};})()', scope);
 }
 // Compile and render the real components, including their templates and child imports.
@@ -32,7 +33,7 @@ function component(file) {
   const compiled = compileScript(descriptor, { id: file, inlineTemplate: true });
   const js = ts.transpileModule(compiled.content, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   const output = { exports: {} };
-  const localRequire = name => name.endsWith('.vue') ? { default: component(path.posix.normalize(path.posix.join(path.posix.dirname(file), name))) } : name.endsWith('/arena.mjs') ? contract : name.endsWith('/arena-art.mjs') ? artwork : require(name);
+  const localRequire = name => name.endsWith('.vue') ? { default: component(path.posix.normalize(path.posix.join(path.posix.dirname(file), name))) } : name.endsWith('/arena.mjs') ? contract : name.endsWith('/arena-art.mjs') ? artwork : name.endsWith('/useCardImage.mjs') ? { useCardImage } : require(name);
   vm.runInNewContext(js, { ...Vue, exports: output.exports, module: output, require: localRequire, console }, { filename: file });
   cache.set(file, output.exports.default); return output.exports.default;
 }

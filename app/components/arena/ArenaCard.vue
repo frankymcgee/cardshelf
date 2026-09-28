@@ -1,23 +1,23 @@
 <script setup lang="ts">
+import { useCardImage } from '../../composables/useCardImage.mjs'
 import { energySymbol } from '../../../shared/arena.mjs'
 import { arenaTrainingArt } from '../../../shared/arena-art.mjs'
 const props = defineProps<{ unit?: any; card?: any; back?: boolean; selected?: boolean; disabled?: boolean; hit?: boolean; label?: string }>()
 const emit = defineEmits<{ select: [unit: any] }>()
-const broken = ref(false)
 const face = computed<any>(() => props.unit?.card || props.card)
 const hidden = computed(() => props.back || props.unit?.hidden || !face.value)
 const maxHp = computed(() => props.unit?.effective_hp ?? face.value?.hp ?? 0)
 const hp = computed(() => Math.max(0, maxHp.value - (props.unit?.damage || 0)))
 const isTraining = computed(() => face.value?.training || String(face.value?.id || '').startsWith('training:'))
 const trainingArt = computed(() => hidden.value ? undefined : arenaTrainingArt(face.value))
-watch(() => face.value?.image_url, () => { broken.value = false })
 const name = computed(() => props.label || (hidden.value ? 'Face-down card' : `${face.value.name}${face.value.hp ? `, ${hp.value} of ${maxHp.value} HP` : ''}`))
+const { image, imageSource, imageFailed } = useCardImage(computed(() => hidden.value ? null : face.value), ref(false))
 </script>
 <template>
   <button type="button" class="arena-card" :class="[{ 'arena-card-back': hidden, 'is-selected': selected, 'is-hit': hit }, 'energy-' + String(hidden ? 'Colorless' : face?.type || 'Colorless').toLowerCase()]" :disabled="disabled || hidden" :aria-label="name" :aria-pressed="selected || false" @click="emit('select', unit || { id: face.id, card: face })">
     <template v-if="hidden"><span class="arena-back-orbit" aria-hidden="true"><i /><b>CS</b></span><span class="arena-back-word">CARDSHELF</span></template>
     <template v-else>
-      <img v-if="face.image_url && !broken" class="arena-card-art" :src="face.image_url" :alt="face.name" loading="lazy" referrerpolicy="no-referrer" @error="broken = true">
+      <img v-if="image" class="arena-card-art" :src="image" :key="image" :data-artwork-source="imageSource" :alt="face.name" loading="lazy" referrerpolicy="no-referrer" @error="imageFailed">
       <div v-else class="arena-original-card" :class="{ 'has-illustration': !!trainingArt, 'is-energy': face.kind === 'energy' }"><div class="arena-original-top"><b>{{ face.name }}</b><small>{{ face.hp ? face.hp + ' HP' : face.kind }}</small></div><div class="arena-original-art" :class="{ 'is-illustrated': !!trainingArt }" :style="trainingArt" aria-hidden="true"><span v-if="!trainingArt">{{ energySymbol(face.type) }}</span><i v-if="!trainingArt" /><i v-if="!trainingArt" /></div><div class="arena-original-rules"><small>{{ face.stage || face.program?.trainerType || 'Basic Energy' }}</small><span v-if="face.attacks?.length">{{ face.attacks[0].name }} <b>{{ face.attacks[0].printed || face.attacks[0].damage }}</b></span><span v-else>{{ face.program?.text || 'Attach to power your next move.' }}</span></div><small class="arena-original-credit">{{ isTraining ? 'Original training card' : 'Catalogue artwork unavailable' }}</small></div>
       <span v-if="unit?.damage" class="arena-damage-token">{{ unit.damage }}<small>damage</small></span>
       <span v-if="face.hp && unit" class="arena-hp-track" :aria-label="hp + ' HP remaining'"><i :style="{ width: (Math.min(1, hp / maxHp) * 100) + '%' }" /></span>

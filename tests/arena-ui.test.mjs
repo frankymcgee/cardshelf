@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import { randomUUID } from 'node:crypto';
 import ts from 'typescript';
+import { useCardImage } from '../app/composables/useCardImage.mjs';
 import * as contract from '../shared/arena.mjs';
 const plain=v=>JSON.parse(JSON.stringify(v));
 const source=path=>fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -19,7 +20,7 @@ function harness(file,api,props={},path='/arena/matches/11111111-1111-4111-8111-
   const route={params:{id:path.split('/').at(-1)},query:{},path};
   const document={hidden:false,addEventListener(){},removeEventListener(){}};
   const auth={state:{value:{user:{id:'test-user',role:'user',name:'Collector'}}}};
-  const scope={...contract,console,structuredClone,Date,Math,JSON,Number,String,Promise,URL,Blob,
+  const scope={...contract,useCardImage,console,structuredClone,Date,Math,JSON,Number,String,Promise,URL,Blob,
     nextTick:fn=>fn(),ref:value=>({value}),reactive:value=>value,computed:fn=>({get value(){return fn();}}),watch:(a,b)=>watches.push({a,b}),
     onMounted:fn=>mounts.push(fn),onBeforeUnmount:fn=>unmounts.push(fn),defineProps:()=>props,defineEmits:()=>(...args)=>events.push(args),
     useApi:()=>api,useAuth:()=>auth,useRoute:()=>route,definePageMeta(){},onBeforeRouteLeave(){},onBeforeRouteUpdate(){},useSeoMeta(){},errorMessage:e=>e.message||'Request failed',

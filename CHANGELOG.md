@@ -1,3 +1,9 @@
+## 0.46.0 — 2026-09-28
+
+- Recover missing and failed Pokémon artwork with exact set/number/language fallbacks to Pokémon's official card images and Limitless TCG. Initial reviewed mappings cover Mega Evolution Energy, Scarlet & Violet Energy and Mega Evolution.
+- Try full-size and PNG TCGdex artwork when a thumbnail fails. Apply the bounded fallback chain to existing catalogue cards, binders, scanning results, marketplace card selection and visible arena/battle cards without re-importing or modifying collection data.
+- Allow the exact artwork source paths in the production image policy, credit providers, and add deterministic source-selection and production browser regression coverage. No migration, credentials or new dependencies are required.
+
 ## 0.45.0 — 2026-09-28
 
 - Add a dismissible mobile install prompt, native browser installation when available, and iPhone/iPad Home Screen instructions. Installed apps suppress the prompt; App & notifications remains available from More and Account.
