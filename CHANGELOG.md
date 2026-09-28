@@ -1,3 +1,13 @@
+## 0.44.2 — 2026-09-28
+
+- Bound neutral-area screenshot differences by both colour error and changed pixel area to allow subpixel rounding in GitHub's Chromium renderer. Keep the visible foil coverage requirements unchanged.
+- Retain paired foil/baseline images and measurements in CI artifacts before assertions, improving diagnostics for any future visual failure. Application rendering is unchanged.
+
+## 0.44.1 — 2026-09-28
+
+- Stabilise the foil pixel comparison by waiting for each image and an explicit baseline repaint. Preserve the exact coverage thresholds, artwork masks and full browser suite.
+- Fix the intermittent dark-theme validation failure that blocked release publication. Card rendering and deployment behaviour are unchanged.
+
 ## 0.44.0 — 2026-09-28
 
 - Replace faint variant washes and mechanic border outlines with layered artwork foil: rainbow sparkle for Holo, diamond-patterned card stock for Reverse Holo, and full-face prismatic facets and star glints for Holo ex/EX cards.

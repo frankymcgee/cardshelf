@@ -55,15 +55,39 @@ async function openBinder(page, options) {
 }
 async function pixelCoverage(art) {
   await art.scrollIntoViewIfNeeded();
-  const on = await sharp(await art.screenshot()).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  const off = await sharp(await art.screenshot({ style: '.foil-layer { visibility: hidden !important; }' })).removeAlpha().raw().toBuffer();
+  await expect.poll(() => art.locator('img').evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  const layers = art.locator('.foil-layer');
+  await expect(layers).toHaveCount(3);
+  // Keep the baseline state in place until Chromium has painted it. A temporary
+  // screenshot style can race the compositor and capture the foiled image twice.
+  const painted = () => art.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await expect(layers.first()).toHaveCSS('visibility', 'visible');
+  await painted();
+  const onImage = await art.screenshot();
+  const styles = await layers.evaluateAll(nodes => nodes.map(node => node.getAttribute('style')));
+  let offImage;
+  try {
+    await layers.evaluateAll(nodes => nodes.forEach(node => node.style.setProperty('visibility', 'hidden', 'important')));
+    for (const layer of await layers.all()) await expect(layer).toHaveCSS('visibility', 'hidden');
+    await painted();
+    offImage = await art.screenshot();
+  } finally {
+    await layers.evaluateAll((nodes, previous) => nodes.forEach((node, i) => previous[i] == null ? node.removeAttribute('style') : node.setAttribute('style', previous[i])), styles);
+    await painted();
+  }
+  const on = await sharp(onImage).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const off = await sharp(offImage).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  expect(off.info).toEqual(on.info);
+  const label = await art.evaluate(node => node.closest('[data-position]')?.getAttribute('data-position') || 'detail');
+  await test.info().attach(`card-${label}-foil`, { body: onImage, contentType: 'image/png' });
+  await test.info().attach(`card-${label}-baseline`, { body: offImage, contentType: 'image/png' });
   const { width, height, channels } = on.info;
   function difference([x0, y0, x1, y1]) {
     let sum = 0, pixels = 0, changed = 0;
     for (let y = Math.ceil(y0 * height); y < Math.floor(y1 * height); y++) {
       for (let x = Math.ceil(x0 * width); x < Math.floor(x1 * width); x++) {
         const i = (y * width + x) * channels;
-        const delta = (Math.abs(on.data[i] - off[i]) + Math.abs(on.data[i + 1] - off[i + 1]) + Math.abs(on.data[i + 2] - off[i + 2])) / 3;
+        const delta = (Math.abs(on.data[i] - off.data[i]) + Math.abs(on.data[i + 1] - off.data[i + 1]) + Math.abs(on.data[i + 2] - off.data[i + 2])) / 3;
         sum += delta; pixels++; if (delta > 3) changed++;
       }
     }
@@ -71,23 +95,30 @@ async function pixelCoverage(art) {
   }
   return { art: difference([.2, .25, .8, .5]), stock: difference([.2, .65, .8, .8]) };
 }
+function expectClear(region, message) {
+  // Hiding a blended layer can re-rasterise the image by a fraction of an RGB8
+  // level in Chromium. Bound both average error and the area of detectable error;
+  // a real foil overlay must still affect >35% of pixels by >3 levels below.
+  expect(region.mean, message).toBeLessThan(1);
+  expect(region.coverage, message + ' (changed area)').toBeLessThan(.05);
+}
 for (const theme of ['light', 'dark']) {
   test(theme + ' foil visibly covers the correct image areas, including both EX spellings', async ({ page }, info) => {
     const fixture = await openBinder(page, { theme });
     const measurements = [];
     for (const n of [0, 1, 2, 3]) measurements.push(await pixelCoverage(artwork(page, n)));
+    await info.attach('rendered-foil-coverage', { body: JSON.stringify(measurements, null, 2), contentType: 'application/json' });
     for (const [n, region] of [[0, 'art'], [1, 'stock'], [2, 'art'], [2, 'stock'], [3, 'art'], [3, 'stock']]) {
       expect(measurements[n][region].mean, `card ${n} ${region} is visibly foiled`).toBeGreaterThan(3);
       expect(measurements[n][region].coverage, `card ${n} ${region} has surface coverage`).toBeGreaterThan(.35);
     }
-    expect(measurements[0].stock.mean, 'standard Holo leaves the text panel clear').toBeLessThan(.3);
-    expect(measurements[1].art.mean, 'Reverse Holo leaves the artwork clear').toBeLessThan(.3);
+    expectClear(measurements[0].stock, 'standard Holo leaves the text panel clear');
+    expectClear(measurements[1].art, 'Reverse Holo leaves the artwork clear');
     for (const n of [4, 5, 6, 7]) await expect(artwork(page, n).locator('.foil-layer')).toHaveCount(0);
     await expect(artwork(page, 6).locator('.artwork-fallback')).toBeVisible();
     await expect(artwork(page, 7).locator('.artwork-fallback')).toBeVisible();
     await expect(artwork(page, 8)).toHaveAttribute('data-foil', 'full');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-    await info.attach('rendered-foil-coverage', { body: JSON.stringify(measurements, null, 2), contentType: 'application/json' });
     await page.locator('.binder-stage').screenshot({ path: info.outputPath(theme + '-foil-binder.png') });
     expect(fixture.errors).toEqual([]); expect(fixture.writes).toEqual([]);
   });
@@ -128,7 +159,7 @@ test('changing the selected printing updates foil without writing collection dat
   await page.getByLabel('Visualise printing').selectOption(printings[2].id);
   await expect(art).toHaveAttribute('data-foil', 'reverse');
   const coverage = await pixelCoverage(art);
-  expect(coverage.art.mean).toBeLessThan(.3);
+  expectClear(coverage.art, 'Reverse Holo leaves the selected artwork clear');
   expect(coverage.stock.mean).toBeGreaterThan(3);
   await page.getByLabel('Visualise printing').selectOption(printings[3].id);
   await expect(art.locator('.foil-layer')).toHaveCount(0);
