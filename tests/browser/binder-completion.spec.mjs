@@ -1,7 +1,8 @@
 import {test,expect} from '@playwright/test';
 const binderId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const printing=(n)=>'bbbbbbbb-bbbb-4bbb-8bbb-'+String(n).padStart(12,'0');
-const photo='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="150" height="210"><rect width="150" height="210" rx="9" fill="#526f69"/><rect x="10" y="28" width="130" height="93" rx="5" fill="#cfe6cc"/><circle cx="77" cy="77" r="25" fill="#e3c64b"/><text x="75" y="166" font-size="12" text-anchor="middle" fill="white">Fixture card</text></svg>');
+const photo='/fixture-completion-card.svg';
+const artwork='<svg xmlns="http://www.w3.org/2000/svg" width="150" height="210"><rect width="150" height="210" rx="9" fill="#526f69"/><rect x="10" y="28" width="130" height="93" rx="5" fill="#cfe6cc"/><circle cx="77" cy="77" r="25" fill="#e3c64b"/><text x="75" y="166" font-size="12" text-anchor="middle" fill="white">Fixture card</text></svg>';
 function fixtureData({type='collection',design=false,total=3,allowed=true}={}){
   return {binder:{id:binderId,title:'My Scarlet & Violet binder',binder_type:type,game:'pokemon',columns:3,rows:3,page_count:8,design_checklist:design},
     preview_token:'a'.repeat(64),progress:{total:72,completed:72-total,missing:total,missing_printings:total,percent:Math.round((72-total)/72*100)},
@@ -12,6 +13,7 @@ async function fixtures(page,options={}){
   let data=fixtureData(options);const calls=[],errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(mode=>localStorage.setItem('cardshelf.theme',mode),options.theme||'light');
+  await page.route('**'+photo,route=>route.fulfill({contentType:'image/svg+xml',body:artwork}));
   await page.route('**/api/**',async route=>{
     const r=route.request(),path=new URL(r.url()).pathname;
     if(path.endsWith('/completion/wishlist')){

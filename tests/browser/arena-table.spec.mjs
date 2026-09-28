@@ -29,9 +29,12 @@ test('reduced motion and narrow containers keep a flat field; public discard art
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.locator('.arena-board-wrap').evaluate(e => { e.style.maxWidth = '700px'; });
   await expect.poll(() => page.locator('.arena-table-plane').evaluate(e => getComputedStyle(e).transform)).toBe('none');
-  await page.evaluate(() => { window.arenaFixture.props.table.players[0].discard[0].card.image_url = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="63" height="88" fill="teal"/></svg>'; });
+  await page.route('**/fixture-discard-card.svg', route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="63" height="88" fill="teal"/></svg>' }));
+  await page.evaluate(() => { window.arenaFixture.props.table.players[0].discard[0].card.image_url = '/fixture-discard-card.svg'; });
   const pile = page.locator('[data-side="self"] .arena-table-discard');
-  await expect(pile.locator('img')).toBeVisible(); await pile.click();
+  await expect(pile.locator('img')).toBeVisible();
+  await expect.poll(() => pile.locator('img').evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  await pile.click();
   await expect(page.getByRole('dialog', { name: 'Discard pile', exact: true })).toBeVisible();
   await page.getByRole('dialog', { name: 'Discard pile', exact: true }).getByRole('button', { name: 'Close', exact: true }).click();
   await page.evaluate(() => { window.arenaFixture.props.table.players[0].discard = []; });

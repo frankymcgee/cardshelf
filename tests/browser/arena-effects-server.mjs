@@ -10,7 +10,7 @@ const root = fileURLToPath(new URL('../../', import.meta.url)), require = create
 const files = new Map([
   ['/vue.js', path.join(path.dirname(require.resolve('vue/package.json')), 'dist/vue.esm-browser.prod.js')],
   ...[...fs.readdirSync(path.join(root, 'app/components/arena')).filter(n => n.endsWith('.vue')).map(n => 'app/components/arena/' + n),
-    'shared/arena.mjs', 'shared/arena-art.mjs', 'shared/arena-effects.mjs', 'tests/helpers/arena-table-fixtures.mjs', 'tests/browser/arena-effects-app.mjs',
+    'app/components/CardImage.vue', 'app/composables/useCardImage.mjs', 'shared/card-images.mjs', 'shared/arena.mjs', 'shared/arena-art.mjs', 'shared/arena-effects.mjs', 'tests/helpers/arena-table-fixtures.mjs', 'tests/browser/arena-effects-app.mjs',
     ...['main', 'arena', 'arena-table', 'arena-interactions', 'arena-effects', 'arena-perspective', 'arena-card-art', 'arena-scene'].map(n => 'app/assets/css/' + n + '.css')].map(file => ['/' + file, path.join(root, file)])
 ]);
 const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Arena effects fixture</title>'
@@ -32,6 +32,7 @@ const server = http.createServer((req, res) => {
       const missing = ['ref','computed','watch','onMounted','onBeforeUnmount','nextTick'].filter(n => !imported.has(n));
       content = (missing.length ? 'import { ' + missing.join(', ') + ' } from "/vue.js";\n' : '') + content.replace(/from (['"])vue\1/g, 'from "/vue.js"');
     }
+    content = content.replace(/from (['"])vue\1/g, 'from "/vue.js"');
     res.setHeader('Content-Type', name.endsWith('.css') ? 'text/css' : 'text/javascript'); res.end(content);
   } catch (error) { console.error(error); res.writeHead(500); res.end('Fixture compilation failed'); }
 });

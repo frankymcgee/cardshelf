@@ -2,12 +2,13 @@ import {test,expect} from '@playwright/test';
 import sharp from 'sharp';
 const owner='11111111-aaaa-4111-8111-111111111111',binderId='22222222-bbbb-4222-8222-222222222222',normal='33333333-cccc-4333-8333-333333333333',holo='44444444-dddd-4444-8444-444444444444';
 const photos=await Promise.all(['#dfc955','#7abb8e','#efadcb'].map(async(fill,index)=>({name:'private-card-'+index+'.png',mimeType:'image/png',buffer:await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="420"><rect width="300" height="420" rx="16" fill="${fill}"/><text x="20" y="40" font-size="20">Fixture ${index+1}</text><rect x="20" y="70" width="260" height="180" rx="8" fill="#bde0ec"/><text x="20" y="390" font-size="18">025 / 100 TEST</text></svg>`)).png().toBuffer()})));
-const card={id:'en:batch-fixture-025',game:'pokemon',language:'en',name:'Batch Pikachu',local_id:'025',set_name:'Batch fixture set',image_url:'data:image/png;base64,'+photos[0].buffer.toString('base64'),printings:[{id:normal,key:'normal',label:'Normal'},{id:holo,key:'holo',label:'Holo'}],match_evidence:['Card number','Name'],match_strength:'Multiple details match'};
+const card={id:'en:batch-fixture-025',game:'pokemon',language:'en',name:'Batch Pikachu',local_id:'025',set_name:'Batch fixture set',image_url:'/fixture-scan-batch-card.png',printings:[{id:normal,key:'normal',label:'Normal'},{id:holo,key:'holo',label:'Holo'}],match_evidence:['Card number','Name'],match_strength:'Multiple details match'};
 async function fixtures(page,{theme='light',limit=0,lostUpload=false,lostSave=false,delayed=false,tracking=false,full=false,disabled=false,failed=false}={}){
   const calls=[],errors=[],receipts=new Map();let quantity=2,revision=7,release;
   const binder={id:binderId,title:'Batch binder',game:'pokemon',binder_type:tracking?'tracking':'collection',columns:2,rows:2,page_count:1,revision:4,slots:full?Array.from({length:4},(_,position)=>({position,printing_id:normal})):tracking?[{position:2,printing_id:holo,is_collected:false}]:[]};
   page.on('pageerror',e=>errors.push(e.message));page.on('dialog',dialog=>dialog.accept());
   await page.addInitScript(value=>localStorage.setItem('cardshelf.theme',value),theme);
+  await page.route('**/fixture-scan-batch-card.png',route=>route.fulfill({contentType:'image/png',body:photos[0].buffer}));
   await page.route('**/api/**',async route=>{
     const request=route.request(),path=decodeURIComponent(new URL(request.url()).pathname),method=request.method(),body=method==='POST'?request.postDataJSON():null;
     calls.push({path,method,body});let data;
