@@ -1,3 +1,11 @@
+## 0.45.0 — 2026-09-28
+
+- Add a dismissible mobile install prompt, native browser installation when available, and iPhone/iPad Home Screen instructions. Installed apps suppress the prompt; App & notifications remains available from More and Account.
+- Add device-specific, opt-in Web Push for marketplace enquiries/replies and administrator membership changes, with editable preferences and a self-test. Private message text stays inside CardShelf.
+- Generate persistent VAPID keys automatically in PostgreSQL. Add authenticated subscription APIs, session-bound revocation, delivery-time permission checks, bounded retries, expired endpoint cleanup and same-origin notification links.
+- Ship the migration and locked Web Push dependency in the existing GitHub AMD64/ARM64 images. No new server environment settings or host deployment changes are needed; HTTPS is required.
+- Add protocol, service-worker, database/API and desktop/mobile browser coverage to release validation.
+
 ## 0.44.2 — 2026-09-28
 
 - Bound neutral-area screenshot differences by both colour error and changed pixel area to allow subpixel rounding in GitHub's Chromium renderer. Keep the visible foil coverage requirements unchanged.

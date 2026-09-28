@@ -1,4 +1,4 @@
-# CardShelf 0.44.2
+# CardShelf 0.45.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -168,6 +168,35 @@ does not provide escrow, seller settlement, buyer protection or automatic referr
 
 See [Stripe setup and activation](docs/STRIPE.md). Historical provider records remain
 read-only and old setup documents are archived in `docs/history/`.
+
+## Mobile installation and push notifications
+
+Open **More → App & notifications** to install CardShelf and enable updates on
+each device. The Home page also offers a dismissible install prompt. Chrome and
+other supporting browsers open their native install dialog; iPhone and iPad show
+Home Screen instructions. On iOS/iPadOS 16.4 or later, add the app to the Home
+Screen, launch it from that icon, sign in, then enable notifications.
+
+Push is optional and requires a public HTTPS `APP_ORIGIN`, a supported browser,
+and notification permission granted after pressing **Enable notifications**.
+Choose marketplace enquiries/replies and administrator membership updates
+independently on each device. **Send test notification** queues a test to that
+device only. Notification text does not include private messages. Email choices
+are separate. Signing out, changing/resetting a password, deleting the account,
+or session expiry revokes delivery for that sign-in; enable push again after a
+new sign-in. Notifications already accepted by a push service may still arrive.
+
+The app generates its VAPID key pair once in PostgreSQL. Normal database backups
+and image upgrades preserve it; no additional environment variables, Firebase
+project, Apple developer account or paid service are needed. Treat database
+backups as sensitive because they contain the private key and device credentials.
+Outbound HTTPS must reach the browser push services: `fcm.googleapis.com`,
+`updates.push.services.mozilla.com`, `*.push.apple.com` and `*.notify.windows.com`.
+The app processes a durable queue every five seconds, retries transient failures
+up to three attempts, and removes expired subscriptions. Provider acceptance does
+not prove device display: check Focus/Do Not Disturb, browser/site permissions,
+and OS notification settings if a test does not appear. The app does not support
+offline collection editing.
 
 ## Existing installation upgrade
 
