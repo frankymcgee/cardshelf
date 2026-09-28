@@ -1,3 +1,8 @@
+## 0.46.1 — 2026-09-28
+
+- Keep missing-card artwork placeholders readable in light and dark themes, including when every image source fails.
+- Serve browser-test card artwork from supported local URLs so Arena, theme, binder and scanning checks exercise loaded images. Verify discard artwork loads and add missing/failed-image contrast regressions without relaxing existing checks.
+
 ## 0.46.0 — 2026-09-28
 
 - Recover missing and failed Pokémon artwork with exact set/number/language fallbacks to Pokémon's official card images and Limitless TCG. Initial reviewed mappings cover Mega Evolution Energy, Scarlet & Violet Energy and Mega Evolution.

@@ -1,12 +1,16 @@
 import {test,expect} from '@playwright/test';
 import {SCAN_DEFAULTS} from '../../shared/card-scanning.mjs';
 const shop={id:'00000000-0000-0000-0000-000000000001',name:'Card binders',retailer:'amazon',description:'Keep your collection organised.',url:'https://www.amazon.com.au/dp/ABCDEFGHIJ?tag=fixture-22',enabled:true,placements:['marketplace'],games:[],expires_on:''};
-const photo='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336"><rect width="240" height="336" rx="12" fill="#568378"/><text x="120" y="180" text-anchor="middle" fill="white" font-size="24">Test card</text></svg>');
+const photo='/fixture-theme-card.svg';
+const artwork='<svg xmlns="http://www.w3.org/2000/svg" width="240" height="336"><rect width="240" height="336" rx="12" fill="#568378"/><text x="120" y="180" text-anchor="middle" fill="white" font-size="24">Test card</text></svg>';
 const card={id:'en:base1-4',game:'pokemon',name:'Charizard',set_name:'Base Set',local_id:'4',language:'en',rarity:'Rare',faces:[],rules_text:'Fixture card',image_url:photo,printings:[]};
 const offer=(plan,cadence)=>({plan_code:plan,cadence,total_minor:cadence==='MONTHLY'?1000:10000,tax_minor:0,tax_mode:'none',tax_behavior:'inclusive',product_snapshot:{id:'prod_'+plan,name:plan==='plus'?'Collector Pro':'Collector',description:'Tools for your collection.',images:[],marketing_features:[{name:'Ad-free collecting'}]}});
-async function fixtures(page,mode='system'){
+async function fixtures(page,mode='system',{missingImages=false}={}){
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(value=>{if(!localStorage.getItem('cardshelf.theme'))localStorage.setItem('cardshelf.theme',value)},mode);
+  await page.route('**'+photo,route=>route.fulfill({contentType:'image/svg+xml',body:artwork}));
+  await page.route('**/fixture-missing-card.png',route=>route.fulfill({status:404,body:''}));
+  const cards=missingImages?[{...card,image_url:null},{...card,id:'en:base1-5',name:'Clefairy',local_id:'5',image_url:'/fixture-missing-card.png'}]:[card];
   await page.route('**/api/**',async route=>{
     const path=new URL(route.request().url()).pathname;let data;
     if(path==='/api/session')data={user:{id:'theme-fixture',name:'Theme tester',role:'admin'},setup_required:false};
@@ -18,7 +22,7 @@ async function fixtures(page,mode='system'){
     else if(path==='/api/admin/integrations/stripe/products')data={configured:false,settings:{managed:false,daily:false,mirror_plans:false,revision:1},products:[],offers:[]};
     else if(path==='/api/admin/integrations/stripe/products/preview')data={preview:true,environment:'sandbox',checkout_enabled:false,last_synced_at:null,sync_failed:false,offers:['collector','plus'].flatMap(plan=>['MONTHLY','ANNUAL'].map(c=>offer(plan,c))),scan_allowances:{free:5,collector:25,plus:0}};
     else if(path==='/api/public/subscription-offers')data={enabled:false,offers:[],scan_allowances:{free:5,collector:25,plus:0}};
-    else if(path==='/api/public/catalogue')data={items:[card],total:1,limit:24};
+    else if(path==='/api/public/catalogue')data={items:cards,total:cards.length,limit:24};
     else if(path==='/api/public/catalogue/sets')data=[];
     else if(path==='/api/admin/scanning')data={settings:{...SCAN_DEFAULTS,revision:1,enabled:false,api_key_set:false,key_available:true,monthly_budget_micros:0,tier_monthly_limits:{free:100,collector:100,plus:100,complimentary:100},input_price_micros:400000,output_price_micros:1600000},totals:{accounted_micros:0,confirmed:0,measured_micros:0,scans:0,uncertain:0},models:[],history:[],users:[]};
     else if(path==='/api/account/games')data={tier:'complimentary'};
@@ -63,6 +67,18 @@ for(const mode of ['light','dark']){
       await page.goto(url);await expect(page.locator('html')).toHaveAttribute('data-theme',mode);await surface(page,panel,mode);await readable(page,selectors);await fits(page);
       await page.screenshot({path:info.outputPath(mode+url.replaceAll('/','-')+'public.png'),fullPage:true});
     }expect(errors).toEqual([]);
+  });
+  test(mode+' missing and failed artwork keeps readable placeholders',async({page})=>{
+    const errors=await fixtures(page,mode,{missingImages:true});await page.emulateMedia({colorScheme:mode});await page.goto('/explore');
+    await expect(page.locator('html')).toHaveAttribute('data-theme',mode);
+    const placeholders=page.locator('.public-card-tile .artwork-fallback');await expect(placeholders).toHaveCount(2);
+    for(let i=0;i<2;i++){
+      const placeholder=placeholders.nth(i);await expect(placeholder).toBeVisible();
+      await expect(placeholder.locator('small')).toHaveText('Image unavailable');
+      for(const text of [placeholder.locator('span'),placeholder.locator('small')])expect((await colours(text)).contrast,'placeholder text contrast').toBeGreaterThanOrEqual(4.5);
+    }
+    await expect(page.locator('.public-card-tile .card-artwork img')).toHaveCount(0);
+    await surface(page,'.artwork-fallback',mode);await fits(page);expect(errors).toEqual([]);
   });
   test(mode+' marketplace and administration share the palette',async({page},info)=>{
     const errors=await fixtures(page,mode);await page.emulateMedia({colorScheme:mode});

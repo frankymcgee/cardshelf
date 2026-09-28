@@ -3,7 +3,7 @@ import sharp from 'sharp';
 import {SCAN_DEFAULTS,SCAN_PROMPT} from '../../shared/card-scanning.mjs';
 const cardId='en:scan-fixture-025',normal='11111111-1111-4111-8111-111111111111',holo='22222222-2222-4222-8222-222222222222',binderId='33333333-3333-4333-8333-333333333333',trackingId='44444444-4444-4444-8444-444444444444';
 const fixtureImage=await sharp(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560"><rect width="400" height="560" rx="18" fill="#f4d24d"/><rect x="20" y="50" width="360" height="220" fill="#d8eaca"/><text x="25" y="35" font-size="20">Synthetic scanner card</text><text x="25" y="530" font-size="20">025 / 100 · TEST</text></svg>')).png().toBuffer();
-const card={id:cardId,game:'pokemon',language:'en',name:'Synthetic scanner card',local_id:'025',set_name:'Scanner test set',image_url:'data:image/png;base64,'+fixtureImage.toString('base64'),printings:[{id:normal,key:'normal',label:'Normal'},{id:holo,key:'holo',label:'Holo'}],entries:[{printing_id:holo,condition:'UNKNOWN',quantity:2,revision:7}],match_evidence:['Card number','Name'],match_strength:'Multiple details match'};
+const card={id:cardId,game:'pokemon',language:'en',name:'Synthetic scanner card',local_id:'025',set_name:'Scanner test set',image_url:'/fixture-scanning-card.png',printings:[{id:normal,key:'normal',label:'Normal'},{id:holo,key:'holo',label:'Holo'}],entries:[{printing_id:holo,condition:'UNKNOWN',quantity:2,revision:7}],match_evidence:['Card number','Name'],match_strength:'Multiple details match'};
 const binder={id:binderId,title:'My collection binder',game:'pokemon',binder_type:'collection',columns:2,rows:2,page_count:2,revision:4,slots:[{position:1,printing_id:normal}]};
 async function fixtures(page,{noMatches=false,lostConfirmation=false,disabled=false,collectionSlots=binder.slots,trackingCollected=false,automaticPosition=0}={}){
   let receipt=null;const calls=[],errors=[];
@@ -11,6 +11,7 @@ async function fixtures(page,{noMatches=false,lostConfirmation=false,disabled=fa
   const binderStates=[structuredClone({...binder,slots:collectionSlots}),{...binder,id:trackingId,binder_type:'tracking',title:'Prepared checklist',slots:[{position:5,printing_id:holo,is_collected:trackingCollected}]}];
   let settings={...SCAN_DEFAULTS,revision:1,enabled:false,api_key_set:false,key_available:true,monthly_budget_micros:0,user_monthly_limit:100,tier_monthly_limits:{free:100,collector:100,plus:100,complimentary:100},input_price_micros:400000,output_price_micros:1600000,reservation_micros:7783};
   page.on('pageerror',e=>errors.push(e.message));
+  await page.route('**/fixture-scanning-card.png',route=>route.fulfill({contentType:'image/png',body:fixtureImage}));
   await page.route('**/api/**',async route=>{
     const request=route.request(),path=decodeURIComponent(new URL(request.url()).pathname),method=request.method(),body=method==='POST'?request.postDataJSON():null;
     calls.push({path,method,body});let data;
