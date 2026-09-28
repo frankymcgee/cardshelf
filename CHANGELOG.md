@@ -1,3 +1,8 @@
+## 0.44.2 — 2026-09-28
+
+- Bound neutral-area screenshot differences by both colour error and changed pixel area to allow subpixel rounding in GitHub's Chromium renderer. Keep the visible foil coverage requirements unchanged.
+- Retain paired foil/baseline images and measurements in CI artifacts before assertions, improving diagnostics for any future visual failure. Application rendering is unchanged.
+
 ## 0.44.1 — 2026-09-28
 
 - Stabilise the foil pixel comparison by waiting for each image and an explicit baseline repaint. Preserve the exact coverage thresholds, artwork masks and full browser suite.
