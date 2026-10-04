@@ -1,3 +1,10 @@
+## 0.47.0 — 2026-10-04
+
+- Add independent outside cover colours and wallpapers to Binder appearance, with inside/outside controls and live previews. Show covers on the binder shelf, dashboard, open binder and shared view.
+- Save inside and outside images together with separate fit, opacity, dimming and blur settings. Existing binders retain their colours and page backgrounds, including when the cover colour changes.
+- Add bounded cover image storage with owner-only and current-share access, independent removal, and automatic cleanup. Migration 029 ships in the existing GitHub release images; no new dependencies or server settings are needed.
+- Verify legacy compatibility, dual uploads, stale edits, shared-link revocation and desktop/mobile appearance controls.
+
 ## 0.46.1 — 2026-09-28
 
 - Keep missing-card artwork placeholders readable in light and dark themes, including when every image source fails.

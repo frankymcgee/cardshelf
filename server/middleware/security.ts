@@ -43,7 +43,8 @@ export default defineEventHandler(async event => {
         throw createError({ statusCode: 403, message: 'Request origin is not allowed. Check APP_ORIGIN on the server.' })
       }
       const length = Number(getHeader(event, 'content-length') || 0)
-      if (length > (postalWebhook ? 65536 : webhook ? 262144 : 8_000_000)) throw createError({ statusCode: 413, message: 'Request body is too large.' })
+      const binderAppearance = /^\/api\/binders\/[a-f0-9-]{36}\/appearance$/.test(path) && event.method === 'PATCH'
+      if (length > (postalWebhook ? 65536 : webhook ? 262144 : binderAppearance ? 14_000_000 : 8_000_000)) throw createError({ statusCode: 413, message: 'Request body is too large.' })
     }
   }
 })

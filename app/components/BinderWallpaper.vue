@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { resolvedAppearance, wallpaperUrl } from '../../shared/appearance.mjs'
-const props = withDefaults(defineProps<{ binder: any; shareToken?: string; previewWallpaper?: string; hideWallpaper?: boolean }>(),
-  { shareToken: '', previewWallpaper: '', hideWallpaper: false })
-const theme = computed(() => resolvedAppearance(props.binder?.appearance, props.binder?.color))
-const image = computed(() => !props.hideWallpaper && theme.value.mode === 'image' ? props.previewWallpaper || wallpaperUrl(props.binder, props.shareToken) : '')
+import { resolvedAppearance, coverAppearance, wallpaperUrl } from '../../shared/appearance.mjs'
+const props = withDefaults(defineProps<{ binder: any; shareToken?: string; previewWallpaper?: string; hideWallpaper?: boolean; surface?: 'inside' | 'cover' }>(),
+  { shareToken: '', previewWallpaper: '', hideWallpaper: false, surface: 'inside' })
+const theme = computed(() => props.surface === 'cover' ? coverAppearance(props.binder) : resolvedAppearance(props.binder?.appearance, props.binder?.color))
+const image = computed(() => !props.hideWallpaper && theme.value.mode === 'image' ? props.previewWallpaper || wallpaperUrl(props.binder, props.shareToken, props.surface) : '')
 const imageStyle = computed(() => ({
   backgroundImage: image.value ? `url("${image.value}")` : 'none',
   backgroundSize: theme.value.wallpaper_fit === 'tile' ? '320px auto' : theme.value.wallpaper_fit === 'center' ? 'auto' : String(theme.value.wallpaper_fit),

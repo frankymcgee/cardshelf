@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { appearanceDefaults, resolvedAppearance, contrastingText, wallpaperUrl } from '../shared/appearance.mjs';
+import { appearanceDefaults, resolvedAppearance, contrastingText, wallpaperUrl, coverAppearance } from '../shared/appearance.mjs';
 import { appearanceInput, decodeWallpaper } from '../lib/appearance-validation.mjs';
 import { printingVisual, namedCardClass, singlePrinting, foilTreatment } from '../shared/variant-visuals.mjs';
 const defaults=appearanceDefaults();
@@ -11,6 +11,26 @@ test('old binders inherit their existing cover colour with a static effect defau
 });
 test('saved appearance resolves consistently without mutating the input',()=>{
   const v={...defaults,mode:'image',pocket_opacity:45};assert.deepEqual(resolvedAppearance(v),v);assert.deepEqual(appearanceInput(v),v);
+});
+test('outside covers inherit the old cover colour independently of inside wallpaper',()=>{
+  const binder={color:'#123456',appearance:{mode:'image',background_color:'#fedcba',wallpaper_dim:60}};
+  const cover=coverAppearance(binder);
+  assert.equal(cover.background_color,'#123456');assert.equal(cover.mode,'color');assert.equal(cover.wallpaper_dim,15);
+  binder.appearance.cover_mode='image';binder.appearance.cover_wallpaper_dim=0;
+  assert.equal(coverAppearance(binder).mode,'image');assert.equal(coverAppearance(binder).wallpaper_dim,0);
+  assert.equal(resolvedAppearance(binder.appearance).wallpaper_dim,60);
+});
+test('cover settings validate the same image bounds without accepting CSS',()=>{
+  for(const setting of [{cover_mode:'url(x)'},{cover_wallpaper_fit:'stretch'},{cover_wallpaper_opacity:101},{cover_wallpaper_dim:-1},{cover_wallpaper_blur:13}])
+    assert.throws(()=>appearanceInput({...defaults,...setting}));
+  assert.deepEqual(resolvedAppearance({cover_mode:'url(x)',cover_wallpaper_blur:13}),defaults);
+});
+test('cover URLs use their own version and owner or share-scoped route',()=>{
+  const binder={id:'10000000-0000-0000-0000-000000000001',wallpaper_version:'a'.repeat(64),cover_wallpaper_version:'b'.repeat(64)};
+  assert.equal(wallpaperUrl(binder,'','cover'),`/api/binders/${binder.id}/cover-wallpaper?v=${binder.cover_wallpaper_version}`);
+  assert.equal(wallpaperUrl(binder,'c'.repeat(64),'cover'),`/api/shared/${'c'.repeat(64)}/cover-wallpaper?v=${binder.cover_wallpaper_version}`);
+  assert.equal(wallpaperUrl({...binder,cover_wallpaper_version:null},'','cover'),'');
+  assert.equal(wallpaperUrl(binder,'bad token','cover'),'');assert.equal(wallpaperUrl(binder,'','../cover'),'');
 });
 test('invalid saved CSS values are replaced with safe defaults',()=>{
   const v=resolvedAppearance({background_color:'url(https://bad.invalid)',wallpaper_fit:'url(x)',wallpaper_dim:999,effects_mode:'flash'});

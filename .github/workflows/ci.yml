@@ -104,6 +104,7 @@ jobs:
       - run: npm run test:variant-effects-ui
       - run: npm run test:push-ui
       - run: npm run test:card-images-ui
+      - run: npm run test:binder-cover-ui
       - name: Upload resolved lockfile and server log
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -120,6 +121,7 @@ jobs:
             test-results/variant-effects
             test-results/push
             test-results/card-images
+            test-results/binder-cover
 
   release-arena-table:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'

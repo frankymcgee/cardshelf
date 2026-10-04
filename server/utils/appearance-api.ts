@@ -13,7 +13,8 @@ export async function appearanceJSON(event: H3Event) {
   for await (const value of event.node.req) {
     const chunk = Buffer.isBuffer(value) ? value : Buffer.from(value)
     size += chunk.length
-    ensure(size <= 7_000_000, 413, 'Wallpaper request is too large.')
+    // Two independently bounded 5 MB images, base64-encoded, plus settings.
+    ensure(size <= 14_000_000, 413, 'Wallpaper request is too large.')
     chunks.push(chunk)
   }
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')) }
