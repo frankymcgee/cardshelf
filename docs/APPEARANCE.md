@@ -33,20 +33,29 @@ animation across every card. Printing never adds foil effects to the placeholder
 
 Open a binder and select **Appearance**. Preview and save:
 
-- Solid colour or a custom wallpaper; background and pocket colours.
+- **Inside pages**: solid colour or a custom wallpaper, background and pocket colours.
+- **Outside cover**: a separate solid colour or wallpaper for the binder cover.
 - Pocket transparency, wallpaper opacity, dim amount and 0–12 px blur.
 - Cover, contain, centre or tiled wallpaper fitting.
 - Variant effects mode and the default print-background option.
+
+Each surface has its own image, fit, opacity, dimming and blur. Switch between the
+two controls to preview each design; unsaved edits are retained while switching.
+Outside covers appear on the binder shelf, dashboard, open binder header and shared
+binder. The cover colour is the same setting used by **Binder settings → Cover colour**.
+Changing it no longer changes the interior's fallback colour on older binders.
+Existing tracking binders keep their simple checklist appearance.
 
 Uploads and settings are saved together only when Save appearance is pressed.
 Cancel discards the preview and pending upload. A stale binder revision is rejected;
 Reload appearance discards unsaved edits and loads current settings. Switching to
 Solid colour retains the saved image privately for later reuse. Remove wallpaper
-on save deletes the stored image. Reset style restores defaults but does not delete
-an image. Appearance edits never reallocate pockets or change collection quantities.
+on save deletes only that surface's stored image. Reset inside style / Reset cover
+style restores defaults for the selected surface but does not delete an image.
+Appearance edits never reallocate pockets or change collection quantities.
 
-The appearance is applied to binder pages and read-only sharing. Wallpaper is shared
-only while Wallpaper mode is active and a current sharing token is enabled. Rotating
+The appearance is applied to binder covers, pages and read-only sharing. Each wallpaper
+is shared only while that surface's Wallpaper mode is active and a current sharing token is enabled. Rotating
 or revoking the token revokes the old wallpaper endpoint, but cannot recall copies or
 screenshots already made. Do not upload sensitive personal material to a shared binder.
 Only upload imagery you have permission to use. No Pokémon artwork is bundled.
@@ -59,7 +68,10 @@ applies orientation and re-encodes to WebP at up to 2048 × 2048 within 2 MB.
 Metadata is stripped. Animated multi-page images, SVG, arbitrary URLs and corrupt
 files are rejected. A maximum of two decodes per application process is permitted.
 
-A single bounded image per binder is stored in the new binder_wallpapers table.
+A single bounded image per surface is stored in `binder_wallpapers` (inside pages)
+and `binder_cover_wallpapers` (outside cover). Each keeps the same 5 MB input / 2 MB
+optimised limit; the appearance endpoint permits a 14 MB JSON body so both images
+can be saved atomically after base64 encoding. Other API body limits are unchanged.
 Normal PostgreSQL backups include it; no additional filesystem volume, image API or
 API key is needed. Deleting a binder cascades to its image. CardShelf's API serves
 wallpapers with no-store and same-origin resource headers, after owner or share-token
@@ -83,14 +95,13 @@ git pull --ff-only
 sudo sh scripts/upgrade.sh
 ```
 
-Migration 003 is additive. Existing binder colours, pocket positions, ownership,
-prices and sharing tokens are retained. The existing helper takes a local safety
+Migrations 003 and 029 are additive. Existing binder colours, inside wallpapers,
+pocket positions, ownership, prices and sharing tokens are retained. The existing helper takes a local safety
 backup automatically. Do not regenerate .env or remove the database volume.
 
-This release adds sharp 0.35.4. Docker reconciles an older retained dependency lockfile
-with the release manifest inside its build image, then installs using npm ci. This
-neither edits nor deletes the host lockfile. The application image retains the resolved
-lockfile for inspection. No new containers or server-side Node installation are required.
+Cover images use the existing sharp 0.35.4 dependency. This update adds no new
+dependencies, containers or server environment settings. The existing GitHub-built
+AMD64/ARM64 images include the new migration and image routes.
 
 Reload the browser after upgrading. Test one wallpaper, a colour-only binder, a
 revoked shared link and a mobile page before rolling out custom themes widely.
@@ -99,7 +110,7 @@ revoked shared link and a mobile page before rolling out custom themes widely.
 
 Local unit checks cover appearance bounds, type/size validation, conservative variant
 classification, older-binder defaults, generated wallpaper routes and image processing.
-The available local sharp is 0.34.1; CI must validate the pinned 0.35.4 with Node 24.
+The locked sharp 0.35.4 and Node 24 are used by release validation.
 New API/PostgreSQL tests cover atomic saves, owner isolation, stale revisions,
 private/shared image retrieval, revoked links, deletion and unchanged collection data.
 CI also runs the existing pricing and set/series binder tests. Browser screenshots of
@@ -116,3 +127,10 @@ the production binder and card dialog with local demonstration artwork. It check
 rendered pixels inside and outside the artwork mask, normal/unknown and missing
 images, the appearance controls, keyboard/hover isolation, touch, reduced motion
 and print output. Fixtures are demonstrations, not real catalogue or deployment data.
+
+The cover suite (`npm run test:binder-cover-ui`) checks the production editor on
+desktop and phone in light/dark themes, switching surfaces, saving, cancelling,
+removing an image, conflict reload, and cover rendering on the shelf, dashboard and
+shared binder. Database/API tests in `tests/integration/binder-cover.test.mjs` cover
+legacy colour independence, dual uploads over the former combined request limit,
+image isolation, stale saves, token revocation, independent removal and deletion.
