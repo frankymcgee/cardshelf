@@ -54,6 +54,13 @@ selector is separate from the active subscription environment in **Subscription 
    add reviewed customer-facing recurring/cancellation/refund terms, and publish.
    Optional fixed percentage tax rates use `txr_...`; no tax is added when omitted.
 
+If a manual draft uses the wrong tier, select **Delete draft** beside it and confirm.
+Then add the same Stripe price again with the correct Collector or Collector Plus tier.
+Deletion is available only for unpublished, unused manual offers; checkout and subscription
+history is retained. Stripe-managed offers must be corrected through product sync.
+The Stripe product and price remain available. Use the matching Test or Live credential
+workspace when correcting an offer.
+
 Restricted keys need account/balance reads; product/price/tax reads; customer creation
 and reads; Checkout session create/read/expiry; subscription reads/cancellation;
 invoice/payment-intent/charge/refund/event reads; portal configuration reads and portal

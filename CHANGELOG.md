@@ -1,3 +1,9 @@
+## 0.47.1 — 2026-10-07
+
+- Add Delete draft to manual Stripe offers so an unused price can be re-added under the correct Collector or Collector Plus tier.
+- Require administrator access, confirmation and the current offer revision. Preserve published offers, Stripe-managed offers and every offer referenced by checkout or subscription history.
+- Remove only the CardShelf draft mapping, record the deletion in the audit log, and keep Stripe products and prices available. No migration or server configuration change is required.
+
 ## 0.47.0 — 2026-10-04
 
 - Add independent outside cover colours and wallpapers to Binder appearance, with inside/outside controls and live previews. Show covers on the binder shelf, dashboard, open binder and shared view.
