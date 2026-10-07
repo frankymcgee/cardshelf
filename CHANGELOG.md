@@ -1,3 +1,11 @@
+## 0.48.0 — 2026-10-07
+
+- Add CardShelf card motion to Arena: hover lift, selection waves, card-play landing pulses, Energy attachment rings and evolution bursts.
+- Show attack-card lunges, type-coloured trails, impact particles and larger exact damage numbers, plus turn, Knock Out and result banners.
+- Animate newly revealed opponent plays at their public destination while preserving private hands and anonymous draw/Prize card backs.
+- Add Full/Reduced motion controls and apply Battle effects: Off to selection movement as well. Respect system reduced motion with textual battle feedback.
+- Keep effects brief and cancel them on scroll, reconnect and navigation. Uses the existing GitHub build with no new packages or migration.
+
 ## 0.47.4 — 2026-10-07
 
 - Show the backend photo-scan allowance on every public and Test pricing card, including Free and Collector. Remove the display gate that hid their saved limits behind a fixed not-included message.

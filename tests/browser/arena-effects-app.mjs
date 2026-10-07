@@ -19,6 +19,8 @@ function advance(kind) {
   const event = (kind, extra = {}) => t.events.push({ n: t.events.at(-1).n + 1, kind, seat, ...extra });
   const take = index => p.hand.splice(p.hand.findIndex(u => u.id === 'Hand-' + index), 1)[0];
   if (kind === 'play') { p.bench.push(take(0)); event('bench'); }
+  if (kind === 'opponent-play') { op.bench.push(tableUnit('Revealed-Opponent')); event('bench', { seat: 1 - seat }); }
+  if (kind === 'evolve') { const prior = p.active; p.active = take(0); p.active.under = [prior]; p.active.card.stage = 'Stage1'; event('evolve', { target: p.active.id }); }
   if (kind === 'attach') { p.active.energy.push(take(1)); event('energy', { target: p.active.id }); }
   if (kind === 'swap') { const a = p.active; p.active = p.bench[0]; p.bench = [a]; event('switch'); }
   if (kind === 'attack') { op.active.damage += 30; event('attack', { attacker: p.active.id, target: op.active.id, attack: 'Training Strike', damage: 30 }); }

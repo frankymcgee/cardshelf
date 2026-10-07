@@ -1,6 +1,6 @@
 // Client-only presentation of acknowledged views. No rules, hidden-zone reads or persistence.
 const VERSIONS = new Set(['pokemon-core-v1', 'pokemon-expanded-v2']);
-export const ARENA_EFFECT_LIMITS = Object.freeze({ units: 160, events: 120, burst: 12, moves: 8, impacts: 6, cues: 4, lifetime: 1400, flight: 460 });
+export const ARENA_EFFECT_LIMITS = Object.freeze({ units: 160, events: 120, burst: 12, moves: 8, impacts: 6, accents: 6, cues: 4, lifetime: 1400, flight: 640 });
 const list = value => Array.isArray(value) ? value : [];
 const idOf = unit => unit && !unit.hidden && typeof unit.id === 'string' && unit.id.length <= 160 && unit.card ? unit.id : '';
 const count = value => Number.isSafeInteger(value) && value >= 0 && value <= 10000 ? value : 0;
@@ -63,7 +63,7 @@ export function arenaEffectUnit(table, id) {
 
 /** Build a bounded one-update effect batch. The board updates immediately; this never changes game state. */
 export function arenaEffectPlan(before, after, sourceEvents) {
-  const empty = () => ({ moves: [], impacts: [], cues: [], coalesced: false });
+  const empty = () => ({ moves: [], impacts: [], accents: [], cues: [], coalesced: false });
   if (!before || !after || before.key !== after.key || after.revision <= before.revision || before.ambiguous || after.ambiguous
     || !before.ordered || !after.ordered || after.lastEvent < before.lastEvent) return empty();
   const events = list(sourceEvents).slice(-ARENA_EFFECT_LIMITS.events).filter(e => Number.isSafeInteger(e?.n) && e.n > before.lastEvent && e.n <= after.lastEvent);
@@ -73,9 +73,15 @@ export function arenaEffectPlan(before, after, sourceEvents) {
     return { ...empty(), coalesced: true, cues: [{ kind: 'update', text: 'Table updated · see History for the intervening actions.' }] };
   }
   const result = empty(), old = new Map(before.units.map(u => [u.id, u])), current = new Map(after.units.map(u => [u.id, u]));
+  const evolutions = new Set(events.filter(e => e.kind === 'evolve' && current.get(e.target)?.field).map(e => e.target));
   const cue = (kind, message, seat = null) => result.cues.push({ kind, text: message, seat });
   for (const next of after.units) {
     const prior = old.get(next.id);
+    // Newly disclosed opponent plays receive an arrival pulse without inventing a private hand origin.
+    if (next.field && (!prior || prior.zone === 'hand')) result.accents.push({ kind: evolutions.has(next.id) ? 'evolve' : 'arrival', target: next.anchor });
+    if (next.zone !== prior?.zone && (next.zone.startsWith('energy:') || next.zone.startsWith('tools:'))) {
+      result.accents.push({ kind: next.zone.startsWith('energy:') ? 'energy' : 'attach', target: next.anchor });
+    }
     if (prior && prior.seat === next.seat && prior.zone !== next.zone && (prior.anchor !== next.anchor || next.field)) {
       // Surviving IDs only. An unchanged bench/hand order is not movement; a fresh discard ID is not matched by name.
       result.moves.push({ kind: 'card', id: next.id, from: prior.anchor, to: next.anchor });
@@ -105,7 +111,10 @@ export function arenaEffectPlan(before, after, sourceEvents) {
     } else if (e.kind === 'coin' && typeof e.heads === 'boolean') {
       cue('coin', e.heads ? 'Coin · Heads' : 'Coin · Tails', e.seat);
       result.impacts.push({ kind: 'coin', target: 'centre', text: e.heads ? 'HEADS' : 'TAILS', amount: null });
-    } else if (e.kind === 'knockout') cue('knockout', `${text(e.card?.name) || 'Pokémon'} knocked out`, e.seat);
+    } else if (e.kind === 'bench') cue('play', 'Pokémon played to the Bench', e.seat);
+    else if (e.kind === 'energy') cue('attach', 'Energy attached', e.seat);
+    else if (e.kind === 'evolve') cue('evolve', 'Pokémon evolved', e.seat);
+    else if (e.kind === 'knockout') cue('knockout', `${text(e.card?.name) || 'Pokémon'} knocked out`, e.seat);
     else if (e.kind === 'attack_miss') cue('miss', 'Attack did no damage.', e.seat);
     else if (e.kind === 'ability') {
       cue('ability', 'Ability used', e.seat);
@@ -133,6 +142,7 @@ export function arenaEffectPlan(before, after, sourceEvents) {
   if (after.phase === 'finished' && before.phase !== 'finished' && [0, 1, 'draw'].includes(after.result)) cue('result', after.result === 'draw' ? 'Draw' : after.result === after.seat ? 'Victory' : 'Defeat');
   result.moves = result.moves.slice(0, ARENA_EFFECT_LIMITS.moves);
   result.impacts = result.impacts.slice(-ARENA_EFFECT_LIMITS.impacts);
+  result.accents = result.accents.slice(0, ARENA_EFFECT_LIMITS.accents);
   // A compact latest-update recap, not a queue that can delay prompts or hide current state.
   if (result.cues.length > ARENA_EFFECT_LIMITS.cues) result.cues = [{ kind: 'update', text: 'Several actions resolved · full details in History.' }, ...result.cues.slice(-(ARENA_EFFECT_LIMITS.cues - 1))];
   return result;

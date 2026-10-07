@@ -1,8 +1,13 @@
-# CardShelf 0.47.4
+# CardShelf 0.48.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
 binders, quick tracking, artwork effects, binder themes and a member marketplace.
+
+Arena now gives cards hover lift and selection feedback, plays and evolutions
+landing pulses, and attacks card lunges, type-coloured trails and damage bursts.
+Use **Motion: Full/Reduced** or **Battle effects: On/Off** above the live table.
+System reduced motion always takes priority. See [Arena animations](docs/ARENA_CARD_ANIMATIONS.md).
 
 ## Complete your binder
 
