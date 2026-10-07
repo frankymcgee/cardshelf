@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 const offer=(plan,cadence)=>({plan_code:plan,cadence,total_minor:cadence==='MONTHLY'?1000:10000,tax_minor:0,tax_mode:'none',tax_behavior:'inclusive',product_snapshot:{id:'prod_'+plan,name:plan==='plus'?'Collector Pro':'Collector',description:'Tools for your collection.',images:[],marketing_features:[{name:'Ad-free collecting'}]}});
-async function fixtures(page,{empty=false,role='admin',stripeOffers=[],stripeManaged=false}={}){
+async function fixtures(page,{empty=false,role='admin',stripeOffers=[],stripeManaged=false,pricingOffers=null,scanAllowances={free:5,collector:25,plus:0}}={}){
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/api/**',async route=>{
     const path=new URL(route.request().url()).pathname;
@@ -11,8 +11,9 @@ async function fixtures(page,{empty=false,role='admin',stripeOffers=[],stripeMan
     else if(path==='/api/admin/platform/plans')data=[];
     else if(path==='/api/admin/integrations/stripe/products')data={configured:false,settings:{managed:false,daily:false,mirror_plans:false,revision:1},products:[],offers:[]};
     else if(path==='/api/account/games')data={tier:'complimentary'};
-    else if(path==='/api/admin/integrations/stripe/products/preview')data={preview:true,environment:'sandbox',checkout_enabled:false,last_synced_at:null,sync_failed:false,offers:empty?[]:['collector','plus'].flatMap(plan=>['MONTHLY','ANNUAL'].map(c=>offer(plan,c))),scan_allowances:{free:5,collector:25,plus:0}};
-    else if(path==='/api/public/subscription-offers')data={enabled:false,offers:[],scan_allowances:{free:5,collector:25,plus:0}};
+    else if(path==='/api/admin/integrations/stripe/products/preview')data={preview:true,environment:'sandbox',checkout_enabled:false,last_synced_at:null,sync_failed:false,offers:empty?[]:pricingOffers??['collector','plus'].flatMap(plan=>['MONTHLY','ANNUAL'].map(c=>offer(plan,c))),scan_allowances:scanAllowances};
+    else if(path==='/api/public/subscription-offers')data={enabled:!!pricingOffers,environment:'production',offers:pricingOffers??[],scan_allowances:scanAllowances};
+    else if(path==='/api/billing/stripe/account')data={enabled:true,configured:true,environment:'production',offers:pricingOffers??[],subscriptions:[],scan_allowances:scanAllowances};
     else if(path==='/api/account/membership')data={access:{tier:'complimentary',features:[],allowed:true}};
     else if(path.startsWith('/api/ads/'))data={eligible:false};
     else return route.fulfill({status:404,json:{message:'Unexpected fixture path '+path}});
@@ -138,4 +139,37 @@ test('Stripe-managed mode permits manual cleanup and explains protected offers',
   await expect(page).toHaveURL(/\/admin\/pricing\?environment=production#stripe-product-catalogue$/);
   await expect(page.getByRole('combobox',{name:'Stripe catalogue environment',exact:true})).toHaveValue('production');
   expect(errors).toEqual([]);
+});
+
+for(const view of ['Test preview','public pricing','membership'])test(view+' shows backend photo scans and zero as unlimited instead of Stripe counts',async({page},info)=>{
+  const pricingOffers=['collector','plus'].flatMap(plan=>['MONTHLY','ANNUAL'].map(c=>{
+    const row=offer(plan,c);row.id=plan+'-'+c;row.terms='Synthetic recurring membership terms.';
+    row.product_snapshot.marketing_features.push({name:'999 photo scans per month'});return row;
+  }));
+  const scanAllowances={free:0,collector:0,plus:275},errors=await fixtures(page,{pricingOffers,scanAllowances});
+  for(const limit of [275,0]){
+    scanAllowances.plus=limit;
+    // Enter public pricing through client navigation so fixtures cover its API read.
+    await page.goto(view==='membership'?'/membership':'/admin/integrations/stripe-preview');
+    if(view==='public pricing')await page.getByRole('link',{name:'View public pricing',exact:true}).click();
+    const plus=page.locator(view==='membership'?'.membership-product':'.stripe-plan').filter({has:page.getByText('Collector Pro',{exact:true})});
+    const label=limit===0?'Unlimited photo scans':'275 photo scans per month';
+    await expect(plus.getByText(label,{exact:true})).toBeVisible();
+    await expect(page.getByText('999 photo scans per month',{exact:true})).toHaveCount(0);
+    await expect(plus.getByText('Ad-free collecting',{exact:true})).toBeVisible();
+    await expect(page.getByText('Photo scanning is not included in this tier.',{exact:true})).toBeVisible();
+    if(view==='membership')await plus.getByRole('radio').last().check();
+    else await page.getByRole('button',{name:'Yearly',exact:true}).click();
+    await expect(plus.getByText(label,{exact:true})).toBeVisible();
+    await noOverflow(page);
+  }
+  await page.screenshot({path:info.outputPath('backend-photo-scans.png'),fullPage:true});expect(errors).toEqual([]);
+});
+
+test('an unavailable allowance never becomes unlimited or falls back to a Stripe scan count',async({page})=>{
+  const row=offer('plus','MONTHLY');row.product_snapshot.marketing_features=[{name:'Unlimited photo scans'}];
+  const errors=await fixtures(page,{pricingOffers:[row],scanAllowances:{free:0,collector:0}});
+  await page.goto('/admin/integrations/stripe-preview');
+  await expect(page.getByText('Photo scan allowance not available',{exact:true})).toBeVisible();
+  await expect(page.getByText('Unlimited photo scans',{exact:true})).toHaveCount(0);expect(errors).toEqual([]);
 });
