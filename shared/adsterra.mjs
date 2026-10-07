@@ -39,18 +39,33 @@ export function selectAdsterraUnit(units, layout, width, availableHeight = 600) 
   return null;
 }
 
+// A sandboxed srcdoc has an opaque origin: document.cookie throws instead of
+// returning the empty string that a cookie-disabled browser normally exposes.
+// Let vendor cookie readers use that empty interface without granting access to
+// the app's origin, cookies or storage. Writes are discarded, never forwarded.
+// This function is serialized into the frame and must remain self-contained.
+export function adsterraCookieAccess(doc) {
+  try { void doc.cookie; return false; }
+  catch (error) {
+    if (error?.name !== 'SecurityError') throw error;
+    Object.defineProperty(doc, 'cookie', { configurable: false, enumerable: true,
+      get() { return ''; }, set(_value) {} });
+    return true;
+  }
+}
+
 export function adsterraFrameDocument(unit, nonce) {
   const checked = adsterraUnit(unit?.format, unit?.key);
   if (!checked || !/^[a-f0-9]{32}$/.test(nonce || '')) return '';
   const { key, format, width, height, src } = checked;
-  const errors = `<script nonce="${nonce}">document.addEventListener('error',function(event){if(event.target.tagName==='SCRIPT')parent.postMessage({type:'cardshelf-adsterra-error',key:'${key}'},'*')},true);</script>`;
+  const bootstrap = `<script nonce="${nonce}">window.addEventListener('error',function(event){if(event.target?.tagName==='SCRIPT'||event.message)parent.postMessage({type:'cardshelf-adsterra-error',key:'${key}'},'*')},true);(${adsterraCookieAccess.toString()})(document);</script>`;
   const content = format === 'native'
     ? `<div id="container-${key}"></div><script nonce="${nonce}" async="async" data-cfasync="false" src="${src}"></script>`
-    : `<script nonce="${nonce}">var atOptions=${JSON.stringify({ key, format: 'iframe', height, width, params: {} })};</script><script nonce="${nonce}" src="${src}"></script>`;
+    : `<script nonce="${nonce}">window.atOptions=${JSON.stringify({ key, format: 'iframe', height, width, params: {} })};</script><script nonce="${nonce}" src="${src}"></script>`;
   // Opaque sandbox frames cannot read the collector app's DOM, cookies or storage.
   // Native creatives report their height; the parent verifies the source window.
   const resize = format === 'native' ? `<script nonce="${nonce}">
     new ResizeObserver(function(){parent.postMessage({type:'cardshelf-adsterra-size',key:'${key}',height:Math.ceil(document.body.getBoundingClientRect().height)},'*')}).observe(document.body);
   </script>` : '';
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;padding:0;width:100%;background:transparent}body{display:flow-root}iframe{border:0}img{max-width:100%}</style></head><body>${errors}${content}${resize}</body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;padding:0;width:100%;background:transparent}body{display:flow-root}iframe{border:0}img{max-width:100%}</style></head><body>${bootstrap}${content}${resize}</body></html>`;
 }

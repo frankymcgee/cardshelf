@@ -3,8 +3,8 @@ import { nonceScriptTags } from '../../lib/adsense-logic.mjs'
 export default defineNitroPlugin(nitro => {
   nitro.hooks.hook('render:html', async (html, { event }) => {
     const path = event.path.split('?')[0] || ''
-    // Verification is inert metadata, not an ad loader. Visitors/paid users may
-    // see this public publisher ID, but never get Google advertising JavaScript.
+    // Verification is inert metadata. Actual ad eligibility for guests and
+    // members is independently decided by the document middleware.
     if (path === '/' || path === '/explore' || path === '/explore/') {
       try {
         const settings = await adsenseSettings()

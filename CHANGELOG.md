@@ -1,3 +1,10 @@
+## 0.50.0 — 2026-10-08
+
+- Fix Adsterra banner startup by making `window.atOptions` removable by the vendor loader.
+- Support native/banner cookie reads inside isolated ad frames with an empty, non-persistent cookie interface when the browser denies cookie access. Keep the sandbox and app-origin isolation intact; collapse slots on vendor runtime errors without retrying.
+- Enable advertising for signed-out visitors on the homepage, features, pricing and public card catalogue/details. Keep paid/protected accounts, login/forms, private pages and authenticated marketplace access excluded from guest advertising.
+- Add browser regressions for the two observed vendor errors, guest ads, login transitions and cookie/DOM isolation. No new dependencies, migration or advertising codes are needed.
+
 ## 0.49.0 — 2026-10-07
 
 - Add Adsterra to Administration → Advertising with the supplied six banners and native unit available as a preset. Keep Google settings when switching providers.

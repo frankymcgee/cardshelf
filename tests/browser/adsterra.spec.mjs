@@ -1,15 +1,15 @@
 import { test, expect } from '@playwright/test';
 import { fixtures } from './ads-fixtures.mjs';
 import { ADSTERRA_CARDSHELF_UNITS as units } from '../../shared/adsterra.mjs';
-import { adsensePageKind } from '../../shared/adsense-policy.mjs';
+import { adsensePageKind, adsenseGuestPage } from '../../shared/adsense-policy.mjs';
 import { adsenseCsp, nonceScriptTags } from '../../lib/adsense-logic.mjs';
 
-async function liveFixtures(page, { deny = false, fail = false } = {}) {
-  const fixture = await fixtures(page, { count: 8, provider: 'adsterra', initialMode: 'live' });
+async function liveFixtures(page, { deny = false, fail = false, crash = false, guest = false } = {}) {
+  const fixture = await fixtures(page, { count: 8, provider: 'adsterra', initialMode: 'live', guest });
   const seen = [], nonce = 'c'.repeat(32);
   await page.route('**/api/ads/adsense**', route => {
     const path = new URL(route.request().url()).searchParams.get('path'), kind = adsensePageKind(path);
-    return route.fulfill({ json: deny || !kind ? { eligible: false } : {
+    return route.fulfill({ json: deny || !kind || (guest && !adsenseGuestPage(path)) ? { eligible: false } : {
       eligible: true, provider: 'adsterra', adsterra_units: units, page_kind: kind, revision: 1
     } });
   });
@@ -19,10 +19,11 @@ async function liveFixtures(page, { deny = false, fail = false } = {}) {
       seen.push(url.pathname);
       if (fail) return route.abort('blockedbyclient');
       const key = url.pathname.split('/').at(-1);
-      // Synthetic creatives exercise the supplied synchronous loader contract.
-      const js = url.pathname.startsWith('/22/')
-        ? `if(atOptions.key!=='${key}')throw Error('Unit configuration crossed frames');document.write('<div style="width:'+atOptions.width+'px;height:'+atOptions.height+'px;background:#dfecff">Banner fixture</div>')`
-        : `document.getElementById('container-${key}').innerHTML='<div style="height:190px;background:#dfecff">Native fixture</div>'`;
+      // Reproduce the two operations which failed with the real vendor scripts:
+      // cookie reads in opaque frames and strict deletion of window.atOptions.
+      const js = crash ? `throw Error('Synthetic vendor failure')` : `"use strict";void document.cookie;document.cookie='vendor=value';` + (url.pathname.startsWith('/22/')
+        ? `const options=window.atOptions;if(options.key!=='${key}')throw Error('Unit configuration crossed frames');delete window.atOptions;document.write('<div style="width:'+options.width+'px;height:'+options.height+'px;background:#dfecff">Banner fixture</div>')`
+        : `document.getElementById('container-${key}').innerHTML='<div style="height:190px;background:#dfecff">Native fixture</div>'`);
       return route.fulfill({ contentType: 'application/javascript', body: js });
     }
     if (!['127.0.0.1', 'localhost'].includes(url.hostname)) return route.abort();
@@ -93,6 +94,17 @@ test('native grids resize without duplicate units when switching catalogue views
   await frame.scrollIntoViewIfNeeded();
   await expect(frame.contentFrame().getByText('Native fixture')).toBeVisible();
   await expect(frame).toHaveAttribute('height', '190');
+  await page.evaluate(() => { document.cookie = 'cardshelf_test_private=synthetic'; });
+  const isolated = await frame.contentFrame().locator('body').evaluate(() => {
+    let parentBlocked = false, storageBlocked = false;
+    try { void parent.document.body; } catch { parentBlocked = true; }
+    try { void localStorage.length; } catch { storageBlocked = true; }
+    document.cookie = 'vendor=attempted';
+    return { parentBlocked, storageBlocked, cookie: document.cookie };
+  });
+  expect(isolated).toEqual({ parentBlocked: true, storageBlocked: true, cookie: '' });
+  expect(await page.evaluate(() => document.cookie)).toContain('cardshelf_test_private=synthetic');
+  expect(await page.evaluate(() => document.cookie)).not.toContain('vendor=');
   await page.screenshot({ path: `test-results/ads/adsterra-native-${test.info().project.name}.png` });
   expect(seen).toEqual(['/21/' + units.native]);
   await page.getByRole('button', { name: 'List view', exact: true }).click();
@@ -100,6 +112,36 @@ test('native grids resize without duplicate units when switching catalogue views
   expect(seen.filter(path => path === '/21/' + units.native)).toHaveLength(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(errors).toEqual([]);
+});
+test('signed-out visitors receive live banner and catalogue ads, then a clean login document', async ({ page }) => {
+  const { seen, errors } = await liveFixtures(page, { guest: true });
+  await page.goto('/');
+  let frame = page.locator('.adsterra-placement iframe');
+  await frame.scrollIntoViewIfNeeded();
+  await expect(frame.contentFrame().getByText('Banner fixture')).toBeVisible();
+  const menu = page.getByRole('button', { name: 'Toggle navigation' });
+  if (await menu.isVisible()) await menu.click();
+  await page.getByRole('link', { name: 'Browse cards', exact: true }).click();
+  await expect(page).toHaveURL(/\/explore$/);
+  frame = page.locator('.adsterra-placement iframe');
+  await frame.scrollIntoViewIfNeeded();
+  await expect(frame.contentFrame().getByText('Native fixture')).toBeVisible();
+  expect(seen).toHaveLength(2);
+  await page.evaluate(() => { window.__adsterraGuestDocument = true; });
+  await page.getByRole('navigation', { name: 'Footer navigation' }).getByRole('link', { name: 'Sign in', exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  expect(await page.evaluate(() => window.__adsterraGuestDocument)).toBeUndefined();
+  await expect(page.locator('iframe[srcdoc]')).toHaveCount(0);
+  expect(seen).toHaveLength(2); expect(errors).toEqual([]);
+});
+test('a vendor runtime failure collapses the slot without another request', async ({ page }) => {
+  const { seen } = await liveFixtures(page, { crash: true });
+  await page.goto('/');
+  await page.locator('.adsterra-placement iframe').scrollIntoViewIfNeeded();
+  await expect.poll(() => seen.length).toBe(1);
+  await expect(page.locator('iframe[srcdoc]')).toHaveCount(0);
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  expect(seen).toHaveLength(1);
 });
 test('ineligible pages and blocked scripts do not fall back to another provider or retry', async ({ page }) => {
   const { seen } = await liveFixtures(page, { fail: true });

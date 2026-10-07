@@ -42,7 +42,7 @@ async function save() {
 }
 </script>
 <template>
-  <header class="page-heading"><div><span class="eyebrow">FREE-ONLY ADVERTISING</span><h1>Advertising</h1><p>Choose Adsterra or Google AdSense for eligible content pages.</p></div></header>
+  <header class="page-heading"><div><span class="eyebrow">PUBLIC & FREE-ACCOUNT ADVERTISING</span><h1>Advertising</h1><p>Choose Adsterra or Google AdSense for eligible content pages.</p></div></header>
   <p v-if="error" class="alert error" role="alert">{{ error }}</p>
   <section v-if="saved" class="panel adsense-settings form-stack">
     <h2>Your administrator ad view</h2>
@@ -53,11 +53,11 @@ async function save() {
     <div class="button-row"><NuxtLink to="/cards#cardshelf-placement-preview">View catalogue</NuxtLink><NuxtLink to="/marketplace#cardshelf-placement-preview">View marketplace</NuxtLink><NuxtLink to="/#cardshelf-placement-preview">View homepage</NuxtLink></div>
   </section>
   <form v-if="saved" class="panel adsense-settings form-stack" @submit.prevent="save">
-    <p class="alert info">Only signed-in Free accounts are eligible. Collector, Collector Plus/Pro, Complimentary users, testers and signed-out visitors receive no advertising scripts. Passwords, billing, account settings, administration, private messages, private card editors, binders and battles stay ad-free.</p>
+    <p class="alert info">Signed-out visitors may see ads on the homepage, features, pricing and public card catalogue/details. Signed-in Free accounts are also eligible on approved content pages. Collector, Collector Plus/Pro, Complimentary users and testers receive no advertising scripts. Passwords, billing, account settings, administration, private messages, private card editors, binders and battles stay ad-free.</p>
     <label>Advertising provider<select v-model="form.provider" :disabled="busy"><option value="adsense">Google AdSense</option><option value="adsterra">Adsterra</option></select></label>
     <p class="data-note">One provider runs at a time. Saving a provider change keeps the other provider's configuration for later.</p>
-    <label class="checkbox-label"><input v-model="form.enabled" type="checkbox" :disabled="busy">Enable Free-only {{ providerName }}</label>
-    <label class="checkbox-label"><input v-model="form.placeholders_enabled" type="checkbox" :disabled="busy">Show placeholder ad sections to eligible Free accounts</label>
+    <label class="checkbox-label"><input v-model="form.enabled" type="checkbox" :disabled="busy">Enable {{ providerName }} for public visitors and Free accounts</label>
+    <label class="checkbox-label"><input v-model="form.placeholders_enabled" type="checkbox" :disabled="busy">Show placeholder ad sections to public visitors and eligible Free accounts</label>
     <template v-if="form.provider === 'adsterra'">
       <p class="data-note">Turn placeholders off for live ads. Local previews show the selected provider's layouts without requesting advertisements.</p>
       <fieldset :disabled="busy" class="ad-modes">
@@ -70,7 +70,7 @@ async function save() {
       </fieldset>
       <label class="checkbox-label"><input v-model="approval" type="checkbox" :disabled="busy">Adsterra has approved this site and the configured units.</label>
       <label class="checkbox-label"><input v-model="consent" type="checkbox" :disabled="busy">I have reviewed the ad categories and published the privacy disclosures and consent controls required for my audience.</label>
-      <label class="checkbox-label"><input v-model="scope" type="checkbox" :disabled="busy">Use Free-only content pages and keep private screens excluded.</label>
+      <label class="checkbox-label"><input v-model="scope" type="checkbox" :disabled="busy">Use approved public and Free-account content pages and keep private screens excluded.</label>
     </template>
     <template v-else>
     <p class="data-note">Use while awaiting approval. This replaces Google advertising with local placeholders on eligible content pages, with no publisher or ad unit IDs required. Turn it off when ready for live ads. All placeholders illustrate Google Auto ads formats. Homepage: large banner, anchor and widescreen side rail. Features: Multiplex grid, anchor and side rail. Pricing and public card details: rectangle. Catalogue, Cards and marketplace grids: card-sized rectangles after six cards. Cards list view and overview: horizontal banners with anchors. Grid previews do not reserve a live Google position. Sizes adapt on phones; Google chooses the actual live layout. Paid and protected accounts stay ad-free.</p>
@@ -88,13 +88,13 @@ async function save() {
       <label class="checkbox-label"><input v-model="form.marketplace_enabled" type="checkbox">Place an advertisement in the marketplace card grid</label>
       <label>Marketplace responsive display ad unit ID<input v-model="form.marketplace_slot_id" placeholder="1234567890" maxlength="20" autocomplete="off"></label>
       <p class="data-note">Use a responsive Display ad unit, not an In-feed template. One labelled ad tile appears after up to six listings when at least four listings are present. It uses the listing-card footprint, is not a sale link and does not replace a card. Disable “Optimise your existing ads” in Google to retain this manual position. Ad creative sizes and fill are determined by Google.</p>
-      <p class="data-note">Auto ads alone needs only your publisher ID. Catalogue and marketplace display units are independent optional placements. Never paste scripts into a global header, theme, proxy or Tag Manager: that would bypass Free-only controls.</p>
+      <p class="data-note">Auto ads alone needs only your publisher ID. Catalogue and marketplace display units are independent optional placements. Never paste scripts into a global header, theme, proxy or Tag Manager: that would bypass account and page exclusions.</p>
     </fieldset>
     <label class="checkbox-label"><input v-model="approval" type="checkbox" :disabled="busy">Google has approved this site and the chosen ad units. I have reviewed publisher content and placement eligibility.</label>
     <label class="checkbox-label"><input v-model="consent" type="checkbox" :disabled="busy">I have published and tested the required Google-certified consent messages, privacy disclosures and consent-revocation option for the audiences I serve.</label>
     <label v-if="form.auto_ads_enabled" class="checkbox-label"><input v-model="autoReady" type="checkbox" :disabled="busy">Auto ads is configured in Google, with private-page exclusions and reviewed formats. I understand Google may add Auto ads wherever its shared loader runs, including pages with manual units.</label>
     <label v-else class="checkbox-label"><input v-model="autoOff" type="checkbox" :disabled="busy">Auto ads and automatic ad experiments are disabled in Google AdSense; only the selected manual units will be requested.</label>
-    <label v-if="form.auto_ads_enabled || form.marketplace_enabled" class="checkbox-label"><input v-model="scope" type="checkbox" :disabled="busy">I confirm the Free-only page scope and private-screen exclusions, and no additional unscoped advertising loader is installed.</label>
+    <label v-if="form.auto_ads_enabled || form.marketplace_enabled" class="checkbox-label"><input v-model="scope" type="checkbox" :disabled="busy">I confirm the public/Free-account page scope and private-screen exclusions, and no additional unscoped advertising loader is installed.</label>
     <p class="data-note">These acknowledgements do not change or verify your Google account. Google Privacy & messaging handles consent; CardShelf never overrides a refusal. Do not click your own ads or request real ads in automated tests.</p>
     </template>
     <label>Reason for change<input v-model="form.reason" required minlength="5" maxlength="500" :disabled="busy"></label>

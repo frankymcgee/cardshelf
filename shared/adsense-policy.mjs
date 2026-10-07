@@ -34,6 +34,11 @@ export function adsensePageKind(value) {
   }
   return null;
 }
+/** Guests can receive ads only on the existing public marketing/catalogue pages. */
+export function adsenseGuestPage(path) {
+  const kind = adsensePageKind(path);
+  return kind === 'marketing' || kind === 'catalogue';
+}
 /** A view-only Free marketplace reader does NOT gain the enquiry/selling feature. */
 export function freeMarketplaceReader(access) {
   return access?.allowed === true && access.tier === 'free' && access.reason === 'free_account';
