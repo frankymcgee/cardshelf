@@ -93,6 +93,18 @@ await test('administrator-only Test pricing preview with untouched Live policy a
           assert.deepEqual(Object.keys(r.data.scan_allowances).sort(),['collector','free','plus']);
           assert.ok(!Object.hasOwn(r.data,'tier_monthly_limits'));
         }
+        // Also verify the actual public HTML. Reading the API alone missed the
+        // old component gate that discarded Free and Collector's saved limits.
+        const page=await request('/pricing');assert.equal(page.status,200);
+        const cards=[...page.data.matchAll(/<article\b[^>]*>([\s\S]*?)<\/article>/g)].map(match=>match[1]);
+        for(const [tier,name] of [['free','Free'],['collector','Collector'],['plus','Collector Plus']]){
+          const card=cards.find(html=>new RegExp('<h2[^>]*>'+name+'<\\/h2>').test(html));
+          assert.ok(card,'Missing public pricing card: '+name);
+          const label=limits[tier]===0?'Unlimited photo scans':limits[tier]+' photo scans per month';
+          assert.ok(card.includes(label),name+' must display '+label);
+          assert.equal((card.match(/class="plan-scan-allowance"/g)||[]).length,1);
+          assert.ok(!card.includes('Photo scanning is not included in this tier.'));
+        }
       }
       assert.deepEqual(await snapshot(),before);
     });

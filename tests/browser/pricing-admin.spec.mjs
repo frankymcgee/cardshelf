@@ -141,35 +141,56 @@ test('Stripe-managed mode permits manual cleanup and explains protected offers',
   expect(errors).toEqual([]);
 });
 
-for(const view of ['Test preview','public pricing','membership'])test(view+' shows backend photo scans and zero as unlimited instead of Stripe counts',async({page},info)=>{
+for(const view of ['Test preview','public pricing','membership'])test(view+' shows every backend tier allowance and zero as unlimited',async({page},info)=>{
   const pricingOffers=['collector','plus'].flatMap(plan=>['MONTHLY','ANNUAL'].map(c=>{
     const row=offer(plan,c);row.id=plan+'-'+c;row.terms='Synthetic recurring membership terms.';
     row.product_snapshot.marketing_features.push({name:'999 photo scans per month'});return row;
   }));
-  const scanAllowances={free:0,collector:0,plus:275},errors=await fixtures(page,{pricingOffers,scanAllowances});
-  for(const limit of [275,0]){
-    scanAllowances.plus=limit;
+  const scanAllowances={free:5,collector:10,plus:100},errors=await fixtures(page,{pricingOffers,scanAllowances});
+  const cases=[{free:5,collector:10,plus:100},{free:0,collector:10,plus:100},{free:5,collector:0,plus:100},{free:5,collector:10,plus:0}];
+  for(const [index,limits] of cases.entries()){
+    Object.assign(scanAllowances,limits);
     // Enter public pricing through client navigation so fixtures cover its API read.
     await page.goto(view==='membership'?'/membership':'/admin/integrations/stripe-preview');
     if(view==='public pricing')await page.getByRole('link',{name:'View public pricing',exact:true}).click();
-    const plus=page.locator(view==='membership'?'.membership-product':'.stripe-plan').filter({has:page.getByText('Collector Pro',{exact:true})});
-    const label=limit===0?'Unlimited photo scans':'275 photo scans per month';
-    await expect(plus.getByText(label,{exact:true})).toBeVisible();
+    const card=name=>page.locator(view==='membership'?'.membership-product':'.stripe-plan').filter({has:page.getByText(name,{exact:true})});
+    const expected=view==='membership'?[['collector','Collector'],['plus','Collector Pro']]:[['free','Free'],['collector','Collector'],['plus','Collector Pro']];
+    async function checkAllowances(){
+      for(const [tier,name] of expected){
+        const amount=limits[tier]===0?'Unlimited photo scans':limits[tier]+' photo scans per month';
+        await expect(card(name).getByText(amount,{exact:true})).toBeVisible();
+        await expect(card(name).locator('.plan-scan-allowance')).toHaveCount(1);
+        await expect(card(name).locator('.plan-scan-allowance')).toContainText('Requires collection access');
+      }
+    }
+    await checkAllowances();
     await expect(page.getByText('999 photo scans per month',{exact:true})).toHaveCount(0);
-    await expect(plus.getByText('Ad-free collecting',{exact:true})).toBeVisible();
-    await expect(page.getByText('Photo scanning is not included in this tier.',{exact:true})).toBeVisible();
-    if(view==='membership')await plus.getByRole('radio').last().check();
+    await expect(card('Collector Pro').getByText('Ad-free collecting',{exact:true})).toBeVisible();
+    await expect(page.getByText('Photo scanning is not included in this tier.',{exact:true})).toHaveCount(0);
+    if(view==='membership')await card('Collector Pro').getByRole('radio').last().check();
     else await page.getByRole('button',{name:'Yearly',exact:true}).click();
-    await expect(plus.getByText(label,{exact:true})).toBeVisible();
-    await noOverflow(page);
+    await checkAllowances();await noOverflow(page);
+    if(index===0||index===cases.length-1)await page.locator(view==='membership'?'.membership-products':'.stripe-plan-grid').screenshot({path:info.outputPath(index===0?'all-tier-photo-scans.png':'unlimited-photo-scans.png')});
   }
-  await page.screenshot({path:info.outputPath('backend-photo-scans.png'),fullPage:true});expect(errors).toEqual([]);
+  expect(errors).toEqual([]);
 });
 
 test('an unavailable allowance never becomes unlimited or falls back to a Stripe scan count',async({page})=>{
   const row=offer('plus','MONTHLY');row.product_snapshot.marketing_features=[{name:'Unlimited photo scans'}];
-  const errors=await fixtures(page,{pricingOffers:[row],scanAllowances:{free:0,collector:0}});
+  const errors=await fixtures(page,{pricingOffers:[row],scanAllowances:{free:5,collector:10}});
   await page.goto('/admin/integrations/stripe-preview');
   await expect(page.getByText('Photo scan allowance not available',{exact:true})).toBeVisible();
   await expect(page.getByText('Unlimited photo scans',{exact:true})).toHaveCount(0);expect(errors).toEqual([]);
+});
+
+test('paused public pricing still shows all three saved allowances',async({page},info)=>{
+  const errors=await fixtures(page,{scanAllowances:{free:5,collector:10,plus:0}});
+  await page.goto('/admin/integrations/stripe-preview');
+  await page.getByRole('link',{name:'View public pricing',exact:true}).click();
+  await expect(page.getByTestId('free-plan').getByText('5 photo scans per month',{exact:true})).toBeVisible();
+  const card=name=>page.locator('.stripe-plan').filter({has:page.getByRole('heading',{name,exact:true})});
+  await expect(card('Collector').getByText('10 photo scans per month',{exact:true})).toBeVisible();
+  await expect(card('Collector Plus').getByText('Unlimited photo scans',{exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:/Choose Collector/})).toHaveCount(0);
+  await noOverflow(page);await page.locator('.stripe-plan-grid').screenshot({path:info.outputPath('paused-photo-scans.png')});expect(errors).toEqual([]);
 });

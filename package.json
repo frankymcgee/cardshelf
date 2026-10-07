@@ -1,6 +1,6 @@
 {
   "name": "cardshelf",
-  "version": "0.47.3",
+  "version": "0.47.4",
   "private": true,
   "type": "module",
   "description": "A standalone, self-hosted card collection and binder planner.",
