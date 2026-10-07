@@ -123,3 +123,33 @@ test('duplicate IDs and malformed event ordering fail closed rather than binding
   assert.equal(frame(b).ambiguous, true); assert.equal(arenaEffectUnit(b, 'active-0'), null); assert.deepEqual(plan(a, b).moves, []);
   b.players[0].bench.pop(); b.events.push({ n: 1, kind: 'coin', heads: true }); assert.deepEqual(plan(a, b).impacts, []);
 });
+
+test('a newly revealed opponent play pulses only at its public destination without reading the private hand', () => {
+  const a = table(), b = structuredClone(a);
+  for (const t of [a, b]) Object.defineProperty(t.players[1], 'hand', { get() { throw Error('private hand read'); } });
+  b.players[1].bench.push(unit('revealed')); b.events.push({ n: 2, kind: 'bench', seat: 1 });
+  const p = plan(a, b); assert.deepEqual(p.moves, []);
+  assert.deepEqual(p.accents, [{ kind: 'arrival', target: 'unit:revealed' }]);
+  assert.doesNotMatch(JSON.stringify(p.accents), /FACE-|private-|card|image/);
+});
+
+test('Energy attachment and evolution pulses follow the exact receiving disclosed instance', () => {
+  const a = table(), b = structuredClone(a), energy = b.players[0].hand.pop(); b.players[0].active.energy.push(energy);
+  assert.deepEqual(plan(a, b).accents, [{ kind: 'energy', target: 'unit:active-0' }]);
+  const c = structuredClone(a), evolution = c.players[0].hand.pop(); c.players[0].active = evolution;
+  c.events.push({ n: 2, kind: 'evolve', seat: 0, target: evolution.id });
+  assert.deepEqual(plan(a, c).accents, [{ kind: 'evolve', target: 'unit:hand-0' }]);
+  assert.equal(plan(a, c).cues[0].text, 'Pokémon evolved');
+});
+
+test('polling, removed identities and reconnect gaps never queue arrival pulses', () => {
+  const a = table(), b = structuredClone(a); b.players[0].hand = [];
+  assert.deepEqual(plan(a, a).accents, []); assert.deepEqual(plan(a, b).accents, []);
+  b.players[1].bench.push(unit('revealed')); b.events = [{ n: 50, kind: 'bench', seat: 1 }];
+  assert.deepEqual(plan(a, b).accents, []);
+});
+
+test('oversized newly disclosed attachment lists have bounded pulse counts', () => {
+  const a = table(), b = structuredClone(a); b.players[1].active.energy = Array.from({ length: 60 }, (_, i) => unit('energy-' + i));
+  assert.equal(plan(a, b).accents.length, ARENA_EFFECT_LIMITS.accents);
+});

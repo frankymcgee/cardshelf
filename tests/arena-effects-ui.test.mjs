@@ -21,7 +21,7 @@ function harness() {
   const window = { innerWidth: 1440, innerHeight: 1700, matchMedia: () => preference, addEventListener: (n, fn) => listeners.set(n, fn), removeEventListener: n => listeners.delete(n) };
   const script = source.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1].replace(/^import .*$/mg, '');
   const js = ts.transpileModule(script, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
-  const state = vm.runInNewContext('(function(){' + js + ';return {stage,enabled,reduced,flights,impacts,beams,cues,liveFlights,update,baseline,interrupt,toggle,visibility,changedPreference};})()', {
+  const state = vm.runInNewContext('(function(){' + js + ';return {stage,enabled,reduced,minimal,motion,flights,impacts,beams,cues,strikes,bursts,banners,liveFlights,liveStrikes,update,baseline,interrupt,toggle,toggleMotion,visibility,changedPreference};})()', {
     ...effects, window, document, Date: { now: () => now }, console,
     defineProps: () => props, ref: value => ({ value }), computed: fn => ({ get value() { return fn(); } }),
     watch: (a, b) => watchers.push(b), onMounted: fn => mounts.push(fn), onBeforeUnmount: fn => unmounts.push(fn), nextTick: () => Promise.resolve(),
@@ -40,6 +40,8 @@ test('a confirmed revision creates bounded effects and timers without changing t
   const h = harness(); h.change(); const before = JSON.stringify(h.props.table); await h.state.update();
   assert.equal(h.state.impacts.value[0].amount, 30); assert.equal(h.state.beams.value.length, 1);
   assert.equal(h.timers.size, 2); assert.equal(JSON.stringify(h.props.table), before);
+  assert.equal(h.state.liveStrikes.value.length, 1); assert.equal(h.state.liveStrikes.value[0].unit.id, 'a0');
+  assert.equal(h.state.bursts.value[0].kind, 'attack'); assert.equal(h.state.bursts.value[0].sparks.length, 6);
 });
 test('same revision polls preserve an active effect without rescheduling it', async () => {
   const h = harness(); h.change(); await h.state.update(); const ids = [...h.timers.keys()];
@@ -78,10 +80,25 @@ test('new match identity clears current decoration instead of animating across t
 test('unmount cancels all timers, preference listeners and viewport listeners', async () => {
   const h = harness(); h.change(); await h.state.update(); h.unmounts.forEach(fn => fn());
   assert.equal(h.timers.size, 0); assert.equal(h.listeners.size, 0); assert.equal(h.state.impacts.value.length, 0);
+  assert.equal(h.state.liveStrikes.value.length, 0); assert.equal(h.state.bursts.value.length, 0); assert.equal(h.state.banners.value.length, 0);
 });
 test('live flight faces disappear as soon as their current disclosed identity is removed', () => {
   const h = harness(); h.state.flights.value = [{ id: 'h0', kind: 'card' }]; assert.equal(h.state.liveFlights.value.length, 1);
   h.props.table.players[0].hand = []; assert.equal(h.state.liveFlights.value.length, 0);
+});
+
+test('manual reduced motion cancels every effect and retains new textual feedback without replay', async () => {
+  const h = harness(); h.change(); await h.state.update(); assert.equal(h.state.liveStrikes.value.length, 1);
+  h.state.toggleMotion(); assert.equal(h.state.motion.value, 'reduced'); assert.equal(h.state.liveStrikes.value.length, 0);
+  assert.equal(h.state.bursts.value.length, 0); assert.equal(h.timers.size, 0);
+  h.change(); await h.state.update(); assert.equal(h.state.cues.value.length, 1); assert.equal(h.state.impacts.value.length, 0);
+  h.state.toggleMotion(); await h.state.update(); assert.equal(h.state.motion.value, 'full'); assert.equal(h.state.cues.value.length, 0);
+});
+
+test('strike artwork disappears immediately when its source is hidden or removed', async () => {
+  const h = harness(); h.change(); await h.state.update(); assert.equal(h.state.liveStrikes.value.length, 1);
+  h.props.table.players[0].active.hidden = true; assert.equal(h.state.liveStrikes.value.length, 0);
+  h.props.table.players[0].active = null; assert.equal(h.state.liveStrikes.value.length, 0);
 });
 
 test('a delayed preference-change event cannot consume or cancel an already-correct new effect', async () => {

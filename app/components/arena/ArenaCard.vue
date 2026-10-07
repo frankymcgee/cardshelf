@@ -25,6 +25,7 @@ const { image, imageSource, imageFailed } = useCardImage(computed(() => hidden.v
       <span v-if="face.rule_box" class="arena-rule-token" :aria-label="'Rule box: ' + face.rule_box">{{ face.rule_box }}</span>
       <span v-if="unit?.tools?.length || unit?.under?.length" class="arena-attachment-tokens"><span v-if="unit.tools?.length" :title="unit.tools.map((tool: any) => tool.card.name).join(', ')">Tool {{ unit.tools.length }}</span><span v-if="unit.under?.length" :title="'Evolution stack: ' + unit.under.map((card: any) => card.card.name).join(', ')">↥ {{ unit.under.length }}</span></span>
       <span v-if="unit?.energy?.length" class="arena-energy-tokens"><i v-for="energy in unit.energy" :key="energy.id" :title="energy.card.name">{{ energySymbol(energy.card.type) }}</i></span>
+      <span v-if="selected" class="arena-card-selection-wave" aria-hidden="true" />
     </template>
   </button>
 </template>

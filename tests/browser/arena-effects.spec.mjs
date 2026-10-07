@@ -28,6 +28,59 @@ test('server attack amount and impact are visible while real cards remain select
   await noActions(page);
   await page.screenshot({ path: info.outputPath('phase4-attack-desktop.png'), fullPage: true });
 });
+
+test('a confirmed attack has a disclosed card lunge, a type-coloured burst and the exact damage number', async ({ page }, info) => {
+  await start(page); await advance(page, 'attack');
+  await expect(page.locator('.arena-effect-strike')).toHaveCount(1);
+  await expect(page.locator('[data-burst="attack"]')).toHaveCount(1);
+  await expect(page.locator('.arena-impact-amount')).toHaveText('30');
+  await expect(page.locator('.arena-effect-strike .arena-card')).toHaveAttribute('disabled', '');
+  expect(await page.locator('.arena-effect-strike').getAttribute('data-tone')).toBe(await page.evaluate(() => window.effectsFixture.state.table.players[window.effectsFixture.state.table.seat].active.card.type.toLowerCase()));
+  // Hold the CSS pose for a useful screenshot; effect expiry still follows the real bounded timer.
+  await page.locator('.arena-motion-layer').evaluate(layer => {
+    for (const animation of layer.getAnimations({ subtree: true })) { animation.pause(); animation.currentTime = 300; }
+  });
+  await page.screenshot({ path: info.outputPath('cardshelf-attack-animation.png'), fullPage: true });
+  await expect(page.locator('.arena-effect-strike')).toHaveCount(0); await noActions(page);
+});
+
+test('hover and card selection lift the hand card and create feedback without playing it', async ({ page }) => {
+  await start(page);
+  const card = page.locator('[data-hand-id="Hand-0"]'), initial = await card.boundingBox();
+  await card.hover();
+  await expect.poll(async () => (await card.boundingBox()).y).toBeLessThan(initial.y - 8);
+  await card.click();
+  await expect(card).toHaveAttribute('aria-pressed', 'true');
+  await expect(card.locator('.arena-card-selection-wave')).toHaveCSS('animation-name', 'arena-selection-wave');
+  expect(await page.evaluate(() => window.effectsFixture.selections.at(-1))).toBe('Hand-0');
+  await noActions(page);
+});
+
+test('opponent plays and evolution pulse only at the new disclosed field card', async ({ page }) => {
+  await start(page); await advance(page, 'opponent-play');
+  await expect(page.locator('[data-burst="arrival"]')).toHaveCount(1);
+  await expect(page.locator('.arena-effect-flight')).toHaveCount(0);
+  await expect(page.locator('[data-side="opponent"] .arena-bench-spot .arena-card')).toHaveCount(2);
+  await advance(page, 'evolve');
+  await expect(page.locator('[data-burst="evolve"]')).toHaveCount(1);
+  await expect(page.locator('[data-cue="evolve"]')).toContainText('Pokémon evolved'); await noActions(page);
+});
+
+test('manual reduced motion disables selection travel and combat decoration but keeps exact text feedback', async ({ page }) => {
+  await start(page); await page.getByRole('button', { name: 'Motion: Full', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Motion: Reduced', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  const card = page.locator('[data-hand-id="Hand-0"]'); await card.click();
+  await expect(card).toHaveCSS('transform', 'none');
+  await expect(card.locator('.arena-card-selection-wave')).toBeHidden();
+  // Bring the controls into view, then acknowledge a fresh baseline after the scroll interruption.
+  await page.getByRole('button', { name: 'Motion: Reduced', exact: true }).scrollIntoViewIfNeeded();
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.evaluate(() => window.effectsFixture.poll()); await advance(page, 'attack');
+  await expect(page.locator('.arena-motion-layer')).toHaveCount(0);
+  await expect(page.locator('[data-cue="attack"]')).toContainText('30 damage');
+  await page.getByRole('button', { name: 'Motion: Reduced', exact: true }).click();
+  await expect(page.locator('.arena-motion-layer')).toHaveCount(0); await noActions(page);
+});
 test('duplicate event polling never repeats an attack or a coin', async ({ page }) => {
   await start(page); await advance(page, 'coin');
   await expect(page.locator('[data-impact="coin"]')).toHaveText('HEADS');
