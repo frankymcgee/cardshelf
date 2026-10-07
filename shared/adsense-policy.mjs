@@ -1,6 +1,7 @@
 // One allowlist shared by the server, browser and navigation boundary. Unknown
 // routes stay ad-free; broad /admin/** or /marketplace/** matches are never used.
 import { gameFromCardId } from './games.mjs';
+import { adsterraReady } from './adsterra.mjs';
 const MARKETING = ['/', '/features', '/pricing'];
 const WORKSPACE = ['/app', '/cards'];
 const SAFE_QUERY = new Set(['q','game','set','language','rarity','artist','dex','ownership','sort','order','condition','page','mine']);
@@ -40,7 +41,10 @@ export function freeMarketplaceReader(access) {
 /** @param {any} settings @param {unknown} path */
 export function adsensePagePlan(settings, path) {
   const kind = adsensePageKind(path);
-  if (!kind || settings?.enabled !== true || !/^ca-pub-\d{16}$/.test(settings.publisher_id)) return null;
+  if (!kind || settings?.enabled !== true) return null;
+  if (settings.provider === 'adsterra') return adsterraReady(settings.adsterra_units)
+    ? { provider: 'adsterra', adsterra_units: settings.adsterra_units, auto_ads: false, slot_id: '', page_kind: kind } : null;
+  if (!/^ca-pub-\d{16}$/.test(settings.publisher_id)) return null;
   const auto = settings.auto_ads_enabled === true;
   let slot = '';
   if (kind === 'catalogue' && /^\d{5,20}$/.test(settings.slot_id)) slot = settings.slot_id;

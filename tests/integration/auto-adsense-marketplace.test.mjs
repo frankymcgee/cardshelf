@@ -6,6 +6,7 @@ import postgres from 'postgres';
 import { randomUUID } from 'node:crypto';
 import { randomToken,digest,hashPassword } from '../../lib/security.mjs';
 import { closeDatabase } from '../../lib/db.mjs';
+import { ADSTERRA_CARDSHELF_UNITS } from '../../shared/adsterra.mjs';
 const base=process.env.TEST_BASE_URL,dbUrl=process.env.DATABASE_URL;
 if(process.env.ALLOW_TEST_DATABASE!=='yes'||!base||!new URL(dbUrl||'http://invalid').pathname.endsWith('_test'))throw Error('Use the disposable _test database only.');
 const sql=postgres(dbUrl,{max:4}),origin=process.env.APP_ORIGIN||base,suffix=randomUUID().replaceAll('-','');
@@ -210,6 +211,41 @@ await test('Free-only Auto ads and marketplace display units preserve private da
       assert.deepEqual(await sql`SELECT * FROM collection_entries WHERE user_id=${free.id}`,inventory);
       assert.deepEqual(await sql`SELECT * FROM stripe_billing_controls`,billing);assert.deepEqual(await sql`SELECT * FROM free_platform_settings`,sponsor);
       assert.equal((await request('/api/session',{cookie:free.cookie})).data.user.id,free.id);
+    });
+    await t.test('Adsterra settings persist without Google IDs and preserve account/page exclusions',async()=>{
+      await sql`DELETE FROM auth_attempts WHERE bucket=${digest('adsense-admin:'+admin.id)}`;
+      await save({provider:'adsterra',adsterra_units:ADSTERRA_CARDSHELF_UNITS,enabled:true,verification_enabled:false,publisher_id:''});
+      assert.equal(settings.provider,'adsterra');assert.deepEqual(settings.adsterra_units,ADSTERRA_CARDSHELF_UNITS);
+      for(const path of ['/','/features','/pricing','/app','/cards','/explore','/marketplace']){
+        const result=await ad(free.cookie,path);assert.equal(result.data.eligible,true,path);assert.equal(result.data.provider,'adsterra');
+        assert.equal(result.data.auto_ads,false);assert.equal(result.data.slot_id,'');
+      }
+      for(const cookie of [undefined,admin.cookie,pro.cookie,collector.cookie,tester.cookie,complimentary.cookie])
+        assert.deepEqual((await ad(cookie,'/cards')).data,{eligible:false});
+      for(const path of ['/account','/admin/adsense','/membership','/cards?card=en:demo','/marketplace?mine=1','/arena','/binders','/cards?ads=off'])
+        assert.deepEqual((await ad(free.cookie,path)).data,{eligible:false});
+      const doc=await request('/cards',{cookie:free.cookie});
+      assert.match(doc.headers.get('content-security-policy'),/strict-dynamic/);
+      assert.match(doc.data,/<meta name="cardshelf-ad-provider" content="adsterra">/);
+      assert.ok(!doc.data.includes('src="https://bicea.org/')); // Client still checks eligibility and visibility.
+      await sql`INSERT INTO account_tier_overrides(user_id,tier,reason) VALUES(${free.id},'plus','Synthetic Adsterra upgrade')`;
+      assert.deepEqual((await ad(free.cookie,'/cards')).data,{eligible:false});
+      await sql`DELETE FROM account_tier_overrides WHERE user_id=${free.id}`;
+    });
+    await t.test('Adsterra previews have no ad CSP; provider switching and pausing remain reversible',async()=>{
+      await save({provider:'adsterra',adsterra_units:ADSTERRA_CARDSHELF_UNITS,enabled:true,placeholders_enabled:true});
+      const preview=await ad(free.cookie,'/cards');assert.equal(preview.data.placeholder,true);assert.equal(preview.data.provider,'adsterra');
+      assert.ok(!String((await request('/cards',{cookie:free.cookie})).headers.get('content-security-policy')).includes('strict-dynamic'));
+      const pref=await request('/api/admin/adsense/view',{cookie:admin.cookie,method:'POST',body:{mode:'preview'}});
+      const cookie=admin.cookie+'; '+pref.headers.get('set-cookie').split(';')[0];
+      assert.equal((await request('/api/session',{cookie})).data.admin_ad_provider,'adsterra');
+      await save({provider:'adsense',adsterra_units:ADSTERRA_CARDSHELF_UNITS,enabled:true,auto_ads_enabled:true});
+      const google=await ad(free.cookie,'/cards');assert.equal(google.data.publisher_id,publisher);assert.equal(google.data.auto_ads,true);
+      assert.deepEqual(settings.adsterra_units,ADSTERRA_CARDSHELF_UNITS);
+      await save({provider:'adsterra',adsterra_units:ADSTERRA_CARDSHELF_UNITS,enabled:false});
+      assert.deepEqual((await ad(free.cookie,'/cards')).data,{eligible:false});
+      assert.deepEqual(await sql`SELECT * FROM collection_entries WHERE user_id=${free.id}`,inventory);
+      assert.deepEqual(await sql`SELECT * FROM stripe_billing_controls`,billing);
     });
   }finally{
     await sql`DELETE FROM adsense_settings`;if(oldSettings.length)await sql`INSERT INTO adsense_settings ${sql(oldSettings)}`;

@@ -25,9 +25,9 @@ export default defineEventHandler(async event => {
     setHeader(event, 'Vary', 'Cookie')
     try {
       const placement = await adsensePlacement(await sessionUser(getCookie(event, 'cardshelf_session')), event.path, getCookie(event, 'cardshelf_admin_ads'))
-      if (placement.eligible) {
+      if (placement.eligible && 'revision' in placement) {
         const nonce = randomBytes(16).toString('hex')
-        event.context.cardshelfAdsense = { nonce, revision: placement.revision }
+        event.context.cardshelfAdsense = { nonce, revision: placement.revision, provider: 'provider' in placement && placement.provider === 'adsterra' ? 'adsterra' : 'adsense' }
         setHeader(event, 'Content-Security-Policy', adsenseCsp(nonce))
       }
     } catch { /* Fail closed: preserve the restrictive default; no Google loader. */ }

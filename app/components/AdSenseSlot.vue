@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { startAdSense } from '../../shared/adsense-browser.mjs'
 import { adFreePath, adsensePageKind, marketplaceAdSize } from '../../shared/adsense-policy.mjs'
-interface Placement { eligible: boolean; placeholder?: boolean; publisher_id?: string; slot_id?: string; revision?: number; auto_ads?: boolean; page_kind?: string }
-const props = defineProps<{ contentReady: boolean; autoOnly?: boolean; grid?: boolean; marketplace?: boolean; manualAllowed?: boolean; adFreeUrl?: string }>()
+interface Placement { eligible: boolean; provider?: string; adsterra_units?: Record<string, string>; placeholder?: boolean; publisher_id?: string; slot_id?: string; revision?: number; auto_ads?: boolean; page_kind?: string }
+const props = withDefaults(defineProps<{ contentReady: boolean; autoOnly?: boolean; grid?: boolean; marketplace?: boolean; manualAllowed?: boolean; adFreeUrl?: string }>(), { manualAllowed: true })
 const api = useApi(), route = useRoute(), auth = useAuth()
 const placement = ref<Placement | null>(null), unit = ref<HTMLElement | null>(null), failed = ref(false), unsupported = ref(false), unfilled = ref(false), manualRetired = ref(false)
 const adminPreview = computed(() => auth.state.value.user?.role === 'admin' && auth.state.value.admin_placement_view === 'preview')
+const adsterra = computed(() => placement.value?.provider === 'adsterra' || (adminPreview.value && auth.state.value.admin_ad_provider === 'adsterra'))
+const adsterraNonce = ref('')
 const placeholder = computed(() => (adminPreview.value || placement.value?.placeholder === true) && props.contentReady && !!adsensePageKind(path()))
-const manual = computed(() => !props.autoOnly && props.manualAllowed !== false && !unsupported.value && !manualRetired.value && !!placement.value?.slot_id)
+const manual = computed(() => !adsterra.value && !props.autoOnly && props.manualAllowed !== false && !unsupported.value && !manualRetired.value && !!placement.value?.slot_id)
 const path = () => route.fullPath.split('#')[0] || '/'
 const browser = () => window as Window & { __cardshelfAdSenseLoaded?: boolean; __cardshelfAdSenseBlocked?: boolean }
 let requestedUserId: string | null = null
@@ -20,8 +22,10 @@ function freshDocument() {
   window.location.replace(adFreePath(props.adFreeUrl || path()))
 }
 function allowed() { return alive && !reloading && props.contentReady && placement.value?.eligible === true && !failed.value && !browser().__cardshelfAdSenseBlocked }
+function adsterraAllowed() { return allowed() && adsterra.value && props.manualAllowed !== false && !manualRetired.value }
+function adsterraRequested() { requested = true; requestedUserId = auth.state.value.user?.id || null }
 function requestAd() {
-  if (requested || !allowed() || document.visibilityState !== 'visible') return
+  if (adsterra.value || requested || !allowed() || document.visibilityState !== 'visible') return
   if (manual.value && (!unit.value?.isConnected || unit.value.getBoundingClientRect().width <= 0)) return
   if (manual.value && props.marketplace && unit.value) {
     const rect = unit.value.getBoundingClientRect()
@@ -67,12 +71,14 @@ async function check() {
       placement.value = value; return
     }
     const revision = document.querySelector<HTMLMetaElement>('meta[name="cardshelf-adsense-revision"]')?.content
-    if (!value.eligible || String(value.revision) !== revision || value.page_kind !== adsensePageKind(path())) {
+    const adsterraDocument = document.querySelector<HTMLMetaElement>('meta[name="cardshelf-ad-provider"]')?.content === 'adsterra'
+    if (!value.eligible || String(value.revision) !== revision || value.page_kind !== adsensePageKind(path()) || (value.provider === 'adsterra') !== adsterraDocument) {
       placement.value = null
       if (requested) freshDocument()
       return
     }
     placement.value = value
+    adsterraNonce.value = document.querySelector<HTMLScriptElement>('script[nonce]')?.nonce || ''
     await nextTick()
     if (!alive || request !== sequence) return
     if (!observer && unit.value && typeof ResizeObserver !== 'undefined') {
@@ -115,7 +121,9 @@ onBeforeUnmount(() => {
 })
 </script>
 <template>
-  <AutoPlacementPreview v-if="placeholder" :key="route.path" :path="path()" :administrator="adminPreview" :marketplace="marketplace" :grid="grid" />
+  <AdsterraPlacements v-if="adsterra && (placeholder || (placement?.eligible && contentReady && manualAllowed !== false && !manualRetired && !failed))"
+    :units="placement?.adsterra_units" :path="path()" :grid="grid" :marketplace="marketplace" :preview="placeholder" :nonce="adsterraNonce" :allowed="adsterraAllowed" @requested="adsterraRequested" />
+  <AutoPlacementPreview v-else-if="placeholder" :key="route.path" :path="path()" :administrator="adminPreview" :marketplace="marketplace" :grid="grid" />
   <aside v-else-if="placement?.eligible && contentReady && manual && !failed && !unfilled" :class="marketplace ? 'market-card marketplace-ad' : 'adsense-slot'" aria-label="Advertisements">
     <template v-if="marketplace">
       <div class="market-card-photo market-ad-photo"><div class="market-ad-space" style="position:relative;aspect-ratio:5/7;width:100%;min-width:0">

@@ -1,3 +1,10 @@
+## 0.49.0 — 2026-10-07
+
+- Add Adsterra to Administration → Advertising with the supplied six banners and native unit available as a preset. Keep Google settings when switching providers.
+- Fit banners to the actual container, place native ads in card grids, and use side rails only in spare widescreen marketing margins. Prevent duplicate requests after filtering, resizing or changing views.
+- Retain Free-only eligibility, administrator previews, paid/protected exclusions and private-screen document resets for both providers. Isolate Adsterra scripts in sandboxed frames.
+- Migration 030 preserves the current provider and enabled state. Additional page-wide scripts and the direct advertising link remain inactive.
+
 ## 0.48.0 — 2026-10-07
 
 - Add CardShelf card motion to Arena: hover lift, selection waves, card-play landing pulses, Energy attachment rings and evolution bursts.
