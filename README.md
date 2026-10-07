@@ -1,4 +1,4 @@
-# CardShelf 0.48.0
+# CardShelf 0.49.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -40,9 +40,23 @@ limit. Save changes with your administrator password.
 The Administration home groups and searches all tools. The request inbox now
 focuses on website requests; member management stays in Memberships & referrals.
 
+## Adsterra advertising
+
+Open **Administration → Advertising**, choose **Adsterra**, and click **Load
+CardShelf's seven units**. This loads the six banner sizes and native code supplied
+for website 6105596. Enable Free-only advertising, turn off Free-account
+placeholders for live serving, complete the existing approval/privacy confirmations,
+and save with your administrator password and a reason. Administrators separately
+select **Live ads** in **Your administrator ad view** to see live placements.
+
+The provider switch retains Google settings. Preview mode makes no ad requests.
+Migration `030_adsterra_advertising.sql` preserves existing settings and does not
+activate Adsterra automatically. See [Adsterra setup](docs/ADSTERRA.md) for the
+placement map, testing and the three additional codes kept inactive.
+
 ## Ad placeholders and administrator preview
 
-Under **More → Google AdSense**, enable **Show placeholder ad sections** and save
+Under **Administration → Advertising**, enable **Show placeholder ad sections** and save
 with your administrator password and a reason. This replaces live Google ads for
 eligible Free members and needs no Google approval or IDs. Disable placeholders
 when you are ready to enable approved live advertising. Migration 022 adds the
@@ -56,7 +70,7 @@ ads layout. Private routes and paid/protected member exclusions are preserved.
 
 ### Auto ads placeholder formats
 
-All placeholders represent Google Auto ads, with no manual unit ID required.
+With Google AdSense selected, placeholders represent Google Auto ads, with no manual unit ID required.
 Grid previews are additional labelled tiles, never card records: totals and pagination
 remain unchanged. With fewer than six cards, the preview follows the last card.
 Google still chooses live positions; the sample grid tile does not reserve a real ad.

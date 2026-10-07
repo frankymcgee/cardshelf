@@ -19,5 +19,6 @@ export default defineNitroPlugin(nitro => {
       html[key] = html[key].map(part => nonceScriptTags(part, state.nonce))
     }
     html.head.push(`<meta name="cardshelf-adsense-revision" content="${state.revision}">`)
+    html.head.push(`<meta name="cardshelf-ad-provider" content="${state.provider === 'adsterra' ? 'adsterra' : 'adsense'}">`)
   })
 })

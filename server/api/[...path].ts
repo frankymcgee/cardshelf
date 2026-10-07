@@ -3,7 +3,7 @@ import { defineEventHandler, getRouterParam, getQuery, getCookie, setCookie, del
 import { configuration } from '../../lib/config.mjs'
 import { AppError, ensure } from '../../lib/errors.mjs'
 import * as v from '../../lib/validate.mjs'
-import { adminAdView } from '../../lib/adsense.mjs'
+import { adminAdView, adsenseSettings } from '../../lib/adsense.mjs'
 import * as auth from '../../lib/auth.mjs'
 import * as catalogue from '../../lib/catalogue.mjs'
 import * as collection from '../../lib/collection.mjs'
@@ -39,7 +39,13 @@ export default defineEventHandler(async event => {
     const token = getCookie(event, COOKIE)
     if (route === 'session' && method === 'GET') {
       const user = await auth.sessionUser(token)
-      return { user, setup_required: await auth.needsSetup(), admin_placement_view: adminAdView(user, getCookie(event, 'cardshelf_admin_ads')) }
+      const view = adminAdView(user, getCookie(event, 'cardshelf_admin_ads'))
+      // Local administrator previews work even when ad endpoints are blocked.
+      let provider = 'adsense'
+      if (view === 'preview') {
+        try { provider = (await adsenseSettings()).provider } catch { /* Preview remains available. */ }
+      }
+      return { user, setup_required: await auth.needsSetup(), admin_placement_view: view, admin_ad_provider: provider }
     }
     if ((route === 'setup' || route === 'login') && method === 'POST') {
       const ip = getRequestIP(event, { xForwardedFor: configuration().trustProxy }) || 'unknown'

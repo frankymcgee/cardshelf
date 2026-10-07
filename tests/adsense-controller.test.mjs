@@ -27,7 +27,7 @@ function harness({response=yes(),initialLoaded=true,ready=true,autoOnly=false,ma
     await new Promise(resolve=>{refreshResolve=resolve;});auth.state.value={loaded:true,user:{id:'free-user'}};
   }};
   const context={startAdSense,adFreePath,adsensePageKind,marketplaceAdSize,window:win,document:doc,
-    defineProps:()=>props,useApi:()=>async(path,options)=>{calls.push({path,options});if(throws)throw Error('offline');return typeof value==='function'?value():value;},useRoute:()=>route,useAuth:()=>auth,
+    defineProps:()=>props,withDefaults:(value)=>value,useApi:()=>async(path,options)=>{calls.push({path,options});if(throws)throw Error('offline');return typeof value==='function'?value():value;},useRoute:()=>route,useAuth:()=>auth,
     ref:value=>({value}),computed:read=>({get value(){return read();}}),nextTick:async()=>{if(state.manual.value)state.unit.value=target;},
     watch:(read,callback)=>watches.push({read,callback,old:read()}),onMounted:fn=>mounted.push(fn),onBeforeUnmount:fn=>unmounted.push(fn),
     setInterval:fn=>{timers.push(fn);return 1;},clearInterval:()=>{timers.length=0;},
