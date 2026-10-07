@@ -4,7 +4,7 @@ import { AppError } from '../../../../../lib/errors.mjs'
 import { rateLimit } from '../../../../../lib/auth.mjs'
 import { db,audit } from '../../../../../lib/db.mjs'
 import { stripeEnvironment,stripeId } from '../../../../../lib/stripe-logic.mjs'
-import { stripeStatus,saveStripeConnection,testStripeConnection,stripeCatalogue,saveStripeOffer,publishStripeOffer } from '../../../../../lib/stripe-connection.mjs'
+import { stripeStatus,saveStripeConnection,testStripeConnection,stripeCatalogue,saveStripeOffer,publishStripeOffer,deleteStripeOffer } from '../../../../../lib/stripe-connection.mjs'
 import { syncStripeSubscription,cancelStripeSubscription } from '../../../../../lib/stripe-subscriptions.mjs'
 export default defineEventHandler(event=>platformResult(async()=>{
   const user=await platformUser(event,true),query=getQuery(event),environment=stripeEnvironment(query.environment||'sandbox')
@@ -19,6 +19,7 @@ export default defineEventHandler(event=>platformResult(async()=>{
   if(action==='settings')return saveStripeConnection(user.id,environment,body)
   if(action==='test')return testStripeConnection(user.id,environment)
   if(action==='offers')return saveStripeOffer(user.id,environment,body)
+  if(p.length===3&&p[0]==='offers'&&p[2]==='delete')return deleteStripeOffer(user.id,environment,p[1],body)
   if(p.length===2&&p[0]==='offers')return publishStripeOffer(user.id,environment,p[1],body)
   if(p.length===2&&p[0]==='events'){
     const id=stripeId(p[1],'evt')

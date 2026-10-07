@@ -113,6 +113,7 @@ jobs:
           path: |
             package-lock.json
             /tmp/cardshelf-server.log
+            test-results/pricing-admin
             test-results/themes
             test-results/affiliate-live
             test-results/binder-completion
