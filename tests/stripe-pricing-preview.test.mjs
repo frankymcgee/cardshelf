@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { stripePricingPreview } from '../lib/stripe-pricing-preview.mjs';
-import { pricingPlans, pricingCadence, annualSaving } from '../shared/pricing-table.mjs';
+import { pricingPlans, pricingFeatures, pricingCadence, annualSaving } from '../shared/pricing-table.mjs';
 import { productPresentation, offerTaxLabel } from '../shared/stripe-products.mjs';
 import { publicPage, safeReturnTo } from '../shared/platform.mjs';
 const product = () => ({ id: 'prod_preview', name: 'Collector Pro preview', description: 'Test description\nSecond line', unit_label: 'collector', images: ['https://files.stripe.com/links/preview'], marketing_features: [{ name: 'All supported games' }] });
@@ -67,6 +67,16 @@ test('both displays group monthly/yearly prices and share all requested product 
 test('clearing synced descriptions, features and images clears the preview instead of adding stale defaults', () => {
   const [plan] = pricingPlans([offer('MONTHLY', { product_snapshot: { id: 'prod_preview', name: 'Renamed' } })], false);
   assert.equal(plan.name, 'Renamed'); assert.equal(plan.description, ''); assert.deepEqual(plan.features, []); assert.deepEqual(plan.product.images, []);
+});
+test('pricing omits Stripe photo-scan copy without changing saved product snapshots or other features', () => {
+  const keep=[{name:'Ad-free collecting'},{name:'Photo uploads'},{name:'Track 1,000 cards'},{name:'Scan barcodes'}];
+  const stale=['100 photo scans per month','0 scans','UNLIMITED SCANS','Monthly scans: 250','AI scanning','Photo scans','Card scans included'];
+  const row=offer();row.product_snapshot.marketing_features=[...keep,...stale.map(name=>({name}))];
+  const before=structuredClone(row),[plan]=pricingPlans([row],false);
+  assert.deepEqual(plan.features,keep);
+  assert.deepEqual(pricingFeatures(plan.product.marketing_features),keep);
+  assert.deepEqual(plan.product.marketing_features,before.product_snapshot.marketing_features);
+  assert.deepEqual(row,before);
 });
 test('legacy manually published offers retain default names without inventing unsupported preview tiers', () => {
   const [plan] = pricingPlans([offer('MONTHLY', { product_snapshot: null })], false);

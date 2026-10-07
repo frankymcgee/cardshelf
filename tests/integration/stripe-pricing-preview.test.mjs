@@ -25,11 +25,12 @@ async function snapshot() {
     overrides: await sql`SELECT * FROM account_tier_overrides WHERE user_id IN ${sql(ids)} ORDER BY user_id` };
 }
 await test('administrator-only Test pricing preview with untouched Live policy and private access', async t => {
-  let oldControls = null, ownsConnections = false;
+  let oldControls = null, oldScanLimits = null, ownsConnections = false;
   try {
     // Other files use the same disposable installation, so never overwrite their fixtures.
     assert.equal((await sql`SELECT environment FROM stripe_connections`).length, 0, 'Previous integration fixture must clean up Stripe connections.');
     oldControls = await sql`SELECT * FROM stripe_billing_controls`;
+    [oldScanLimits] = await sql`SELECT free_monthly_limit,collector_monthly_limit,plus_monthly_limit FROM card_scan_settings WHERE singleton`;
     const hash = await hashPassword('Preview fixture password 123');
     for (const kind of ['admin', 'free', 'collector', 'plus', 'tester', 'complimentary']) {
       const id = randomUUID(), token = randomToken(); ids.push(id);
@@ -82,6 +83,19 @@ await test('administrator-only Test pricing preview with untouched Live policy a
     await t.test('query parameters cannot expose Live or select another account', async () => {
       for (const q of ['environment=production', 'environment=sandbox', 'user_id=' + admin.id, 'preview=true']) assert.equal((await request(path + '?' + q, admin.cookie)).status, 400);
     });
+    await t.test('pricing, Test preview and membership read changed backend allowances without a Stripe sync', async () => {
+      const before=await snapshot();
+      for(const limits of [{free:0,collector:19,plus:275},{free:7,collector:0,plus:0}]){
+        await sql`UPDATE card_scan_settings SET free_monthly_limit=${limits.free},collector_monthly_limit=${limits.collector},plus_monthly_limit=${limits.plus} WHERE singleton`;
+        for(const [url,cookie] of [[path,admin.cookie],['/api/public/subscription-offers',undefined],['/api/billing/stripe/account',accounts[1].cookie]]){
+          const r=await request(url,cookie);
+          assert.equal(r.status,200,JSON.stringify(r.data));assert.deepEqual(r.data.scan_allowances,limits);
+          assert.deepEqual(Object.keys(r.data.scan_allowances).sort(),['collector','free','plus']);
+          assert.ok(!Object.hasOwn(r.data,'tier_monthly_limits'));
+        }
+      }
+      assert.deepEqual(await snapshot(),before);
+    });
     await t.test('direct library calls also recheck roles inside a database-enforced read-only transaction', async () => {
       const r = await sql.begin('isolation level repeatable read, read only', tx => stripePricingPreview(tx, admin.id)); assert.equal(r.offers.length, 2);
       await assert.rejects(() => sql.begin('isolation level repeatable read, read only', tx => stripePricingPreview(tx, accounts[1].id)), e => e.status === 403);
@@ -112,6 +126,7 @@ await test('administrator-only Test pricing preview with untouched Live policy a
       const r = await request(path, admin.cookie); assert.equal(r.status, 403); assert.ok(!JSON.stringify(r.data).includes('PREVIEW_TEST_'));
     });
   } finally {
+    if (oldScanLimits) await sql`UPDATE card_scan_settings SET ${sql(oldScanLimits)} WHERE singleton`;
     if (oldControls !== null) { await sql`DELETE FROM stripe_billing_controls`; if (oldControls.length) await sql`INSERT INTO stripe_billing_controls ${sql(oldControls)}`; }
     if (offerIds.length) await sql`DELETE FROM stripe_offers WHERE id IN ${sql(offerIds)}`;
     if (ownsConnections) { await sql`DELETE FROM stripe_product_sync WHERE environment='sandbox'`; await sql`DELETE FROM stripe_connections WHERE account_id=${'acct_preview_' + suffix}`; }

@@ -1,4 +1,4 @@
-# CardShelf 0.47.2
+# CardShelf 0.47.3
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -19,8 +19,12 @@ no Stripe product or subscription is needed. Paid product details continue to
 come from Stripe, and the Test preview remains read-only.
 
 Set scan limits under **Administration → Card scanning → Monthly scans by
-membership tier**. `0` means unlimited member scans. The shared USD budget still
-applies. Limits reset each UTC calendar month; changing tier does not reset usage.
+membership tier**. Saved allowances are read by public pricing, the Test preview
+and signed-in Stripe membership choices for tiers that include photo scanning.
+No Stripe sync is needed after saving; refresh the page to see the new amount.
+`0` displays as **Unlimited photo scans** for any scan allowance. Manually entered
+photo-scan feature bullets from Stripe are replaced by the backend allowance.
+The shared USD budget still applies. Limits reset each UTC calendar month; changing tier does not reset usage.
 Existing collection/game access rules are unchanged: Free remains catalogue-only,
 and Collector needs collection access (available while enforcement is off) to scan.
 Plus/Pro, Complimentary and protected testers retain their existing scan access.

@@ -219,13 +219,18 @@ test('admin edits model, reasoning, prompt and cost limits, then restores the pr
 
 test('administrator saves zero as an unlimited tier allowance',async({page})=>{
   const {calls,errors}=await fixtures(page);await page.goto('/admin/scanning');
-  await page.getByLabel('Collector Plus / Pro monthly scans',{exact:false}).fill('0');
+  for(const tier of ['Free','Collector','Collector Plus / Pro','Complimentary & testers']){
+    const input=page.getByLabel(tier+' monthly scans',{exact:false});
+    await input.fill('0');
+    await expect(input.locator('..').getByText('Unlimited photo scans',{exact:true})).toBeVisible();
+  }
   await page.getByLabel('Complimentary & testers monthly scans',{exact:false}).fill('250');
+  await expect(page.getByText('250 photo scans per month',{exact:true})).toBeVisible();
   await page.getByLabel('Confirm your administrator password').fill('Synthetic password');
   await page.getByRole('button',{name:'Save scanning settings',exact:true}).click();
   await expect(page.getByRole('status')).toContainText('Scanning settings saved');
   const sent=calls.find(c=>c.path==='/api/admin/scanning'&&c.method==='POST');
-  expect(sent.body.tier_monthly_limits).toEqual({free:100,collector:100,plus:0,complimentary:250});
+  expect(sent.body.tier_monthly_limits).toEqual({free:0,collector:0,plus:0,complimentary:250});
   await expect(page.getByLabel('Collector Plus / Pro monthly scans',{exact:false})).toHaveValue('0');
   await noOverflow(page);expect(errors).toEqual([]);
 });

@@ -1,3 +1,10 @@
+## 0.47.3 — 2026-10-07
+
+- Read current backend photo-scan allowances in signed-in Stripe membership choices, public pricing and the Test preview. Show zero as Unlimited photo scans; finite amounts remain monthly even with yearly billing.
+- Replace Stripe photo-scan feature bullets with the backend allowance so a saved product cannot display a conflicting count. Keep other product details and historical subscription snapshots intact.
+- Preview each tier's allowance beside its scanning setting, including zero as unlimited, and explain that saved limits do not require a Stripe sync.
+- Preserve collection access rules and the shared service budget. No migration or server configuration change is required.
+
 ## 0.47.2 — 2026-10-07
 
 - Allow unused manual Stripe drafts to be deleted while Stripe product sync is enabled. Keep manual offers available to pause so incorrect mappings can be cleaned up without disabling product sync.

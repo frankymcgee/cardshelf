@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SCAN_TIERS } from '../../../shared/scan-allowances.mjs'
+import { SCAN_TIERS, scanAllowanceLabel } from '../../../shared/scan-allowances.mjs'
 import { scanMoney, SCAN_DEFAULTS, SCAN_CONFIG_KEYS, SCAN_PROMPT, SCAN_REASONING_EFFORTS, SCAN_REASONING_MODES } from '../../../shared/card-scanning.mjs'
 const api = useApi()
 const overview = ref<any>(null), error = ref(''), message = ref(''), busy = ref(false)
@@ -73,7 +73,8 @@ onBeforeUnmount(() => { alive = false; form.password = ''; form.api_key = '' })
             </div>
             <h3 id="tier-limits">Monthly scans by membership tier</h3>
             <p class="data-note">Set <strong>0 for unlimited</strong> scans per member. These limits do not add scanning access to a tier; collection access and the selected Pokémon game are still required. The shared USD budget always applies.</p>
-            <div class="scan-settings-grid"><label v-for="tier in SCAN_TIERS" :key="tier.code">{{ tier.name }} monthly scans<input v-model.number="form.tier_monthly_limits[tier.code]" type="number" min="0" max="10000" step="1" required /><small class="data-note">{{ tier.note }}</small></label></div>
+            <div class="scan-settings-grid"><label v-for="tier in SCAN_TIERS" :key="tier.code">{{ tier.name }} monthly scans<input v-model.number="form.tier_monthly_limits[tier.code]" type="number" min="0" max="10000" step="1" required /><strong class="data-note">{{ scanAllowanceLabel(form.tier_monthly_limits[tier.code]) }}</strong><small class="data-note">{{ tier.note }}</small></label></div>
+            <p class="data-note">Saved allowances appear on pricing, the Test preview and membership choices for tiers that include photo scanning. No Stripe sync is needed.</p>
             <p class="data-note">Allowances reset at the start of each UTC calendar month. All analysis attempts count towards the member allowance; adding or undoing a card does not call OpenAI again.</p>
             <p class="data-note">Enter the current USD token rates for your selected model. Prices do not update automatically when you change the model. The OpenAI invoice is authoritative; cached-input discounts are conservatively ignored.</p>
             <div class="scan-settings-grid"><label>USD per million input tokens<input v-model.number="form.input_usd_per_million" type="number" min="0.000001" max="1000" step="0.000001" required /></label><label>USD per million output tokens<input v-model.number="form.output_usd_per_million" type="number" min="0.000001" max="1000" step="0.000001" required /></label></div>

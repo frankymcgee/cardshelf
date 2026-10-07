@@ -25,12 +25,24 @@ const DEFAULT_PLANS = [
   { code: 'collector', name: 'Collector', description: 'A card checklist without the paperwork. Generate a set or series binder, then tap to mark each find.' },
   { code: 'plus', name: 'Collector Plus', description: 'Everything in Collector, with tools to value, organise and personalise your collection.' }
 ];
+/**
+ * Photo scan quotas come from CardShelf's current tier settings, not saved
+ * Stripe marketing copy. Filter only the display list; retain the snapshot.
+ * @param {Array<{name: string}>} features
+ * @returns {Array<{name: string}>}
+ */
+export function pricingFeatures(features) {
+  return features.filter(({ name }) => !(
+    /\b(?:scans?|scanning)\b/i.test(name) &&
+    /\d|\b(?:unlimited|photo|card|image|ai)\b/i.test(name)
+  ));
+}
 /** @param {PricingOffer[]} offers @param {boolean} [includeDefaults] @returns {PricingPlan[]} */
 export function pricingPlans(offers, includeDefaults = true) {
   const values = Array.isArray(offers) ? offers : [];
   const groups = productGroups(values);
   if (groups.some(g => g.product.id)) return groups.map(g => ({
-    ...g, name: g.product.name, description: g.product.description, features: g.product.marketing_features
+    ...g, name: g.product.name, description: g.product.description, features: pricingFeatures(g.product.marketing_features)
   }));
   return DEFAULT_PLANS.filter(p => includeDefaults || groups.some(g => g.code === p.code)).map(p => ({
     ...p, product: productPresentation(), features: planFeatures(p.code).map(f => ({ name: f.label })),
