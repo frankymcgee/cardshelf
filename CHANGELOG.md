@@ -4,6 +4,7 @@
 - Show Collector's saved allowance in signed-in membership choices as well. Zero displays as Unlimited photo scans for any tier; missing values stay unavailable.
 - Keep scan eligibility explicit beside the allowance. Collection access, scanner enablement, usage enforcement and the shared service budget are unchanged.
 - Verify all three tier values, each tier set independently to zero, both billing cadences and paused pricing on desktop and phone. No database migration or server configuration change is required.
+- Make the CI artifact transfer check download the exact artifacts it just uploaded, preventing a retry from comparing files against an earlier attempt's archive.
 
 ## 0.47.3 — 2026-10-07
 
