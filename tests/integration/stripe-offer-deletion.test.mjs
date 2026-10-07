@@ -17,8 +17,8 @@ async function draft(environment='production',values={}) {
   const [row]=await sql`INSERT INTO stripe_offers ${sql({id,environment,price_id:'price_'+id.replaceAll('-',''),plan_code:'collector',cadence:'MONTHLY',amount_minor:1000,total_minor:1000,tax_minor:0,terms,terms_hash:'draft-fixture',...values})} RETURNING *`;
   return row;
 }
-async function request(offer,{user=0,environment=offer.environment,body={revision:offer.revision,confirm:true},origin=requestOrigin}={}) {
-  const response=await fetch(base+'/api/admin/integrations/stripe/offers/'+offer.id+'/delete?environment='+environment,{
+async function request(offer,{user=0,environment=offer.environment,body={revision:offer.revision,confirm:true},origin=requestOrigin,action='/delete'}={}) {
+  const response=await fetch(base+'/api/admin/integrations/stripe/offers/'+offer.id+action+'?environment='+environment,{
     method:'POST',headers:{Origin:origin,'X-Requested-With':'cardshelf','Content-Type':'application/json',...(user===null?{}:{Cookie:'cardshelf_session='+tokens[user]})},body:JSON.stringify(body)
   });
   return {status:response.status,data:await response.json()};
@@ -64,12 +64,30 @@ await test('administrators can remove unused Stripe drafts and correct their tie
         assert.equal((await request(offer)).status,409);
         assert.ok(await statusOffer(offer));
       }
-      await sql`INSERT INTO stripe_product_sync(environment,managed) VALUES('sandbox',true)`;
+    });
+    for(const environment of ['sandbox','production'])await t.test(environment+' permits manual cleanup while Stripe manages new offers',async()=>{
+      await sql`INSERT INTO stripe_product_sync(environment,managed) VALUES(${environment},true)`;
       try {
-        const offer=await draft('sandbox');
-        assert.equal((await statusOffer(offer)).can_delete,false);
-        assert.equal((await request(offer)).status,409);
-      } finally {await sql`DELETE FROM stripe_product_sync WHERE environment='sandbox'`;}
+        const offer=await draft(environment),published=await draft(environment,{published:true,plan_code:'plus'});
+        assert.equal((await stripeStatus(admin,environment)).product_sync_managed,true);
+        assert.equal((await statusOffer(offer)).can_delete,true);
+        assert.equal((await statusOffer(offer)).can_publish,false);
+        assert.equal((await request(offer)).status,200);
+        assert.equal(await statusOffer(offer),undefined);
+        assert.equal((await statusOffer(published)).can_pause,true);
+        assert.equal((await request(published,{action:'',body:{revision:1,published:false}})).status,200);
+        const paused=await statusOffer(published);
+        assert.equal(paused.published,false);assert.equal(paused.can_delete,true);assert.equal(paused.revision,2);
+        await assert.rejects(()=>publishStripeOffer(admin,environment,paused.id,{revision:2,published:true,confirm_terms_reviewed:true},priceApi),e=>e.status===409&&/Stripe-managed/.test(e.message));
+        await assert.rejects(()=>saveStripeOffer(admin,environment,{price_id:offer.price_id,plan_code:'plus',terms},priceApi),e=>e.status===409&&/Stripe-managed/.test(e.message));
+        await sql`UPDATE stripe_offers SET sync_managed=true,published=true WHERE id=${paused.id}`;
+        assert.equal((await statusOffer(paused)).can_pause,false);
+        assert.equal((await statusOffer(paused)).can_delete,false);
+        assert.match((await statusOffer(paused)).delete_block_reason,/Managed by Stripe/);
+        await assert.rejects(()=>publishStripeOffer(admin,environment,paused.id,{revision:2,published:false},priceApi),e=>e.status===409&&/Stripe-managed/.test(e.message));
+        await sql`UPDATE stripe_offers SET published=false WHERE id=${paused.id}`;
+        assert.equal((await request(paused)).status,409);
+      } finally {await sql`DELETE FROM stripe_product_sync WHERE environment=${environment}`;}
     });
     await t.test('pending checkout and cancelled subscription history prevent deletion',async()=>{
       for(const status of ['pending','canceled']) {
@@ -77,6 +95,7 @@ await test('administrators can remove unused Stripe drafts and correct their tie
         const [subscription]=await sql`INSERT INTO stripe_subscriptions(user_id,environment,request_id,offer_id,offer_snapshot,checkout_expires_at,status,current)
           VALUES(${member},'production',${randomUUID()},${offer.id},${sql.json(offer)},now()+interval '1 hour',${status},${status==='pending'}) RETURNING id`;
         assert.equal((await statusOffer(offer)).can_delete,false);
+        assert.match((await statusOffer(offer)).delete_block_reason,/checkout or subscription history/);
         const result=await request(offer);assert.equal(result.status,409);assert.match(result.data.message,/checkout or subscription history/);
         assert.equal((await sql`SELECT offer_id FROM stripe_subscriptions WHERE id=${subscription.id}`)[0].offer_id,offer.id);
       }
