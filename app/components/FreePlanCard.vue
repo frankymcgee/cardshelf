@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{ preview?: boolean }>()
+defineProps<{ preview?: boolean, scanAllowances?: Record<string, number> }>()
 </script>
 <template>
   <article class="m-plan stripe-plan free-plan" data-testid="free-plan">
@@ -8,7 +8,8 @@ defineProps<{ preview?: boolean }>()
     <div class="free-amount"><strong>$0</strong><span>forever</span></div>
     <p class="free-note">No payment details required.</p>
     <ul><li v-for="feature in ['Browse every supported card game', 'Card artwork and available source prices', 'Public marketplace browsing', 'Optional Free account']" :key="feature"><AppIcon name="check" :size="18"/><span>{{ feature }}</span></li></ul>
-    <p class="free-note">Catalogue access with labelled advertising. Photo scanning and collection management are not included.</p>
+    <p class="free-note">Catalogue access with labelled advertising. Collection management is not included.</p>
+    <PlanScanAllowance plan-code="free" :allowances="scanAllowances" />
     <div class="free-footer"><p v-if="preview" class="m-fine">Built-in CardShelf tier. No Stripe product or subscription is needed.</p><template v-else><NuxtLink to="/explore" class="m-button">Browse for free<AppIcon name="arrow" :size="18"/></NuxtLink><NuxtLink to="/register" class="m-text-link">Free account options</NuxtLink></template></div>
   </article>
 </template>

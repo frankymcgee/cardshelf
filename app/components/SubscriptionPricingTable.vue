@@ -19,7 +19,7 @@ const money = (n: number) => new Intl.NumberFormat('en-AU', { style: 'currency',
   </div>
 </div>
 <section class="m-container m-plan-grid stripe-plan-grid">
-  <FreePlanCard :preview="mode === 'preview'" />
+  <FreePlanCard :preview="mode === 'preview'" :scan-allowances="scanAllowances" />
   <article v-for="plan in plans" :key="plan.code" class="m-plan stripe-plan" :class="plan.code === 'plus' ? 'm-plan-current' : 'm-plan-future'">
     <div class="stripe-plan-heading"><div>
       <span class="m-plan-label">{{ mode === 'preview' ? 'TEST PREVIEW · NOT ON SALE' : mode === 'live' && plan.offers.length ? 'PLATFORM MEMBERSHIP' : 'PLANNED MEMBERSHIP · NOT ON SALE' }}</span>
