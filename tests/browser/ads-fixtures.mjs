@@ -1,4 +1,10 @@
-export async function fixtures(page,{blocked=false,rejectPreference=false,count=1,hidden=false,provider='adsense',initialMode}={}){
+export async function fixtures(page,{blocked=false,rejectPreference=false,count=1,hidden=false,provider='adsense',initialMode,guest=false}={}){
+  // The PWA's document fetch would bypass page.route's synthetic CSP. Stub only
+  // its top-level registration; do not inject service-worker access into opaque ads.
+  await page.addInitScript(() => {
+    if (window === window.top && 'serviceWorker' in navigator)
+      navigator.serviceWorker.register = async () => { throw new Error('Service workers disabled for routed ad fixtures'); };
+  });
   let mode=initialMode || (hidden?'hidden':'preview');const requests=[],errors=[],saves=[];
   let settings={provider,adsterra_units:{},enabled:false,verification_enabled:false,placeholders_enabled:true,publisher_id:'',slot_id:'',marketplace_slot_id:'',auto_ads_enabled:false,marketplace_enabled:false,revision:1};
   page.on('pageerror',e=>errors.push(e.message));
@@ -6,7 +12,7 @@ export async function fixtures(page,{blocked=false,rejectPreference=false,count=
   await page.route('**/api/**',async route=>{
     const path=new URL(route.request().url()).pathname;
     let data={};
-    if(path==='/api/session')data={user:{id:'admin-fixture',role:'admin',name:'Administrator'},setup_required:false,admin_placement_view:mode,admin_ad_provider:provider};
+    if(path==='/api/session')data={user:guest?null:{id:'admin-fixture',role:'admin',name:'Administrator'},setup_required:false,admin_placement_view:guest?'hidden':mode,admin_ad_provider:provider};
     else if(path==='/api/ads/adsense' && blocked)return route.abort('blockedbyclient');
     else if(path==='/api/ads/adsense')data=mode==='preview'?{eligible:false,placeholder:true,page_kind:'marketing',revision:1}:{eligible:false};
     else if(path==='/api/admin/adsense')data={...settings,admin_view:mode};

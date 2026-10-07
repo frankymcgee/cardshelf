@@ -168,11 +168,12 @@ await test('password recovery and Free-only AdSense on an isolated installation'
       assert.equal((await request('/ads.txt')).data,'google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0\n');
       assert.deepEqual((await ad(free.cookie)).data,{eligible:false});
     });
-    await t.test('an enabled manual unit is returned only for the effective Free tier on allowed catalogue pages',async()=>{
+    await t.test('an enabled manual unit supports guests and effective Free accounts on public catalogue pages',async()=>{
       const protectedSettings=await sql`SELECT * FROM stripe_billing_controls`,sponsorSettings=await sql`SELECT * FROM free_platform_settings`;
       await save({enabled:true,verification_enabled:true});
       const r=await ad(free.cookie);assert.equal(r.status,200);assert.deepEqual(r.data,{eligible:true,publisher_id:pub,slot_id:slot,auto_ads:false,page_kind:'catalogue',revision:settings.revision});assert.match(r.headers.get('cache-control'),/no-store/);
-      for(const cookie of [undefined,admin.cookie,collector.cookie,pro.cookie,complimentary.cookie])assert.deepEqual((await ad(cookie)).data,{eligible:false});
+      assert.equal((await ad(undefined)).data.eligible,true);
+      for(const cookie of [admin.cookie,collector.cookie,pro.cookie,complimentary.cookie])assert.deepEqual((await ad(cookie)).data,{eligible:false});
       // Tester sessions were revoked by recovery: a new tester session is still ad-free.
       const tk=randomToken();await sql`INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(${digest(tk)},${tester.id},now()+interval '1 hour')`;
       assert.deepEqual((await ad('cardshelf_session='+tk)).data,{eligible:false});
@@ -189,7 +190,8 @@ await test('password recovery and Free-only AdSense on an isolated installation'
         assert.ok(!r.data.includes(free.email));
       }
       assert.notEqual(a.headers.get('content-security-policy'),b.headers.get('content-security-policy'));
-      for(const cookie of [undefined,admin.cookie,collector.cookie,pro.cookie]){const r=await request('/explore',{cookie});assert.ok(!r.data.includes('cardshelf-adsense-revision'));assert.ok(!(r.headers.get('content-security-policy')||'').includes('strict-dynamic'));}
+      const guest=await request('/explore');assert.ok(guest.data.includes('cardshelf-adsense-revision'));assert.match(guest.headers.get('content-security-policy'),/strict-dynamic/);
+      for(const cookie of [admin.cookie,collector.cookie,pro.cookie]){const r=await request('/explore',{cookie});assert.ok(!r.data.includes('cardshelf-adsense-revision'));assert.ok(!(r.headers.get('content-security-policy')||'').includes('strict-dynamic'));}
       for(const path of ['/account','/reset-password','/membership','/admin/passwords']){const r=await request(path,{cookie:free.cookie});assert.ok(!r.data.includes('cardshelf-adsense-revision'));assert.ok(!(r.headers.get('content-security-policy')||'').includes('strict-dynamic'));}
     });
     await t.test('paid or Complimentary overrides immediately stop future Free ad eligibility responses',async()=>{

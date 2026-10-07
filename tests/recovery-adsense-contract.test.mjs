@@ -49,9 +49,9 @@ test('Google loader stays conditional and sensitive pages never mount an ad cont
   for(const path of ['app/pages/explore/index.vue','app/pages/explore/[id].vue','app/pages/cards.vue','app/pages/app.vue'])assert.match(await text(path),/<AdSenseSlot\b[^>]*:content-ready=/);
   assert.match(await text('app/pages/marketplace/index.vue'),/:content-ready="!!data\?\.items\.length && !failure && !mine"/);
 });
-test('Google payload is issued only after effective membership and pending billing are checked',async()=>{
+test('signed-in Google eligibility retains effective membership and pending billing checks',async()=>{
   const source=await text('lib/adsense.mjs');assert.match(source,/membershipState\(user.id\)/);assert.match(source,/pendingBilling: billing.length > 0/);assert.match(source,/sponsorEligible\(/);
-  assert.match(source,/const kind = adsensePageKind\(path\)/);assert.match(source,/!kind/);assert.match(source,/user.role === 'admin' && view === 'hidden'/);
+  assert.match(source,/const kind = adsensePageKind\(path\)/);assert.match(source,/!kind/);assert.match(source,/user\?\.role === 'admin' && view === 'hidden'/);
 });
 test('nonce CSP scope and cache policy prevent advertising context leaking between users',async()=>{
   const code=await text('server/middleware/security.ts');assert.match(code,/adsensePageKind\(event.path\) && event.method === 'GET'/);assert.match(code,/randomBytes\(16\)/);

@@ -1,4 +1,4 @@
-# CardShelf 0.49.0
+# CardShelf 0.50.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -44,10 +44,15 @@ focuses on website requests; member management stays in Memberships & referrals.
 
 Open **Administration → Advertising**, choose **Adsterra**, and click **Load
 CardShelf's seven units**. This loads the six banner sizes and native code supplied
-for website 6105596. Enable Free-only advertising, turn off Free-account
+for website 6105596. Enable advertising for public visitors and Free accounts, turn off
 placeholders for live serving, complete the existing approval/privacy confirmations,
 and save with your administrator password and a reason. Administrators separately
 select **Live ads** in **Your administrator ad view** to see live placements.
+
+Signed-out visitors can receive ads on the homepage, features, pricing and public
+card catalogue/details. Signing in restores the account-specific exclusions;
+paid/protected accounts stay ad-free. Marketplace and private workspace access
+still require sign-in. Both providers respect the same master and preview switches.
 
 The provider switch retains Google settings. Preview mode makes no ad requests.
 Migration `030_adsterra_advertising.sql` preserves existing settings and does not
@@ -58,7 +63,7 @@ placement map, testing and the three additional codes kept inactive.
 
 Under **Administration → Advertising**, enable **Show placeholder ad sections** and save
 with your administrator password and a reason. This replaces live Google ads for
-eligible Free members and needs no Google approval or IDs. Disable placeholders
+public visitors and eligible Free members and needs no Google approval or IDs. Disable placeholders
 when you are ready to enable approved live advertising. Migration 022 adds the
 setting, defaulting off.
 

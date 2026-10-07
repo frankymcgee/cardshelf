@@ -105,8 +105,16 @@ await test('Free-only Auto ads and marketplace display units preserve private da
         assert.match(r.headers.get('cache-control'),/private.*no-store/);assert.match(r.headers.get('vary'),/Cookie/);
       }
     });
-    await t.test('guests, paid accounts, administrator, testers and Complimentary never get the loader',async()=>{
-      for(const cookie of [undefined,admin.cookie,pro.cookie,collector.cookie,tester.cookie,complimentary.cookie])for(const path of ['/','/app','/marketplace'])assert.deepEqual((await ad(cookie,path)).data,{eligible:false});
+    await t.test('guests receive ads only on public pages; paid/protected accounts remain excluded',async()=>{
+      for(const cookie of [admin.cookie,pro.cookie,collector.cookie,tester.cookie,complimentary.cookie])for(const path of ['/','/explore','/app','/marketplace'])assert.deepEqual((await ad(cookie,path)).data,{eligible:false});
+      for(const path of ['/','/features','/pricing','/explore','/explore/'+encodeURIComponent(cardId)]) {
+        assert.equal((await ad(undefined,path)).data.eligible,true,path);
+        const doc=await request(path);assert.equal(doc.status,200,path);
+        assert.match(doc.headers.get('content-security-policy'),/nonce-[a-f0-9]{32}/);
+        assert.match(doc.headers.get('cache-control'),/private.*no-store/);assert.match(doc.headers.get('vary'),/Cookie/);
+      }
+      for(const path of ['/app','/cards','/marketplace','/marketplace?mine=false','/login','/register','/privacy','/account','/admin','/explore?ads=off'])
+        assert.deepEqual((await ad(undefined,path)).data,{eligible:false},path);
     });
     await t.test('private paths, My listings and explicit ad-free views cannot inherit Auto ads',async()=>{
       for(const path of ['/account','/settings','/admin/adsense','/login','/reset-password','/membership','/binders','/battle','/arena','/arena/decks/new','/arena/matches/'+randomUUID(),'/marketplace/inbox',
@@ -177,12 +185,13 @@ await test('Free-only Auto ads and marketplace display units preserve private da
       const hiddenPhoto=seller.data.photos[0].url;assert.equal((await request(hiddenPhoto,{cookie:pro.cookie})).status,200);
       assert.equal((await request(hiddenPhoto,{cookie:free.cookie})).status,404);
     });
-    await t.test('paid upgrades and invalidated sessions immediately stop new placements',async()=>{
+    await t.test('paid upgrades stop placements; expired sessions only retain public guest eligibility',async()=>{
       await sql`INSERT INTO account_tier_overrides(user_id,tier,reason) VALUES(${free.id},'plus','Synthetic paid upgrade')`;
       assert.deepEqual((await ad(free.cookie,'/marketplace')).data,{eligible:false});await sql`DELETE FROM account_tier_overrides WHERE user_id=${free.id}`;
       const token=randomToken();await sql`INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(${digest(token)},${free.id},now()+interval '1 hour')`;
       assert.equal((await ad('cardshelf_session='+token,'/')).data.eligible,true);await sql`DELETE FROM sessions WHERE token_hash=${digest(token)}`;
-      assert.deepEqual((await ad('cardshelf_session='+token,'/')).data,{eligible:false});
+      assert.equal((await ad('cardshelf_session='+token,'/')).data.eligible,true);
+      assert.deepEqual((await ad('cardshelf_session='+token,'/cards')).data,{eligible:false});
     });
     await t.test('pending billing suppresses ads even when a Free marker remains',async()=>{
       const [old]=await sql`SELECT environment FROM stripe_connections WHERE environment='sandbox'`;
@@ -207,6 +216,7 @@ await test('Free-only Auto ads and marketplace display units preserve private da
     });
     await t.test('master pause retains verification, data and all account access',async()=>{
       for(const path of ['/','/app','/marketplace','/explore'])assert.deepEqual((await ad(free.cookie,path)).data,{eligible:false});
+      for(const path of ['/','/explore'])assert.deepEqual((await ad(undefined,path)).data,{eligible:false});
       assert.equal((await request('/ads.txt')).data,'google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0\n');
       assert.deepEqual(await sql`SELECT * FROM collection_entries WHERE user_id=${free.id}`,inventory);
       assert.deepEqual(await sql`SELECT * FROM stripe_billing_controls`,billing);assert.deepEqual(await sql`SELECT * FROM free_platform_settings`,sponsor);
@@ -219,6 +229,12 @@ await test('Free-only Auto ads and marketplace display units preserve private da
       for(const path of ['/','/features','/pricing','/app','/cards','/explore','/marketplace']){
         const result=await ad(free.cookie,path);assert.equal(result.data.eligible,true,path);assert.equal(result.data.provider,'adsterra');
         assert.equal(result.data.auto_ads,false);assert.equal(result.data.slot_id,'');
+      }
+      for(const path of ['/','/features','/pricing','/explore','/explore/'+encodeURIComponent(cardId)]) {
+        const guest=await ad(undefined,path);assert.equal(guest.data.eligible,true,path);assert.equal(guest.data.provider,'adsterra');
+        const doc=await request(path);assert.match(doc.data,/<meta name="cardshelf-ad-provider" content="adsterra">/);
+        assert.match(doc.headers.get('content-security-policy'),/strict-dynamic/);
+        assert.ok(!doc.data.includes('PRIVATE_AD_TEST_NOTE'));
       }
       for(const cookie of [undefined,admin.cookie,pro.cookie,collector.cookie,tester.cookie,complimentary.cookie])
         assert.deepEqual((await ad(cookie,'/cards')).data,{eligible:false});
@@ -235,6 +251,8 @@ await test('Free-only Auto ads and marketplace display units preserve private da
     await t.test('Adsterra previews have no ad CSP; provider switching and pausing remain reversible',async()=>{
       await save({provider:'adsterra',adsterra_units:ADSTERRA_CARDSHELF_UNITS,enabled:true,placeholders_enabled:true});
       const preview=await ad(free.cookie,'/cards');assert.equal(preview.data.placeholder,true);assert.equal(preview.data.provider,'adsterra');
+      assert.equal((await ad(undefined,'/explore')).data.placeholder,true);
+      assert.ok(!String((await request('/explore')).headers.get('content-security-policy')).includes('strict-dynamic'));
       assert.ok(!String((await request('/cards',{cookie:free.cookie})).headers.get('content-security-policy')).includes('strict-dynamic'));
       const pref=await request('/api/admin/adsense/view',{cookie:admin.cookie,method:'POST',body:{mode:'preview'}});
       const cookie=admin.cookie+'; '+pref.headers.get('set-cookie').split(';')[0];
@@ -244,6 +262,7 @@ await test('Free-only Auto ads and marketplace display units preserve private da
       assert.deepEqual(settings.adsterra_units,ADSTERRA_CARDSHELF_UNITS);
       await save({provider:'adsterra',adsterra_units:ADSTERRA_CARDSHELF_UNITS,enabled:false});
       assert.deepEqual((await ad(free.cookie,'/cards')).data,{eligible:false});
+      assert.deepEqual((await ad(undefined,'/explore')).data,{eligible:false});
       assert.deepEqual(await sql`SELECT * FROM collection_entries WHERE user_id=${free.id}`,inventory);
       assert.deepEqual(await sql`SELECT * FROM stripe_billing_controls`,billing);
     });

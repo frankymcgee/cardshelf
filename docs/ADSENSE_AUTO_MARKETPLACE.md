@@ -1,5 +1,9 @@
 # Free-only Auto ads and marketplace placements — v0.16.0
 
+Updated for v0.50.0: signed-out visitors are also eligible on the public website
+and reference catalogue pages below. Both providers share these audience rules;
+see [Adsterra setup](ADSTERRA.md) for its banner/native formats.
+
 ## Scope and defaults
 
 This release adds opt-in Google Auto ads and one manually positioned marketplace
@@ -7,9 +11,10 @@ ad card. Existing catalogue display ads and site verification are preserved.
 The two new placement switches start **off**, including on installations that
 already enabled the old catalogue display unit.
 
-Only a signed-in account whose **effective** access is explicitly `free_account`
-and tier `free` is eligible. Guests, administrators, Collector, Collector Pro
-(internal `plus`), Complimentary users and protected testers are excluded. A
+Among signed-in members, only an account whose **effective** access is explicitly
+`free_account` and tier `free` is eligible. Administrators default to Hidden and
+can select Live ads in their browser. Collector, Collector Pro (internal `plus`),
+Complimentary users and protected testers are excluded. A
 pending/current Stripe subscription or remaining paid period also suppresses
 advertising, even if a Free marker exists. An account with uncertain permissions
 is never assumed to be Free. No billing settings or subscription charges change.
@@ -17,11 +22,11 @@ is never assumed to be Free. No billing settings or subscription charges change.
 ## Allowed pages
 
 With **Allow Auto ads** enabled, the following existing pages may load Google's
-script for eligible Free users:
+script for public visitors and eligible Free users:
 
 - Website: `/`, `/features`, `/pricing`.
 - Reference catalogue: `/explore` and recognised card-detail URLs below it.
-- Signed-in content: `/app`, `/cards`, marketplace **browse** at `/marketplace`.
+- Signed-in content (Free accounts only): `/app`, `/cards`, marketplace **browse** at `/marketplace`.
 
 This is not a global header insertion. New/unknown routes are excluded. Password
 forms, registration, recovery, account/settings, subscription/payment screens,

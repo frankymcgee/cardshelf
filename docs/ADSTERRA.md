@@ -1,16 +1,17 @@
 # Adsterra for CardShelf
 
-Version 0.49.0 adds a provider selector to **Administration → Advertising**
+Version 0.50.0 fixes live Adsterra loading and enables ads for public visitors.
+The provider selector is in **Administration → Advertising**
 (the existing `/admin/adsense` address still works). Both providers use the same
-Free-account eligibility, private-route exclusions, preview preference and master
+Free-account eligibility, public-visitor scope, private-route exclusions, preview preference and master
 switch. Migration `030_adsterra_advertising.sql` preserves the current provider
 and enabled state; it does not activate Adsterra during deployment.
 
 ## Enable the supplied units
 
 1. Choose **Adsterra** and click **Load CardShelf's seven units**.
-2. Enable **Free-only Adsterra** and turn off **Show placeholder ad sections**
-   when ready to serve real ads to eligible Free accounts.
+2. Enable **Adsterra for public visitors and Free accounts** and turn off
+   **Show placeholder ad sections** when ready to serve real ads.
 3. Complete the approval/privacy confirmations, enter the existing administrator
    password and a reason, then **Save advertising settings**.
 4. Administrators choose **Live ads** under **Your administrator ad view** and
@@ -21,6 +22,13 @@ ID `6105596` is not an installation tag. The preset uses the exact keys and
 `https://bicea.org/21/` (native) or `/22/` (banner) URLs supplied for this site.
 Blank a key to disable a format. Google IDs and verification settings remain
 saved when switching to Adsterra, and vice versa.
+
+Signed-out visitors can receive ads on `/`, `/features`, `/pricing`, `/explore`
+and valid public card-detail pages. Signed-in paid/protected accounts stay
+excluded on those same pages. Guest advertising does not open `/app`, `/cards`,
+the marketplace, binders, shared binders, sign-in, registration or other forms.
+The enabled setting, placeholder mode, selected provider and page exclusions
+apply to guests too; there is no additional activation step after upgrading.
 
 ## Placement map
 
@@ -38,7 +46,8 @@ The renderer chooses a fitting size before making a request. It never loads a
 hidden desktop/mobile alternative, scales a banner, or reuses the same key twice
 in a document. Resize, focus and filtering do not refresh ads. A loaded fixed-size
 unit is retired if its container becomes too narrow. The native container adjusts
-its height to the creative. A blocked loader collapses without retrying.
+its height to the creative. A blocked loader or uncaught vendor runtime error
+collapses without retrying.
 
 The rail only appears on the homepage/features at widths of at least 1800px, in
 the unused outside margin. Ads do not replace card records or change totals.
@@ -58,10 +67,17 @@ needed for the banner/native integration, so none is loaded or linked by the app
 
 Adsterra snippets run in separate sandbox frames, preserving their synchronous
 `atOptions` + script pairing. The frames cannot read the parent app DOM, cookies
-or storage. Native height/error messages are accepted only from the matching
+or storage. `window.atOptions` is a configurable property so Adsterra can delete
+it after reading the configuration; a global `var` declaration prevents that.
+When the browser's opaque-origin cookie getter throws `SecurityError`, a
+frame-local compatibility interface returns an empty string and discards cookie
+writes. It never reads, copies or proxies CardShelf cookies, persists identifiers,
+or supplies consent values. Cookie-dependent vendor features may remain unavailable.
+The sandbox keeps `allow-same-origin` disabled. Vendor scripts are not rewritten.
+Native height/error messages are accepted only from the matching
 frame window. The renderer requires server-issued eligibility, provider, revision
-and a document nonce before requesting a script. Paid/protected accounts and
-signed-out visitors receive neither provider; private routes are excluded.
+and a document nonce before requesting a script. Paid/protected accounts receive
+neither provider; private routes are excluded for everyone.
 
 The existing document-boundary flag also covers Adsterra. Opening a private card,
 leaving the ad page, losing eligibility, or changing settings cannot leave an
@@ -69,8 +85,9 @@ advertising document active on a sensitive screen. A revision mismatch or failed
 eligibility recheck moves an already loaded page to its `ads=off` view.
 
 `npm test`, `npm run typecheck`, `npm run build`, the advertising integration
-suite and `npm run test:ads-ui` cover settings, exclusions, provider switching,
-production CSP, responsive placement, duplicate prevention and blocked scripts.
+suite and `npm run test:ads-ui` cover settings, guest/member exclusions, provider
+switching, production CSP, cookie reads/writes, strict configuration deletion,
+frame isolation, responsive placement, duplicate prevention and blocked scripts.
 Browser tests replace provider requests with synthetic scripts; they never
 request real creatives or generate live ad impressions. Actual fill, approval,
 ad categories and account-side configuration still need to be checked in

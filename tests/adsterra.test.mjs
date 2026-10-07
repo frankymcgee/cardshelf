@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import { adsenseInput, adsenseReady } from '../lib/adsense-logic.mjs';
-import { adsensePagePlan, enterPrivateCard } from '../shared/adsense-policy.mjs';
-import { ADSTERRA_CARDSHELF_UNITS as units, adsterraUnit, selectAdsterraUnit, adsterraFrameDocument } from '../shared/adsterra.mjs';
+import { adsensePagePlan, adsenseGuestPage, enterPrivateCard } from '../shared/adsense-policy.mjs';
+import { ADSTERRA_CARDSHELF_UNITS as units, adsterraUnit, selectAdsterraUnit, adsterraFrameDocument, adsterraCookieAccess } from '../shared/adsterra.mjs';
 import { startAdsterra } from '../shared/adsterra-browser.mjs';
 const nonce = 'e'.repeat(32);
 const settings = { provider: 'adsterra', adsterra_units: units, enabled: true, verification_enabled: false, revision: 1,
@@ -48,13 +49,40 @@ test('banner documents retain the supplied atOptions and native scripts use the 
     assert.ok(!html.includes('afders.org')); assert.ok(!html.includes('arwf.org')); assert.ok(!html.includes('/14/'));
     if (format === 'native') assert.ok(html.includes(`id="container-${key}"`));
     else {
-      const options = JSON.parse(html.match(/var atOptions=(\{.*?\});/)[1]);
+      const options = JSON.parse(html.match(/window.atOptions=(\{.*?\});/)[1]);
       assert.deepEqual(options, { key, format: 'iframe', height: unit.height, width: unit.width, params: {} });
     }
     assert.ok([...html.matchAll(/<script([^>]*)>/g)].every(match => match[1].includes(`nonce="${nonce}"`)));
   }
   assert.equal(adsterraFrameDocument(adsterraUnit('native', units.native), 'bad'), '');
   assert.equal(adsterraFrameDocument({ format: 'native', key: '<script>' }, nonce), '');
+});
+test('banner configuration can be consumed and deleted by the strict vendor loader', () => {
+  const unit = adsterraUnit('banner_728x90', units.banner_728x90);
+  const script = adsterraFrameDocument(unit, nonce).match(/<script[^>]*>(window.atOptions=.*?)<\/script>/)[1];
+  const context = {}; context.window = context;
+  vm.runInNewContext(script + ';"use strict";', context);
+  assert.equal(context.atOptions.key, unit.key);
+  assert.equal(vm.runInNewContext('"use strict"; delete window.atOptions', context), true);
+  assert.equal(context.atOptions, undefined);
+});
+test('opaque frames expose empty cookies without accessing or persisting app cookies', () => {
+  const prototype = { get cookie() { const error = new Error('Opaque origin'); error.name = 'SecurityError'; throw error; } };
+  const doc = Object.create(prototype);
+  assert.equal(adsterraCookieAccess(doc), true);
+  assert.equal(doc.cookie, ''); doc.cookie = 'vendor=value; Path=/'; assert.equal(doc.cookie, '');
+  assert.equal(adsterraCookieAccess(doc), false);
+  assert.throws(() => Object.getOwnPropertyDescriptor(prototype, 'cookie').get.call(doc), { name: 'SecurityError' });
+  const available = { cookie: 'existing=value' }; assert.equal(adsterraCookieAccess(available), false);
+  assert.equal(available.cookie, 'existing=value');
+  assert.throws(() => adsterraCookieAccess({ get cookie() { throw new Error('Unexpected failure'); } }), /Unexpected failure/);
+});
+test('guest advertising has a separate public route allowlist and never opens private routes', () => {
+  for (const path of ['/', '/features', '/pricing', '/explore', '/explore?game=pokemon', '/explore/en%3Ademo-1'])
+    assert.equal(adsenseGuestPage(path), true, path);
+  for (const path of ['/app', '/cards', '/marketplace', '/marketplace?mine=false', '/shared/' + 'a'.repeat(64), '/account', '/login',
+    '/register', '/forgot-password', '/admin/adsense', '/arena', '/privacy', '/explore?ads=off', '/explore?card=private', '//explore', '/explore/%2e%2e/account'])
+    assert.equal(adsenseGuestPage(path), false, path);
 });
 test('one request per key survives component remounts and marks the private-screen document boundary', () => {
   const win = { location: { assign(path) { win.destination = path; } } }, doc = { visibilityState: 'visible' };
