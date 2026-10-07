@@ -73,7 +73,7 @@ test('an incorrect draft can be cancelled or deleted in the selected Stripe envi
     return route.fulfill({json:{deleted:true}});
   });
   await page.goto('/admin/integrations/stripe');
-  await page.getByLabel('Environment',{exact:true}).selectOption('production');
+  await page.getByRole('combobox',{name:'Stripe credential environment',exact:true}).selectOption('production');
   const button=page.getByRole('button',{name:'Delete draft',exact:true});
   await expect(button).toHaveCount(1);
   page.once('dialog',dialog=>dialog.dismiss());await button.click();
