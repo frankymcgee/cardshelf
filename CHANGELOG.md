@@ -1,3 +1,11 @@
+## 0.47.2 — 2026-10-07
+
+- Allow unused manual Stripe drafts to be deleted while Stripe product sync is enabled. Keep manual offers available to pause so incorrect mappings can be cleaned up without disabling product sync.
+- Preserve Stripe-managed offers and checkout/subscription history. Manual creation and publication remain disabled while Stripe manages new offers.
+- Show offer ownership and reasons an offer cannot be deleted; direct managed-price changes to Pricing & plans in the same Test or Live environment.
+- Keep Stripe administration tables horizontally scrollable on phones so offer actions remain reachable.
+- Verify the correction workflow from a mislabelled manual price through deletion and successful product sync. No database migration or server configuration change is required.
+
 ## 0.47.1 — 2026-10-07
 
 - Add Delete draft to manual Stripe offers so an unused price can be re-added under the correct Collector or Collector Plus tier.

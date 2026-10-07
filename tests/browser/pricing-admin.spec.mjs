@@ -1,13 +1,13 @@
 import {test,expect} from '@playwright/test';
 const offer=(plan,cadence)=>({plan_code:plan,cadence,total_minor:cadence==='MONTHLY'?1000:10000,tax_minor:0,tax_mode:'none',tax_behavior:'inclusive',product_snapshot:{id:'prod_'+plan,name:plan==='plus'?'Collector Pro':'Collector',description:'Tools for your collection.',images:[],marketing_features:[{name:'Ad-free collecting'}]}});
-async function fixtures(page,{empty=false,role='admin',stripeOffers=[]}={}){
+async function fixtures(page,{empty=false,role='admin',stripeOffers=[],stripeManaged=false}={}){
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/api/**',async route=>{
     const path=new URL(route.request().url()).pathname;
     let data;
     if(path==='/api/session')data={user:{id:'pricing-fixture',name:'Pricing tester',role},setup_required:false};
     else if(path==='/api/admin/integrations/stripe/controls')data={policy:{environment:'sandbox',requested_enabled:false,enabled:false,enforce:false,revision:1},impact:{protected:1,without_live_access:0},environments:[]};
-    else if(path==='/api/admin/integrations/stripe/status')data={configured:true,key_available:true,portal_id:'bpc_fixture',accepting_new:false,active_environment:'sandbox',revision:1,offers:stripeOffers,events:[],subscriptions:[]};
+    else if(path==='/api/admin/integrations/stripe/status')data={configured:true,key_available:true,portal_id:'bpc_fixture',accepting_new:false,active_environment:'sandbox',revision:1,product_sync_managed:stripeManaged,offers:stripeOffers.map(o=>({can_pause:o.published,can_publish:!o.published,...o})),events:[],subscriptions:[]};
     else if(path==='/api/admin/platform/plans')data=[];
     else if(path==='/api/admin/integrations/stripe/products')data={configured:false,settings:{managed:false,daily:false,mirror_plans:false,revision:1},products:[],offers:[]};
     else if(path==='/api/account/games')data={tier:'complimentary'};
@@ -95,5 +95,47 @@ test('a rejected deletion keeps the draft visible with the server explanation',a
   await expect(page.getByRole('alert')).toContainText('Offer changed. Reload.');
   await expect(page.getByRole('cell',{name:'price_stale',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Delete draft',exact:true})).toBeEnabled();
+  expect(errors).toEqual([]);
+});
+test('Stripe-managed mode permits manual cleanup and explains protected offers',async({page},info)=>{
+  const draft={...offer('collector','MONTHLY'),id:'manual-draft',price_id:'price_manual_draft',revision:1,published:false,sync_managed:false,can_delete:true,can_pause:false,can_publish:false};
+  const manual={...draft,id:'manual-published',price_id:'price_manual_published',published:true,can_delete:false,can_pause:true,delete_block_reason:'Pause this offer before deleting it.'};
+  const managed={...manual,id:'stripe-published',price_id:'price_from_stripe',sync_managed:true,can_pause:false,delete_block_reason:'Managed by Stripe. Change the product or price in Stripe, then sync in Pricing & plans.'};
+  const used={...draft,id:'used-draft',price_id:'price_used',can_delete:false,delete_block_reason:'Kept because this offer has checkout or subscription history.'};
+  const offers=[draft,manual,managed,used],requests=[];
+  const errors=await fixtures(page,{stripeOffers:offers,stripeManaged:true});
+  await page.route('**/api/admin/integrations/stripe/offers/*?*',async route=>{
+    requests.push({path:new URL(route.request().url()).pathname,environment:new URL(route.request().url()).searchParams.get('environment'),body:route.request().postDataJSON()});
+    Object.assign(manual,{published:false,revision:2,can_pause:false,can_delete:true,delete_block_reason:''});
+    return route.fulfill({json:{saved:true}});
+  });
+  await page.route('**/api/admin/integrations/stripe/offers/*/delete?*',async route=>{
+    requests.push({path:new URL(route.request().url()).pathname,environment:new URL(route.request().url()).searchParams.get('environment'),body:route.request().postDataJSON()});
+    offers.splice(offers.indexOf(draft),1);return route.fulfill({json:{deleted:true}});
+  });
+  await page.goto('/admin/integrations/stripe');
+  await page.getByRole('combobox',{name:'Stripe credential environment',exact:true}).selectOption('production');
+  await expect(page.getByText('Stripe manages new offers in this environment.',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Save draft offer',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Verify & publish',exact:true})).toHaveCount(0);
+  const row=price=>page.getByRole('row').filter({has:page.getByRole('cell',{name:price,exact:true})});
+  await expect(row('price_from_stripe').getByRole('button',{name:'Pause',exact:true})).toHaveCount(0);
+  await expect(row('price_from_stripe')).toContainText('Managed by Stripe.');
+  await expect(row('price_used')).toContainText('checkout or subscription history');
+  await expect(row('price_used').getByRole('button',{name:'Delete draft',exact:true})).toHaveCount(0);
+  await row('price_manual_published').getByRole('button',{name:'Pause',exact:true}).click();
+  await expect(row('price_manual_published').getByRole('button',{name:'Delete draft',exact:true})).toBeVisible();
+  page.once('dialog',dialog=>{expect(dialog.message()).toContain('Pricing & plans');return dialog.accept();});
+  await row('price_manual_draft').getByRole('button',{name:'Delete draft',exact:true}).click();
+  await expect(row('price_manual_draft')).toHaveCount(0);
+  await expect(page.getByRole('status')).toContainText('Use Pricing & plans to sync this Stripe price under its correct tier.');
+  expect(requests).toEqual([
+    {path:'/api/admin/integrations/stripe/offers/manual-published',environment:'production',body:{revision:1,published:false,confirm_terms_reviewed:true}},
+    {path:'/api/admin/integrations/stripe/offers/manual-draft/delete',environment:'production',body:{revision:1,confirm:true}}
+  ]);
+  await noOverflow(page);await page.screenshot({path:info.outputPath('stripe-managed-draft-cleanup.png'),fullPage:true});
+  await page.getByRole('link',{name:'Open Pricing & plans',exact:true}).click();
+  await expect(page).toHaveURL(/\/admin\/pricing\?environment=production#stripe-product-catalogue$/);
+  await expect(page.getByRole('combobox',{name:'Stripe catalogue environment',exact:true})).toHaveValue('production');
   expect(errors).toEqual([]);
 });

@@ -34,9 +34,13 @@ the existing Stripe integration screen; existing keys and portal settings are re
 5. Select **Save settings & sync**. Read the result and any warnings before enabling sales.
 
 This is an opt-in because taking over the catalogue can replace previously published
-manual offers. While Stripe-managed mode is on, the old manual offer-edit/publication API
-rejects writes. Use the Stripe catalogue and sync instead; it is not necessary to manually
-publish every individual price again in CardShelf.
+manual offers. While Stripe-managed mode is on, manual offer creation and publication
+are disabled. Existing manual offers can still be paused, and unused manual drafts can
+be deleted in **Stripe integration**. This allows an accidentally mapped price to be
+removed before **Sync now** imports it under the correct Stripe product's tier, without
+turning off product sync. Offers with any checkout or subscription history are retained.
+Stripe-managed rows must be maintained in Stripe and synced; it is not necessary to
+manually publish every individual price again in CardShelf.
 
 After setup, normal product maintenance is done in Stripe. The CardShelf screen is needed
 only for an immediate manual refresh, sync health, or changing these initial preferences.

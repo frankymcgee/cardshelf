@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { productPresentation, offerTaxLabel } from '../../shared/stripe-products.mjs'
 const emit = defineEmits<{ synced: [] }>()
-const api = useApi(), environment = ref('sandbox'), data = ref<any>(null), busy = ref(false), error = ref(''), notice = ref('')
+const api = useApi(), route = useRoute(), environment = ref(route.query.environment === 'production' ? 'production' : 'sandbox'), data = ref<any>(null), busy = ref(false), error = ref(''), notice = ref('')
 const form = reactive({ managed: false, daily: false, mirror_plans: false, password: '', confirm: false })
 const path = (suffix = '') => '/api/admin/integrations/stripe/products' + suffix + '?environment=' + environment.value
 const date = (value: any) => value ? new Date(value).toLocaleString('en-AU') : 'Not yet'
@@ -37,9 +37,9 @@ watch(environment, () => { data.value = null; error.value = ''; notice.value = '
 onMounted(load)
 </script>
 <template>
-<section class="panel platform-admin-panel spaced stripe-sync">
+<section id="stripe-product-catalogue" class="panel platform-admin-panel spaced stripe-sync">
   <div class="section-heading"><div><span class="eyebrow">STRIPE PRODUCT CATALOGUE</span><h2>Manage it once. Keep it in sync.</h2><p class="small muted">Products, descriptions, images, unit labels, marketing features and recurring prices come from Stripe. Existing paid subscriptions keep their accepted terms.</p></div>
-    <label>Catalogue environment<select v-model="environment" :disabled="busy"><option value="sandbox">Test / Sandbox</option><option value="production">Live / Production</option></select></label>
+    <label>Catalogue environment<select v-model="environment" aria-label="Stripe catalogue environment" :disabled="busy"><option value="sandbox">Test / Sandbox</option><option value="production">Live / Production</option></select></label>
   </div>
   <p class="small muted">Review the website without enabling payments: <NuxtLink to="/admin/integrations/stripe-preview" class="text-button">Preview Stripe Test pricing</NuxtLink>. This administrator-only preview always uses Test / Sandbox products, even when Live is selected here.</p>
   <p v-if="error" class="alert error" role="alert">{{ error }}</p><p v-if="notice" class="alert info" role="status">{{ notice }}</p>

@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import '../helpers/block-payment-network.mjs';
 import { db, closeDatabase } from '../../lib/db.mjs';
 import { hashPassword, randomToken, digest } from '../../lib/security.mjs';
-import { saveStripeConnection } from '../../lib/stripe-connection.mjs';
+import { saveStripeConnection, saveStripeOffer, stripeStatus } from '../../lib/stripe-connection.mjs';
 import { saveStripeProductSettings, syncStripeProducts, stripeProductStatus } from '../../lib/stripe-product-sync.mjs';
 import { startStripeCheckout } from '../../lib/stripe-subscriptions.mjs';
 import { publicSubscriptionOffers } from '../../lib/public-subscriptions.mjs';
@@ -15,7 +15,7 @@ const url=process.env.TEST_BASE_URL;
 if(process.env.ALLOW_TEST_DATABASE!=='yes'||!url||!new URL(process.env.DATABASE_URL||'http://invalid').pathname.endsWith('_test'))throw new Error('Use a disposable _test database only.');
 const sql=db(),originalEnv={...process.env},origin=process.env.APP_ORIGIN||url;
 const admin=randomUUID(),member=randomUUID(),password='Product integration password 123',token=randomToken(),memberToken=randomToken();
-let f=productFixture('production'), fail=false, products=[],prices=[],calls=[],snapshotId=null;
+let f=productFixture('production'), fail=false, products=[],prices=[],calls=[],snapshotId=null,mistakenOffer=null;
 const subscribers=[];
 const beforePlans=await sql`SELECT * FROM membership_plans WHERE code IN ('collector','plus')`;
 async function provider(cfg,path,_body=null,method='GET') {
@@ -55,6 +55,7 @@ await test('Stripe-managed catalogue transactions, permissions and preserved mem
   await t.test('sync starts disabled and requires an explicit password-confirmed opt-in',async()=>{
    assert.equal((await stripeProductStatus(admin,'production')).settings.managed,false);
    await assert.rejects(()=>syncStripeProducts(admin,'production',provider),e=>e.status===409);
+   mistakenOffer=await saveStripeOffer(admin,'production',{price_id:'price_year',plan_code:'plus',terms:'An accidentally mislabelled manual membership draft, created before enabling Stripe product sync.'},provider);
    const input={revision:0,password,managed:true,daily:true,mirror_plans:true,confirm:true};
    await assert.rejects(()=>saveStripeProductSettings(member,'production',input),e=>e.status===403);
    await assert.rejects(()=>saveStripeProductSettings(admin,'production',{...input,password:'bad'}),e=>e.status===403);
@@ -62,6 +63,14 @@ await test('Stripe-managed catalogue transactions, permissions and preserved mem
    await saveStripeProductSettings(admin,'production',input);
   });
   products=[f.product];prices=[f.month,f.year];
+  await t.test('deleting a mistaken manual draft unblocks sync into the correct tier without disabling managed mode',async()=>{
+   await assert.rejects(()=>syncStripeProducts(admin,'production',provider),e=>e.status===409&&/another CardShelf tier/.test(e.message));
+   const status=await stripeStatus(admin,'production'),draft=status.offers.find(o=>o.id===mistakenOffer.id);
+   assert.equal(status.product_sync_managed,true);assert.equal(draft.can_delete,true);assert.equal(draft.can_publish,false);
+   const result=await request('/api/admin/integrations/stripe/offers/'+draft.id+'/delete?environment=production','admin','POST',{revision:draft.revision,confirm:true});
+   assert.equal(result.status,200);assert.equal(result.data.deleted,true);
+   assert.equal((await stripeProductStatus(admin,'production')).settings.managed,true);
+  });
   await t.test('first sync groups monthly/yearly prices and mirrors only presentation data',async()=>{
    const result=await syncStripeProducts(admin,'production',provider);assert.equal(result.products,1);assert.equal(result.published_offers,2);assert.equal(result.payments_created,false);
    const rows=await sql`SELECT * FROM stripe_offers WHERE environment='production' AND sync_managed ORDER BY cadence`;

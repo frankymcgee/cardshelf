@@ -55,9 +55,15 @@ selector is separate from the active subscription environment in **Subscription 
    Optional fixed percentage tax rates use `txr_...`; no tax is added when omitted.
 
 If a manual draft uses the wrong tier, select **Delete draft** beside it and confirm.
-Then add the same Stripe price again with the correct Collector or Collector Plus tier.
+In manual mode, add the same Stripe price again with the correct Collector or Collector Plus tier.
 Deletion is available only for unpublished, unused manual offers; checkout and subscription
-history is retained. Stripe-managed offers must be corrected through product sync.
+history is retained. Enabling Stripe product sync does not block deletion of manual drafts
+or pausing manual offers. In managed mode, delete the incorrect manual draft, verify the
+product's tier in Stripe, then follow **Open Pricing & plans → Sync now**. The link retains
+the selected Test or Live environment. Manual creation and publication stay disabled.
+Stripe-managed offers must be corrected through product sync; to stop new purchases,
+archive the price in Stripe and sync. Existing subscriptions continue. The offer table
+shows which offers are manual or Stripe-managed and explains why deletion is unavailable.
 The Stripe product and price remain available. Use the matching Test or Live credential
 workspace when correcting an offer.
 
