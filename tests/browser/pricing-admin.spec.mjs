@@ -45,7 +45,7 @@ test('an empty Test catalogue still previews Free and public paused pricing incl
 test('administration tools are grouped, searchable and reachable through the section switcher',async({page},info)=>{
   const errors=await fixtures(page);await page.goto('/admin');
   await expect(page.getByRole('heading',{name:'Manage your platform.'})).toBeVisible();
-  await expect(page.locator('.admin-card')).toHaveCount(15);
+  await expect(page.locator('.admin-card')).toHaveCount(16);
   await page.getByLabel('Find an admin tool').fill('scan');
   await expect(page.locator('.admin-card')).toHaveCount(1);
   await expect(page.locator('.admin-card')).toContainText('Card scanning');

@@ -1,24 +1,31 @@
-# Functional scope / parity checklist
+# Functional scope and parity — 0.51.0
 
-This is a clean-room functional target based on public descriptions, not a claim
-of access to or testing of every authenticated BinderBuilder workflow.
+Updated 8 October 2026 (UTC). This matrix describes shipped CardShelf capabilities,
+not a certificate of complete BinderBuilder or official Pokémon game parity.
+No authenticated competitor workflow or representative competitor export has
+been available for this inspection. Existing data, grants and billing records
+must survive any later work on the remaining features.
 
-| Area | v0.1.1 implementation | Remaining parity / verification work |
+| Area | Implemented capability | Remaining parity or acceptance work |
 |---|---|---|
-| Catalogue | English/Japanese per-set imports, local search, illustrator and Pokédex filters | Full catalogue coverage audit; species/artist landing pages; scheduling |
-| Printings | Provider flag records and manual additions; explicit unverified labels | Verified edition/finish combinations, stamps, provider corrections |
-| Ownership | Quantities, condition, wishlist, notes, revision checks | Individual physical copies, grading, acquisition history |
-| Progress | Unique imported-design counts by set | Complete master-variant progression and custom targets |
-| Views | Card grid/list and custom binder pages | Arbitrary mixed-size pockets and additional browsing views |
-| Binders | Configurable grid/page count; place, clear, move/swap; desktop spread/touch controls | Bulk set filling, insert/reorder whole pages, auto-sort |
-| Sharing | Revocable read-only bearer link, private holdings excluded | Further sharing policies and trade/sale workflows |
-| Portability | Documented collection JSON/CSV; preview/match/error report; full database backup | Actual BinderBuilder export adapter; portable binder JSON round-trip |
-| Printing | Browser-print card-sized placeholders and checklist | Printer/device measurements and richer template options |
-| Pricing | Not implemented | Provider selection, variant/condition mapping, AUD conversion, coverage reporting |
-| Alerts | Not implemented | Price targets, email delivery, schedules, unsubscribe controls |
-| Offline/PWA | Manifest and offline information page; no private API caching | Offline reads/writes, reconciliation, install/device acceptance tests |
-| Hosting | Docker/Compose, optional HTTPS, migration/health/backup scripts | Actual build/start/restore verification, reproducible locked release |
-| Security | Private accounts and core server-side safeguards in source | Full integration execution, account recovery/admin hardening, MFA/security review |
+| Catalogue | English/Japanese Pokémon imports; English Yu-Gi-Oh! and paper Magic; local search, public detail, set and game filters | Entire provider catalogue is not imported automatically; species/artist landing pages, exhaustive language/printing audit |
+| Printings | Provider variants, manually added printings, explicit uncertain mappings, foil effects | Verified master checklist, exact edition/stamp/artwork combinations for every card |
+| Ownership | Quantity by printing and condition, wishlist, notes, revision checks | Individually identified physical copies, grades, acquisition/cost history |
+| Progress | Collection and independent Tracking binders, set/series generation, missing-printing completion and bulk wishlist | Verified exhaustive master-set progression and additional custom targets |
+| Binders | Grid/pages, planned vs owned states, move/swap, generated sets/series, inside/outside appearance, wallpapers/covers | Arbitrary mixed pocket sizes, insertion/reordering of whole pages, richer auto-sort; physical-copy allocation |
+| Sharing/print | Revocable read-only bearer links, printable checklist/placeholder layouts | Additional sharing policies, printer measurements and richer print templates |
+| Portability | CardShelf JSON/CSV ownership export, previewed safe import, complete server backup/restore tools | Actual BinderBuilder export adapter and portable binder-layout JSON round trip |
+| Market values | Printing/source coverage, AUD conversion, planned/owned values, daily history and attribution | No guaranteed local sale prices or condition/grade valuation; coverage and approximation remain explicit; automatic price-target alerts absent |
+| Membership | Free, Collector, Collector Plus, explicit Complimentary assignments; protected tester grants; Stripe offers/checkout/portal/verified periods; approved referrals | Fresh Live purchase/renewal/cancel acceptance on deployed version; account email verification and MFA absent |
+| Marketplace | Member listings/photos, exact printing selection, private enquiries/replies, seller tools, moderation, affiliate links | No integrated card-sale checkout, settlement, shipping or escrow; these are external workflows |
+| Recognition | Single and sequential batch photo scan, English/Japanese imported Pokémon matches, manual confirmation, binder destination and guarded undo; usage/budget limits | Other-game recognition, graded-card recognition, offline/local-model inference; physical camera acceptance |
+| Emails/push | Postal settings, signed events/DNS diagnostics, recovery, optional email preferences; session-bound encrypted Web Push and per-device preferences | Current live sender signing/event setup and inbox delivery acceptance; physical iPhone/Android push and install tests |
+| Arena | Versioned server engine, hidden hands, supported Casual Expanded cards, original tutorials, CPU/saved opponents, private matches, deck import/export/workshop, tournaments and commentary, accessible motion/audio controls | **Full official card/rules parity is absent.** Special Energy and unsupported effects remain rejected; current two-account/tournament/reconnect acceptance needed |
+| PWA/offline | Installable manifest, service worker and offline information page; private APIs are not cached | Offline collection reads/writes and conflict reconciliation; native App Store/Play Store apps |
+| Advertising | First-party Free sponsor; Google Auto ads and isolated Adsterra banners/native; eligibility and private-page exclusions | Real provider fill and applicable consent acceptance; provider availability is not a code-only guarantee |
+| Operations | Migrations, worker heartbeats, health endpoint, pinned builds, AMD64/ARM64 CI image/upgrade rehearsals, backup scripts, new read-only readiness report | Production-data restore, external DNS/TLS/monitoring, operator scheduling/retention, capacity and independent security audit |
 
-“Implemented” means source is present, not that all browser and database workflows
-have been exercised. See VERIFICATION.md for the exact executed-test boundary.
+Source and automated tests establish implemented behavior only within the tested
+boundaries. See [VERIFICATION.md](VERIFICATION.md) for executed checks and live
+findings. Legacy assisted `/battle` screens are retired archives; they are not a
+second production engine or a route to bypass current Arena entitlements.

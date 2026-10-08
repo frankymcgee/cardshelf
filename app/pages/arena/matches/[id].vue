@@ -93,7 +93,7 @@ async function tick() {
   if (document.hidden || !alive || busy.value || pending.value) return
   if (data.value?.mode !== 'pvp' && table.value && !locked.value) {
     if (autoplay.value && (table.value.prompt || table.value.legal.length)) { await act({ type: 'autoplay' }); return }
-    if (table.value.waiting_for === 1 || table.value.phase === 'playing' && table.value.turn === 1 || table.value.phase === 'setup' && !table.value.players[1].ready) { await act({ type: 'cpu_step' }); return }
+    if (table.value.waiting_for === 1 || table.value.phase === 'playing' && table.value.turn === 1 || table.value.phase === 'setup' && table.value.first !== null && !table.value.players[1].ready) { await act({ type: 'cpu_step' }); return }
   }
   await load()
 }

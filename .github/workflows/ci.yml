@@ -95,6 +95,7 @@ jobs:
       - run: npm run test:integration
       - name: Install scanner browser
         run: npx playwright install --with-deps chromium
+      - run: npm run test:release-ui
       - run: npm run test:scan-batch-ui
       - run: npm run test:scanning-ui
       - run: npm run test:ads-ui
@@ -116,6 +117,7 @@ jobs:
           path: |
             package-lock.json
             /tmp/cardshelf-server.log
+            test-results/release
             test-results/pricing-admin
             test-results/themes
             test-results/affiliate-live

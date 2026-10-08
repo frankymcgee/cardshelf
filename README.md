@@ -1,4 +1,4 @@
-# CardShelf 0.50.0
+# CardShelf 0.51.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -8,6 +8,21 @@ Arena now gives cards hover lift and selection feedback, plays and evolutions
 landing pulses, and attacks card lunges, type-coloured trails and damage bursts.
 Use **Motion: Full/Reduced** or **Battle effects: On/Off** above the live table.
 System reduced motion always takes priority. See [Arena animations](docs/ARENA_CARD_ANIMATIONS.md).
+
+## Production release inspection
+
+Administration → **Release readiness** reports 17 read-only configuration and
+operational checks, with separate acceptance checks for payments, mail, devices,
+Arena and restoration. Public pages now use normal account and contact flows;
+existing `/early-access` links redirect safely to `/contact`.
+
+The inspection also fixes an Arena CPU opening loop: a prepared computer now
+waits for the human’s starting choice rather than repeatedly resetting its field.
+The 4,000-action safety cap and saved engine versions remain in place.
+
+A production launch and full feature parity are not certified by a version bump.
+See [the current inspection](docs/VERIFICATION.md) and
+[the feature/parity matrix](docs/PARITY_CHECKLIST.md) for evidence and open gates.
 
 ## Complete your binder
 

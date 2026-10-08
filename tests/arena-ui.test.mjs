@@ -45,6 +45,12 @@ test('unmounted page does not accept a late private response',async()=>{const d=
 test('hidden tab does not poll or auto-play',async()=>{let calls=0;const h=harness(page,async()=>{calls++;return frame()});h.scope.document.hidden=true;h.autoplay.value=true;h.accept(frame(1,{mode:'practice'}));await h.tick();await h.load();assert.equal(calls,0);});
 test('PvP never sends autoplay even when the local toggle is forced true',async()=>{const calls=[],h=harness(page,async(p,o)=>{calls.push(o);return frame()});h.accept(frame());h.autoplay.value=true;await h.tick();assert.equal(calls.length,1);assert.equal(calls[0],undefined);});
 test('solo autoplay uses server action and never sends locally computed damage',async()=>{const calls=[],h=harness(page,async(p,o)=>{calls.push(o);return frame(2,{mode:'practice'})});const f=frame(1,{mode:'practice'});f.table.legal=[{action:{type:'end_turn'}}];h.accept(f);h.autoplay.value=true;await h.tick();assert.deepEqual(plain(calls[0].body.action),{type:'autoplay'});});
+test('solo opening polls are read-only until the human chooses who starts',async()=>{
+  const calls=[],f=frame(1,{mode:'tutorial'});f.table.phase='setup';f.table.first=null;f.table.players[1].ready=false;
+  const h=harness(page,async(p,o)=>{calls.push(o);return f});h.accept(f);
+  await h.tick();assert.deepEqual(calls,[undefined]);
+  f.table.first=0;await h.tick();assert.deepEqual(plain(calls[1].body.action),{type:'cpu_step'});
+});
 test('pending decision values are the sole choice payload',()=>{const t=source(page);assert.match(t,/@choose="act\(\{ type: 'choose', choices: \$event \}\)"/);assert.ok(!t.includes("type: 'counters'"));assert.match(t,/data\.mode !== 'pvp'/);});
 test('match completion stops local autoplay and blocks further actions',async()=>{let calls=0;const h=harness(page,async()=>{calls++});h.autoplay.value=true;h.accept(frame(9,{status:'finished'}));await h.act({type:'end_turn'});assert.equal(calls,0);assert.equal(h.autoplay.value,false);});
 test('reopening a tab restores the original pending action without executing it automatically',async()=>{let calls=0;const h=harness(page,async()=>{calls++;return frame(2)});const body={revision:1,request_id:randomUUID(),action:{type:'end_turn'}};h.storage.set(h.key(),JSON.stringify({id:matchId,body}));await h.mounts[0]();assert.deepEqual(plain(h.pending.value.body),body);assert.equal(calls,1);});

@@ -39,7 +39,7 @@ await test('public site and subscription preparation',async t=>{
    });
   });
   await t.test('every public page is server-rendered without login',async()=>{
-   for(const [path,title] of [['/','One beautiful home.'],['/features','Everything in its place.'],['/pokemon-arena','Your seat at the table.'],['/pricing','Your level of detail.'],['/early-access','Let’s make an introduction.'],['/privacy','Accounts and collections']]){
+   for(const [path,title] of [['/','One beautiful home.'],['/features','Everything in its place.'],['/pokemon-arena','Your seat at the table.'],['/pricing','Your level of detail.'],['/contact','Let’s make an introduction.'],['/privacy','Accounts and collections']]){
     const r=await request(path);assert.equal(r.status,200,path);assert.ok(r.data.includes(title),path+' server HTML');assert.match(r.headers.get('x-robots-tag'),/index, follow/);assert.ok(!r.data.includes('Platform tester'));assert.ok(!r.data.includes('untouched-session'));
    }
   });
@@ -50,7 +50,7 @@ await test('public site and subscription preparation',async t=>{
    assert.match(r.data,/<h2\b[^>]*>\s*Collector Plus\s*<\/h2>/);
    assert.match(r.data,/no payment required\./i);
    assert.ok(r.data.includes('New subscription checkout is paused. Existing renewals are not cancelled.'));
-   assert.ok(r.data.includes('Already testing? Keep everything.'));
+   assert.ok(r.data.includes('Existing access stays protected.'));
    // Verify the underlying default policy too: marketing copy alone is not a billing guard.
    const offers=await request('/api/public/subscription-offers');
    assert.equal(offers.status,200);assert.match(offers.headers.get('content-type'),/json/);

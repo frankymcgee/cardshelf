@@ -51,11 +51,11 @@ async function inviteFree() {
   <p v-if="error" class="alert error" role="alert">{{ error }}</p><p v-if="loading" class="loading-panel">Loading protected settings…</p>
   <template v-else-if="saved">
     <form class="panel form-stack free-settings" @submit.prevent="save">
-      <h2>Registration and advertisements</h2><div class="button-row"><NuxtLink to="/admin/adsense" class="button secondary">Google AdSense</NuxtLink><NuxtLink to="/admin/passwords" class="button secondary">Password recovery</NuxtLink></div>
+      <h2>Registration and advertisements</h2><div class="button-row"><NuxtLink to="/admin/adsense" class="button secondary">Advertising</NuxtLink><NuxtLink to="/admin/passwords" class="button secondary">Password recovery</NuxtLink></div>
       <label class="checkbox-label"><input v-model="form.registration_enabled" type="checkbox" :disabled="busy" />Allow new Free accounts to register</label>
-      <p class="data-note">The public catalogue does not require an account. New Free accounts have no tester grant or private editing entitlement. Existing testers and paid accounts are not converted. Email verification is not included. Password recovery is available when SMTP is configured; administrators can also provide secure one-time links. Keep self-registration off until your support and privacy process is ready.</p>
+      <p class="data-note">The public catalogue does not require an account. New Free accounts have no tester grant or private editing entitlement. Existing testers and paid accounts are not converted. Email verification is not included. Password recovery is available when Postal is configured; administrators can also provide secure one-time links. Keep self-registration off until your support and privacy process is ready.</p>
       <label class="checkbox-label"><input v-model="form.ads_enabled" type="checkbox" :disabled="busy" />Show the configured sponsor to signed-in Free accounts</label>
-      <p class="alert info">Collector, Collector Pro, administrators, testers and Complimentary users remain ad-free. Signed-out visitors and uncertain membership states do not receive an ad. No ads appear on billing, account, administration, binder-editing, print or private-message screens.</p>
+      <p class="alert info">Collector, Collector Plus, administrators, testers and Complimentary users remain ad-free. Signed-out visitors and uncertain membership states do not receive this first-party sponsor. Network advertising has separate controls under Advertising. No ads appear on billing, account, administration, binder-editing, print or private-message screens.</p>
       <label>Sponsor name<input v-model="form.sponsor_name" maxlength="100" :disabled="busy" /></label>
       <label>Advertisement text<textarea v-model="form.sponsor_text" maxlength="400" :disabled="busy" /></label>
       <div class="form-columns"><label>HTTPS destination<input v-model="form.sponsor_url" type="url" maxlength="1000" placeholder="https://sponsor.example/" :disabled="busy" /></label><label>Button text<input v-model="form.sponsor_cta" maxlength="40" :disabled="busy" /></label></div>
@@ -66,7 +66,7 @@ async function inviteFree() {
       <label>Reason for change<input v-model="form.reason" required minlength="5" maxlength="500" :disabled="busy" /></label>
       <label>Current administrator password<input v-model="password" type="password" autocomplete="current-password" :disabled="busy" required /></label>
       <button class="button primary" :disabled="busy">{{ busy ? 'Saving…' : 'Save Free settings' }}</button>
-      <p class="data-note">This is a first-party sponsor banner, not AdSense or AdMob. It uses no third-party advertising JavaScript, advertising cookies, impression tracking or personalised targeting. Google AdSense is configured separately under Google AdSense. Its consent and privacy requirements are different from this first-party banner.</p>
+      <p class="data-note">This is a first-party sponsor banner, not AdSense or AdMob. It uses no third-party advertising JavaScript, advertising cookies, impression tracking or personalised targeting. Adsterra and Google AdSense are configured separately under Advertising. Their consent and privacy requirements are different from this first-party banner.</p>
       <label>Upload sponsor image after saving settings<input type="file" accept="image/jpeg,image/png,image/webp" :disabled="busy || !saved.revision" @change="upload" /></label>
       <p class="data-note">Re-enter your administrator password before upload. Images are re-encoded, metadata removed and stored on this server. Save text changes separately before uploading.</p>
     </form>

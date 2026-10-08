@@ -1,83 +1,107 @@
-# CardShelf 0.1.0 — verification report
+# Production release inspection — CardShelf 0.51.0
 
-Date: 16 September 2026
+Inspection date: 8 October 2026 (UTC). Live system observed: **0.50.0** at
+`https://cardshelf.cloud`; baseline source: `115c7d3b57cde4668886e373e46d94177949b163`.
+The release changes are on `release/production-readiness` and are not installed
+on the live server merely because they pass source checks.
 
-## Release status
+## Release decision
 
-**Initial source implementation / deployment candidate, not a validated production
-release and not full BinderBuilder feature parity.** The package has not been
-installed on the user's server, published to a registry, or pushed to a repository.
+**A full public launch and full feature parity are not yet certified.** This
+release fixes observed defects and adds reusable inspection coverage. Opening
+registration, successful code CI and removing beta copy are separate from
+verifying real payments, delivered email, device push, restoration and complete
+rules coverage. Preserve protected tester grants and existing subscriptions.
 
-This report distinguishes executed checks from checks that are only supplied as
-code or instructions. A passing pure-function test is not evidence that the Nuxt
-application, database queries, browser interface, HTTPS proxy or Docker services
-work together.
+## Defects corrected
 
-## Checks actually executed
+| Finding | Change |
+|---|---|
+| Arena walkthrough exhausted its 4,000-action safety limit by turn 6 | CPU was repeatedly resetting its prepared opening before the human selected who starts. It now waits, including saved Core v1 matches; the UI polls without idle writes until that choice. The safety cap remains. |
+| Conceding player saw “The opponent conceded” | Use a viewpoint-independent concession reason. |
+| Public pages invited private-beta testers despite Live subscriptions | Normal registration/contact CTAs and launch copy; protected grants remain unchanged. Registration pause is still honestly shown. |
+| Old access-form URL was the only support destination | Canonical `/contact`; permanent legacy redirect preserves only validated purposes and drops arbitrary query parameters. |
+| Server settings reported hard-coded 0.5.0 while the app ran 0.50.0 | Read installed package version; remove outdated loading fallback. |
+| Static pages mixed Collector Pro/Plus and SMTP/Postal descriptions | Align static product and service names; Stripe-supplied product snapshots are still authoritative. |
+| Privacy page omitted photo recognition, push and complete ad information | Explain these implemented data flows and include provider-specific advertising notices. |
+| No consolidated production inspection view | Administrator-only `/admin/readiness` returns 17 derived checks, plus six separate acceptance checks. It performs no external calls or writes and exposes no credentials or account identities. |
 
-| Check | Result | Scope and limitations |
+## Live evidence and outstanding gates
+
+| Area | Evidence observed on live 0.50.0 | Gate still open |
 |---|---|---|
-| Dependency-free Node test suite | **55 passed, 0 failed, 0 skipped** | Validation, binder slot/resize logic, printing normalization, password hashing and verification, token handling, request-origin validation, JSON/CSV parsing and merge rules, configuration parsing. No running database or application server. |
-| JavaScript syntax | **26 files passed** | `node --check` on service modules, worker, utility scripts, service worker and test sources. |
-| TypeScript/script transpilation syntax | **24 source blocks passed** | TypeScript 5.8.3 `transpileModule` on `.ts` files and extracted Vue script blocks. **Not** Vue/Nuxt typechecking or module-resolution validation. |
-| Vue template tag balance | **18 templates passed** | Structural tag-balance check, not Vue compilation, accessibility testing or browser rendering. |
-| JSON/manifest parsing | **3 files passed** | Package metadata, TypeScript configuration and PWA manifest. |
-| YAML parsing | **3 files passed** | Both Compose files and CI workflow parse. Docker Compose itself was unavailable. |
-| Compose source assertions | **Passed** | Database has no host-published port; application defaults to host loopback; app and worker require successful schema migration. This is source inspection, not firewall/network testing. |
-| CSS parsing | **Passed** | Top-level stylesheet rules parse. No responsive rendering claim is made. |
-| POSIX shell syntax | **Passed** | Configuration, backup and restore scripts pass `sh -n`. Backup/restore were not executed. |
-| Configuration helper smoke tests | **8 cases passed** | HTTP with explicit port, standard HTTPS and HTTPS `:443` accepted; out-of-range port, nonstandard HTTPS port, missing HTTP port, path and injection-like URL rejected. |
-| Configuration file handling | **Passed** | Accepted cases produced `.env` mode 0600, correctly formatted random secrets and a valid format check; repeated setup refused to overwrite the file. Tests used temporary directories, which were discarded. |
+| Access/public launch | Existing administrator session works; public and private routes are reachable. Free self-registration is switched **off**. | Enable the reviewed Free registration setting on the deployed release and complete a fresh new-member flow. Do not replace protected grants with paid requirements. |
+| Catalogue/worker/prices | 8 imported sets, 781 cards, 1,128 printings; worker online and recent completed price jobs. English TCGdex returned 220 sets and Japanese 184, excluding the selector placeholder. Binder has dated AUD values and coverage labels. | Current catalogue does not establish exhaustive card/printing coverage. The Yu-Gi-Oh! provider returned selectable source sets. |
+| Stripe | Live checkout and enforcement enabled; both paid tiers published; credentials/portal configured; signed Live webhook and current reconciliation heartbeat visible. | New member checkout → signed invoice → correct tier → portal cancellation/renewal acceptance. No money was charged or subscription changed during this inspection. |
+| Postal | Sending enabled and credentials configured. Historical test/recovery emails show provider acceptance. DNS diagnostics checked SPF/hostname/return-path; DMARC is in review and DKIM diagnostic input is unconfigured. | Verify exact sender DKIM and trusted signed delivery events, then receive a real recovery email and redeem it. Acceptance by Postal is not proof of inbox delivery. |
+| Recognition | Enabled OpenAI integration; successful historical scans and additions; monthly cost/budget counters and scan-resume UI work. | Fresh camera/upload recognition and confirmed addition on the deployed release. This inspection did not spend provider budget or alter collection holdings. |
+| Push/PWA | Device page renders installation, preferences and permission handling. This cloud browser has notifications blocked. | Opted-in physical iPhone/Android install and actual notification delivery. Browser layout tests do not establish delivery. |
+| Arena | Eligible assignment, saved deck, workshop/tournament navigation, hidden opening cards, server-validated placement, Inspect and history observed. A new training match reproduced the reset loop and was closed by concession. | Deploy the fix, repeat a long opening wait and complete a game; run two eligible accounts through private-match reconnect and tournament advancement. Unsupported effects/Special Energy still prevent full official rules parity. |
+| Recovery/hosting | Baseline GitHub validation succeeded, including supplied release gates. | No host shell/current database backup access in this inspection. Restore a current production backup in isolation; do not restore over the live database. |
+| Advertising | Configured provider and administrator previews are inspectable. | Verify signed-out/Free live creative fill and consent on actual devices; repeat private/paid exclusions after deployment. |
 
-The core tests ran with **Node.js 22.16.0** in the authoring environment. The
-application's declared and containerized runtime is **Node.js 24**; running the
-suite against that target runtime remains part of the connected build/CI checks.
-The exact TAP output is included at [test-results/unit-tests.tap](test-results/unit-tests.tap).
+No production credentials, account emails, private collections or messages are
+included in this report. The Arena screenshot contains only original training
+cards and the inspection alias.
 
-## Checks not executed
+## Route inspection coverage
 
-The environment had no Docker daemon/CLI or PostgreSQL server, and could not
-resolve npm/API hosts from the build container. Therefore the following are
-**unverified**, not implicitly passing:
+The new real-server browser suite inspects 11 public routes and 33 authenticated
+member/administrator routes at desktop and phone sizes. Each inspection waits
+for mounted reads, detects JavaScript errors and same-origin API server errors,
+and checks horizontal overflow. It also checks the safe legacy contact redirect,
+paused-registration contact purpose and the complete readiness view. It uses a
+disposable localhost `_test` database, never production credentials.
 
-- Installing the pinned npm dependencies or resolving their transitive graph.
-- Generating/retaining a real npm lockfile; Nuxt preparation, full typechecking
-  and production build; startup of the generated server bundle.
-- PostgreSQL migrations and all SQL-backed operations, including concurrency,
-  transaction isolation, permissions, session invalidation and import matching.
-- The supplied HTTP/database integration suite and GitHub Actions workflow.
-- Building and starting Docker Compose services; health checks, Caddy HTTPS,
-  reverse-proxy headers, worker leases and provider retry behavior in operation.
-- Live TCGdex catalogue imports and live image display against representative sets.
-- Browser behavior, drag/drop, touch movement, scrolling, printing, PWA installation,
-  screen reader behavior and iOS/Android compatibility.
-- A backup/restore round trip, disaster recovery, load testing, or security audit.
+| Route group | Inspection scope |
+|---|---|
+| Public | Homepage, features, pricing, Arena information, contact/privacy, catalogue, registration/sign-in/recovery/reset; canonical metadata and public sitemap |
+| Member | Dashboard, account/membership/referrals, emails/push, games/cards, binder shelf, scanner/settings, marketplace/create/inbox |
+| Administrator | Home, readiness, pricing/Test preview, Stripe, memberships, Arena, provider imports, scanning, emails/recovery, website requests, Free/sponsors, affiliates, advertising, moderation |
+| Dynamic workflows | Existing dedicated integration/browser suites cover card detail/editing, binder detail/completion/sharing/printing, marketplace detail/photos/conversations, Arena deck/match/tournament/watch routes and access failures. A populated binder and an actual training match were also inspected live. |
+| Retired assisted play | `/battle` and `/admin/battle` are retained archive surfaces; current production Arena is `/arena`. Existing version/archive tests remain in place. |
 
-## Gates supplied for a connected environment
+Booting a route does not prove every mutation, external connection or device
+workflow. CI fixtures test actual SQL/application behavior with deterministic
+provider doubles; they do not prove external provider delivery.
 
-The Dockerfile runs unit tests, full Nuxt/Vue typechecking and a production build
-before producing the application image. A failure must be investigated rather
-than bypassed. No prebuilt image is included.
+## Executed checks
 
-`.github/workflows/ci.yml` defines a Node 24/PostgreSQL 17 job that also migrates an
-empty test database, starts the production server and runs
-`tests/integration/api.test.mjs`. That suite defines 16 API/database scenarios
-covering protected setup, authentication, user separation, mutation protections,
-collection revisions, binder behavior, sharing revocation, import replay,
-manual-printing permissions and session changes. It requires an explicitly
-permitted, disposable database ending in `_test`; never point it at real data.
-This workflow was **not executed** in this session.
+| Check | Result | Boundary |
+|---|---|---|
+| Baseline Node suite | 2,094 passed; no failures/skips | Actual source on Node 24.19.0 |
+| Baseline Nuxt typecheck/build | Passed | Volar plugin warning is nonfatal |
+| Arena idle-loop regression and UI suite | 45 passed; no failures/skips | Both engines wait unchanged through 150 polls, then complete a game; browser tick uses reads while first choice is pending |
+| Final release Node/typecheck/build | **2,106 passed, 0 failed, 0 skipped; typecheck and production build passed** | New readiness contracts and existing regressions; Node 24.19.0 |
+| PostgreSQL/real browser/image CI | Results updated on the pull request | This local environment cannot initialize native PostgreSQL as a non-root owner and cannot download Playwright engines; no tests were bypassed. |
+| Live browser inspection | Findings above | Retained administrator session; read-only configuration plus one disposable training match |
 
-Follow the acceptance checklist in [DEPLOYMENT.md](DEPLOYMENT.md). Before entering
-valuable collection data, verify a real set import, two-user isolation, collection
-edits, binder moves, public-link revocation, export/import and a complete backup
-restoration on the intended server.
+The baseline successful workflow is
+[Validate CardShelf](https://github.com/frankymcgee/cardshelf/actions/runs/37697064181).
+Only a successful workflow on this release’s exact commit establishes its CI
+result. New integration tests verify admin/member/anonymous authorization,
+private no-store responses, no leaked secrets, no writes, applied migrations,
+correct installed version, contact SSR/redirect and sitemap behavior.
 
-## Known scope gaps
+## Deployment acceptance sequence
 
-See [PARITY_CHECKLIST.md](PARITY_CHECKLIST.md). In particular, pricing and alerts,
-full offline browsing/editing/synchronization, actual BinderBuilder-export
-compatibility, comprehensive verified printing coverage, local artwork storage,
-individual-copy records and account recovery/MFA are not implemented. Card images
-still load from the external provider; a locally stored catalogue is not the same
-as fully independent image hosting.
+1. Review and merge only after all release CI gates pass; use the repository’s
+   existing tested container release/upgrade path.
+2. Back up the current deployment and verify restoration on an isolated host.
+3. Install the release; check health, app/worker version and migrations, then
+   open Administration → Release readiness.
+4. Complete Postal sender/event and receiving-inbox acceptance, including
+   password recovery without exposing the token in logs or reports.
+5. Complete Live membership purchase/tier/portal/renewal acceptance using the
+   operator’s payment process, and the physical-device push/scan checks.
+6. Complete both-seat Arena and tournament acceptance and actual guest/Free
+   advertising/privacy acceptance.
+7. Enable Free registration with its existing administrator verification and
+   audit reason; confirm a fresh member can register and reach their intended
+   membership. Release announcements must match the implemented scope.
+
+For specific feature gaps see [PARITY_CHECKLIST.md](PARITY_CHECKLIST.md). The
+original September source-only report is retained as
+[history/INITIAL_VERIFICATION.md](history/INITIAL_VERIFICATION.md).
+
+![Live training match closed after inspection](evidence/arena-inspection.jpg)

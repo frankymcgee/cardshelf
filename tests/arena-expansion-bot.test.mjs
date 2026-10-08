@@ -9,6 +9,27 @@ import { readyFixture,power,rngFor,trainer } from './helpers/arena-fixtures.mjs'
 const choices=(kind,min,max,options,extra={})=>({version:ARENA_VERSION,seat:0,phase:'resolution',legal:[],players:[{hand:[],bench:[],discard:[]},{hand:[],bench:[],discard:[]}],prompt:{kind,min,max,options,...extra}});
 const unit=(id,{damage=0,hp=100,...extra}={})=>({id,damage,energy:[],conditions:{special:null,poison:false,burn:false},card:{name:id,kind:'pokemon',stage:'Basic',hp,attacks:[{name:'Tap',damage:10,cost:[],effects:[]}],...extra}});
 
+for(const version of [ARENA_VERSION,'pokemon-core-v1'])test('prepared CPU waits for a human opening choice without resetting · '+version,()=>{
+  const deck=theme=>trainingDeck(theme).map(row=>({...row,card:{...row.card,compiler:version}}));
+  let state=newArena([deck('ember'),deck('tide')],{version,mode:'tutorial',rng:rngFor(21)});
+  const rng=rngFor(101);
+  state=driveCpu(state,{seat:1,rng}).state;
+  assert.ok(state.players[1].active);assert.equal(state.first,null);
+  assert.equal(state.players[1].ready,false);assert.ok(state.actions<=6);
+  const waiting=structuredClone(state);
+  for(let poll=0;poll<150;poll++){
+    const next=driveCpu(state,{seat:1,rng});
+    assert.equal(next.steps,0);state=next.state;
+  }
+  assert.deepEqual(state,waiting);
+  state=applyArenaAction(state,0,{type:'first',seat:0},{rng});
+  state=driveCpu(state,{seat:1,rng}).state;
+  assert.equal(state.players[1].ready,true);assertArena(state);
+  let rounds=0;
+  while(state.phase!=='finished'&&rounds++<180)for(const seat of [0,1])state=driveCpu(state,{seat,rng}).state;
+  assert.equal(state.phase,'finished');assert.ok(state.actions<4000);assertArena(state);
+});
+
 test('expanded CPU obeys every visible prompt cardinality and never invents a selection',()=>{
   const options=[{id:'one',card:unit('one')},{id:'two',card:unit('two')}];
   for(const kind of ['search','recover','trainer_discard','promote','effect_target','prize']) {

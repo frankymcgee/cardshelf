@@ -12,4 +12,4 @@ onMounted(load)
 watch(() => [route.path, auth.state.value.user?.id], load)
 onBeforeUnmount(() => { alive = false; sequence++ })
 </script>
-<template><aside v-if="isFree" class="alert info free-tier-notice"><strong>Free membership</strong><span>Browse every supported card game and available source prices. Private collection tools require Collector or Collector Pro.</span><NuxtLink to="/explore" class="text-button">Free card browser</NuxtLink><NuxtLink to="/membership" class="text-button">Membership options</NuxtLink></aside></template>
+<template><aside v-if="isFree" class="alert info free-tier-notice"><strong>Free membership</strong><span>Browse every supported card game and available source prices. Private collection tools require Collector or Collector Plus.</span><NuxtLink to="/explore" class="text-button">Free card browser</NuxtLink><NuxtLink to="/membership" class="text-button">Membership options</NuxtLink></aside></template>
