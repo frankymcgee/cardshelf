@@ -35,6 +35,10 @@ UPDATE password_recovery_mail SET status='expired', lease_token=NULL, lease_unti
 UPDATE email_outbox SET status='expired', lease_token=NULL, lease_until=NULL,
   finished_at=now(), updated_at=now(), expires_at=now(), last_error='DATABASE_RESTORED'
   WHERE status IN ('queued','sending');
+-- A restored host must verify its own SMTP connection. Keep credentials,
+-- enablement and history, but do not reuse a check from the previous host.
+UPDATE email_settings SET smtp_verified_at=NULL, smtp_verified_revision=NULL
+  WHERE singleton AND provider='smtp';
 COMMIT;
 SQL
 sh scripts/compose.sh up -d app worker

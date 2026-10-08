@@ -5,6 +5,12 @@ import { EMAIL_DNS_NOTICE,emailDnsDiagnostics,inspectSpf,inspectDkim,inspectDmar
 const key=generateKeyPairSync('rsa',{modulusLength:2048}).publicKey.export({format:'der',type:'spki'}).toString('base64');
 const dkim='v=DKIM1; k=rsa; p='+key;
 const txt=value=>[[value]];
+test('SMTP diagnostics ignore even a saved Postal origin and inspect the selected sender only',async()=>{
+  const queried=[],resolver={resolveTxt:async name=>{queried.push(name);return name.startsWith('_dmarc')?txt('v=DMARC1; p=reject'):name.includes('_domainkey')?txt(dkim):txt('v=spf1 include:mail.example.com -all');},resolve4:()=>assert.fail('SMTP diagnostics queried Postal A records'),resolve6:()=>assert.fail('SMTP diagnostics queried Postal AAAA records'),resolveCname:()=>assert.fail('SMTP diagnostics queried Postal return path')};
+  const result=await emailDnsDiagnostics({provider:'smtp',origin:'https://postal.cardshelf.cloud',dkim_selector:'selected-smtp',dkim_public_key:dkim},{resolver});
+  assert.deepEqual(queried.sort(),['_dmarc.cardshelf.cloud','cardshelf.cloud','selected-smtp._domainkey.cardshelf.cloud'].sort());
+  assert.equal(result.checks.length,3);assert.ok(result.checks.every(c=>c.status==='pass'));
+});
 test('SPF recognizes a single constrained record with expected include without promising authorization',()=>{
  const r=inspectSpf(txt('v=spf1 ip4:203.0.113.4 include:spf.postal.cardshelf.cloud -all'),{expectedInclude:'spf.postal.cardshelf.cloud'});assert.equal(r.status,'pass');assert.match(r.detail,/not evaluated/);
 });

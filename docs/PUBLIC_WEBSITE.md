@@ -1,4 +1,4 @@
-# Public website and account access — 0.51.0
+# Public website and account access — 0.52.0
 
 Public routes are `/`, `/features`, `/pokemon-arena`, `/pricing`, `/contact`,
 `/privacy`, `/explore`, card detail and `/register`. Sign-in/recovery pages remain

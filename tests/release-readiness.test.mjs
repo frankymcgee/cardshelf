@@ -18,6 +18,19 @@ test('configured services still require deployment and parity acceptance', () =>
   assert.match(result.acceptance.find(check => check.id === 'arena').detail, /subset.*full official rules parity/);
   assert.equal(result.ready, undefined);
 });
+test('SMTP readiness checks the selected connection without requiring Postal or reusing its delivery evidence', () => {
+  const snapshot=configured();snapshot.email={...snapshot.email,provider:'smtp',signedEvents:false,verifiedAt:new Date(now)};
+  const result=releaseChecks(snapshot,now);
+  assert.equal(result.checks.length,17);assert.equal(result.status,'review');
+  assert.equal(result.checks.find(c=>c.id==='email').status,'pass');
+  assert.equal(result.checks.find(c=>c.id==='smtp-connection').status,'pass');
+  assert.equal(result.checks.find(c=>c.id==='postal-webhook'),undefined);
+  assert.equal(result.checks.find(c=>c.id==='email-delivery').status,'review');
+  for(const verifiedAt of [null,new Date(now-8*86400_000),new Date(now+60_000)]){
+    assert.equal(releaseChecks({...snapshot,email:{...snapshot.email,verifiedAt}},now).checks.find(c=>c.id==='smtp-connection').status,'review');
+  }
+  snapshot.email.configured=false;assert.equal(releaseChecks(snapshot,now).status,'blocked');
+});
 test('closed registration prevents a self-service public release', () => {
   const result = releaseChecks({ ...configured(), registration: false }, now);
   assert.equal(result.status, 'blocked');
