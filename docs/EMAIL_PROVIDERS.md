@@ -58,6 +58,9 @@ Set **Maximum emails per minute** to your provider's permitted rate, allowing
 capacity for other applications sharing the account or source IP. WPMU's preset
 rejects values above 10; custom SMTP accepts 1–60. Both CardShelf queues share an
 atomic PostgreSQL reservation and space submissions evenly, with a small margin.
+When both queues have eligible work, they alternate reservations so an activity
+backlog cannot monopolize every slot and delay password recovery. Either queue
+can use the available capacity when the other has no eligible work.
 This limits CardShelf's attempts across processes; it does not reserve capacity
 with the provider or include other applications' messages. A blocked reservation
 does not claim a job, consume a delivery attempt or generate a recovery token.

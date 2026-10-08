@@ -48,7 +48,8 @@ coverage remain outside the implemented scope in [PARITY_CHECKLIST.md](PARITY_CH
 
 The PR's required CI also runs real PostgreSQL/HTTP recovery and provider tests,
 including a private-schema pre-031 upgrade with preserved Postal secrets and
-held old attempts. It exercises shared SMTP pacing, actual recovery redemption,
+held old attempts. It exercises shared SMTP pacing and fair progress for both
+queues under competing backlogs, actual recovery redemption,
 late signed Postal events after a switch, secret-free endpoints and concurrent
 verification changes. Desktop/phone browser coverage saves/reloads WPMU settings
 through real APIs without revealing its synthetic password. Native AMD64/ARM64

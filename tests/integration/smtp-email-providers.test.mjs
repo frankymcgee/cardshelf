@@ -114,6 +114,20 @@ await test('SMTP and Postal provider selection, recovery, pacing and ambiguous d
       const signature=sign('RSA-SHA256',Buffer.from(JSON.stringify(event)),privateKey).toString('base64');
       const delivered=await request('/api/webhooks/postal',{method:'POST',body:event,headers:{'X-Postal-Signature-256':signature}});assert.equal(delivered.status,200,JSON.stringify(delivered.data));assert.equal(settings.provider,'smtp');assert.equal(settings.webhook_public_key,publicPem);assert.equal((await outbox(historicalPostal.id)).status,'delivered');assert.equal((await outbox(job.id)).status,'accepted');
     });
+    await t.test('both SMTP queues keep making progress with competing backlogs',async()=>{
+      assert.equal((await sql`SELECT last_queue FROM email_dispatch_state WHERE singleton`)[0].last_queue,'recovery');
+      const first=await queue(other);await onlyOutbox(first.id);
+      const [recovery]=await sql`INSERT INTO password_recovery_mail(email,kind) VALUES(${admin.email},'test') RETURNING id`;await onlyRecovery(recovery.id);await clearPacing();
+      const before=capture.length;
+      assert.equal(await processRecoveryMail({sql,origin,send}),false);assert.equal(capture.length,before);
+      assert.equal((await sql`SELECT attempts FROM password_recovery_mail WHERE id=${recovery.id}`)[0].attempts,0);
+      assert.equal(await processEmailOutbox({sql,origin,send}),true);assert.equal((await outbox(first.id)).status,'accepted');
+      const second=await queue(other);await onlyOutbox(second.id);await clearPacing();
+      assert.equal(await processEmailOutbox({sql,origin,send}),false);assert.equal((await outbox(second.id)).attempts,0);
+      assert.equal(await processRecoveryMail({sql,origin,send}),true);assert.equal(capture.at(-1).address,admin.email);
+      assert.equal((await sql`SELECT status FROM password_recovery_mail WHERE id=${recovery.id}`)[0].status,'accepted');
+      await clearPacing();assert.equal(await processEmailOutbox({sql,origin,send}),true);assert.equal((await outbox(second.id)).status,'accepted');
+    });
     await t.test('lost acceptance acknowledgments and interrupted submissions are held without retry across provider changes',async()=>{
       const job=await queue(other);await onlyOutbox(job.id);await clearPacing();let calls=0;
       assert.equal(await processEmailOutbox({sql,origin,send:async()=>{calls++;throw Error('Synthetic lost acknowledgment '+smtpSecret);}}),true);

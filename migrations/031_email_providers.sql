@@ -13,6 +13,7 @@ ALTER TABLE email_settings ADD COLUMN smtp_verified_at timestamptz;
 ALTER TABLE email_settings ADD COLUMN smtp_verified_revision integer;
 CREATE TABLE email_dispatch_state (
   singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),
+  last_queue text CHECK(last_queue IN ('notification','recovery')),
   next_send_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE email_outbox ADD COLUMN dispatch_started_at timestamptz;
