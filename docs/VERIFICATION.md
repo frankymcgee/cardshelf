@@ -17,6 +17,8 @@ rules coverage. Preserve protected tester grants and existing subscriptions.
 
 | Finding | Change |
 |---|---|
+| Dependency audit found an issue in Sharp's bundled librsvg | Pin Sharp 0.35.5 and its patched native dependencies. See the [upstream advisory](https://github.com/lovell/sharp/security/advisories/GHSA-wq5f-xc86-pv6w). No exploitation was tested or established. |
+| Broader audit flagged Vue's server renderer and build tools | Pin Vue 3.5.43, update compatible source-map/shell parsing packages, and scope simple-git 4.0.2 to the disabled Nuxt development tools. Audit critical build issues, production dependencies and exact generated server dependencies in CI. See the dependency boundary below. |
 | Arena walkthrough exhausted its 4,000-action safety limit by turn 6 | CPU was repeatedly resetting its prepared opening before the human selected who starts. It now waits, including saved Core v1 matches; the UI polls without idle writes until that choice. The safety cap remains. |
 | Conceding player saw “The opponent conceded” | Use a viewpoint-independent concession reason. |
 | Public pages invited private-beta testers despite Live subscriptions | Normal registration/contact CTAs and launch copy; protected grants remain unchanged. Registration pause is still honestly shown. |
@@ -31,18 +33,38 @@ rules coverage. Preserve protected tester grants and existing subscriptions.
 | Area | Evidence observed on live 0.50.0 | Gate still open |
 |---|---|---|
 | Access/public launch | Existing administrator session works; public and private routes are reachable. Free self-registration is switched **off**. | Enable the reviewed Free registration setting on the deployed release and complete a fresh new-member flow. Do not replace protected grants with paid requirements. |
-| Catalogue/worker/prices | 8 imported sets, 781 cards, 1,128 printings; worker online and recent completed price jobs. English TCGdex returned 220 sets and Japanese 184, excluding the selector placeholder. Binder has dated AUD values and coverage labels. | Current catalogue does not establish exhaustive card/printing coverage. Yu-Gi-Oh! returned selectable source sets; Magic returned 796 source sets without an error. |
+| Catalogue/worker/prices | 8 imported sets, 781 cards, 1,128 printings; worker online and recent completed price jobs. English TCGdex returned 220 sets and Japanese 184, excluding the selector placeholder. Binder has dated AUD values and coverage labels; its completion page loaded 93 of 203 planned pockets represented and 110 missing printings. | Current catalogue does not establish exhaustive card/printing coverage. Yu-Gi-Oh! returned selectable source sets; Magic returned 796 source sets without an error. |
 | Stripe | Live connection test **passed without creating a charge**; checkout and enforcement enabled; both paid tiers published; portal configured; signed Live webhook and current reconciliation heartbeat visible. | New member checkout → signed invoice → correct tier → portal cancellation/renewal acceptance. No money was charged or subscription changed during this inspection. |
 | Postal | Sending enabled and credentials configured. Historical test/recovery emails show provider acceptance. DNS diagnostics checked SPF/hostname/return-path; DMARC is in review. DKIM diagnostic input and the trusted Postal webhook verification public key are **not configured**. | Obtain and save Postal’s exact trusted HTTP signing public key to allow event verification. Verify sender DKIM and correlated signed delivery events, then receive a real recovery email and redeem it. Acceptance by Postal is not proof of inbox delivery. |
 | Recognition | Enabled OpenAI integration; successful historical scans and additions; monthly cost/budget counters and scan-resume UI work. | Fresh camera/upload recognition and confirmed addition on the deployed release. This inspection did not spend provider budget or alter collection holdings. |
 | Push/PWA | Device page renders installation, preferences and permission handling. This cloud browser has notifications blocked. | Opted-in physical iPhone/Android install and actual notification delivery. Browser layout tests do not establish delivery. |
 | Arena | Eligible assignment, saved deck, workshop/tournament navigation, hidden opening cards, server-validated placement, Inspect and history observed. A new training match reproduced the reset loop and was closed by concession. | Deploy the fix, repeat a long opening wait and complete a game; run two eligible accounts through private-match reconnect and tournament advancement. Unsupported effects/Special Energy still prevent full official rules parity. |
 | Recovery/hosting | Baseline GitHub validation succeeded, including supplied release gates. | No host shell/current database backup access in this inspection. Restore a current production backup in isolation; do not restore over the live database. |
-| Advertising | Configured provider and administrator previews are inspectable. | Verify signed-out/Free live creative fill and consent on actual devices; repeat private/paid exclusions after deployment. |
+| Advertising/marketplace | Configured ad provider and administrator previews are inspectable. The marketplace rendered its saved affiliate product and disclosure; moderation returned no open reports. | Verify signed-out/Free live creative fill and consent on actual devices; repeat private/paid exclusions after deployment. |
 
 No production credentials, account emails, private collections or messages are
 included in this report. The Arena screenshot contains only original training
 cards and the inspection alias.
+
+## Dependency audit boundary
+
+After compatible patches, the local production dependency audit and the audit of
+all 52 dependencies in Nuxt's generated server manifest both reported **zero
+known vulnerabilities**. Vue is declared in development dependencies but its
+server renderer is shipped, so the root `--omit=dev` audit alone was insufficient.
+The generated-server audit resolves a separate lockfile and checks every exact
+version, including platform-specific Sharp packages; it never changes the shipped
+manifest or runs dependency install scripts.
+
+The full root audit still reports **11 high-severity package entries and zero
+critical entries**, from two unpatched development-tool dependencies:
+[braces 3.0.3](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) and
+[node-forge 1.4.0](https://github.com/advisories/GHSA-86w9-cpqp-85rv), plus their
+parent packages. These are absent from the generated server and the pruned
+production dependency set. Nuxt development tools remain disabled. This is a
+documented build-tool risk to revisit when upstream patches are available; audit
+success is not an independent security certification. No framework downgrade or
+pre-release development-tools upgrade was applied.
 
 ## Route inspection coverage
 
@@ -73,6 +95,7 @@ provider doubles; they do not prove external provider delivery.
 | Baseline Nuxt typecheck/build | Passed | Volar plugin warning is nonfatal |
 | Arena idle-loop regression and UI suite | 45 passed; no failures/skips | Both engines wait unchanged through 150 polls, then complete a game; browser tick uses reads while first choice is pending |
 | Final release Node/typecheck/build | **2,106 passed, 0 failed, 0 skipped; typecheck and production build passed** | New readiness contracts and existing regressions; Node 24.19.0 |
+| Dependency audits | Root production and generated server: 0 known vulnerabilities; full root: 0 critical, 11 high development-tool entries | Exact generated server versions checked; two remaining unpatched build dependencies documented above |
 | PostgreSQL/real browser/image CI | Results updated on the pull request | This local environment cannot initialize native PostgreSQL as a non-root owner and cannot download Playwright engines; no tests were bypassed. |
 | Live browser inspection | Findings above | Retained administrator session; read-only configuration plus one disposable training match |
 

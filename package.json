@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "nuxt dev --host 0.0.0.0",
     "build": "nuxt build",
+    "audit:runtime": "node scripts/audit-runtime.mjs",
     "start": "node .output/server/index.mjs",
     "postinstall": "nuxt prepare",
     "typecheck": "nuxt typecheck",
@@ -38,7 +39,7 @@
   "dependencies": {
     "nodemailer": "10.0.10",
     "postgres": "3.4.7",
-    "sharp": "0.35.4",
+    "sharp": "0.35.5",
     "web-push": "3.6.7"
   },
   "devDependencies": {
@@ -46,8 +47,13 @@
     "@types/node": "24.10.1",
     "nuxt": "4.5.2",
     "typescript": "5.9.3",
-    "vue": "3.5.41",
+    "vue": "3.5.43",
     "vue-router": "4.6.3",
     "vue-tsc": "3.1.1"
+  },
+  "overrides": {
+    "@nuxt/devtools": {
+      "simple-git": "4.0.2"
+    }
   }
 }

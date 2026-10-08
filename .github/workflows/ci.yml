@@ -79,9 +79,15 @@ jobs:
           done
       - name: Install locked dependencies
         run: npm ci
+      - name: Audit critical build dependencies
+        run: npm audit --audit-level=critical
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - run: npm test
       - run: npm run typecheck
       - run: npm run build
+      - name: Audit generated server dependencies
+        run: npm run audit:runtime
       - run: npm run migrate
       - name: Start production Node server
         run: |

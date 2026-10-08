@@ -19,6 +19,10 @@ existing `/early-access` links redirect safely to `/contact`.
 The inspection also fixes an Arena CPU opening loop: a prepared computer now
 waits for the human’s starting choice rather than repeatedly resetting its field.
 The 4,000-action safety cap and saved engine versions remain in place.
+Sharp is patched to 0.35.5 and Vue to 3.5.43. CI checks critical build advisories,
+production dependencies and the exact generated server dependencies. Run
+`npm run audit:runtime` after building to repeat the server audit. Remaining
+unpatched development-tool advisories are recorded in the inspection report.
 
 A production launch and full feature parity are not certified by a version bump.
 See [the current inspection](docs/VERIFICATION.md) and
