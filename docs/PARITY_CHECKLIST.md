@@ -27,5 +27,5 @@ must survive any later work on the remaining features.
 
 Source and automated tests establish implemented behavior only within the tested
 boundaries. See [VERIFICATION.md](VERIFICATION.md) for executed checks and live
-findings. Legacy assisted `/battle` screens are retired archives; they are not a
-second production engine or a route to bypass current Arena entitlements.
+findings. Legacy assisted `/battle` URLs redirect to Arena. Old records are retained and
+their APIs are retired; they do not bypass current Arena entitlements.

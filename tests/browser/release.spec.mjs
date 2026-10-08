@@ -27,7 +27,7 @@ async function inspect(page, path) {
   page.on('pageerror', onError); page.on('response', onResponse);
   try {
     const response = await page.goto(path); expect(response.status()).toBe(200);
-    await expect(page.locator('main h1').first(), path + ' page heading').toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 }).first(), path + ' page heading').toBeVisible();
     // Wait for mounted application reads; this suite contains no advertising or external provider requests.
     await page.waitForLoadState('networkidle');
     expect((await page.locator('[role="alert"]').allTextContents()).join(' ')).not.toMatch(/Internal Server Error|could not complete this request|Database is not ready/);
