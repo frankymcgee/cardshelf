@@ -40,6 +40,7 @@ await test('SMTP and Postal provider selection, recovery, pacing and ambiguous d
   async function save(changes={}){await overview();const response=await request('/api/admin/emails/settings',{user:admin,method:'POST',body:body(changes)});assert.equal(response.status,200,JSON.stringify(response.data));secretFree(response.data);await overview();return response.data;}
   async function queue(user=member){const key='smtp-integration:'+randomUUID();await enqueueEmail(sql,{eventKey:key,kind:'password_changed',userId:user.id});return (await sql`SELECT * FROM email_outbox WHERE event_key=${key}`)[0];}
   async function onlyOutbox(id){await sql`UPDATE email_outbox SET available_at=now()+interval '1 day' WHERE user_id IN ${sql(users)} AND status='queued'`;await sql`UPDATE email_outbox SET available_at=now()-interval '1 second' WHERE id=${id}`;}
+  async function onlyRecovery(id){await sql`UPDATE password_recovery_mail SET available_at=now()+interval '1 day' WHERE email IN ${sql(users.map(user=>user+'@example.test'))} AND status='queued'`;await sql`UPDATE password_recovery_mail SET available_at=now()-interval '1 second' WHERE id=${id}`;}
   async function clearPacing(){await sql`UPDATE email_dispatch_state SET next_send_at=now()-interval '1 second' WHERE singleton`;}
   const outbox=id=>sql`SELECT * FROM email_outbox WHERE id=${id}`.then(rows=>rows[0]);
   const capture=[];
@@ -102,7 +103,7 @@ await test('SMTP and Postal provider selection, recovery, pacing and ambiguous d
       await save({enabled:true});assert.equal(settings.smtp_verified_at,null);assert.equal((await recoveryDeliveryStatus(sql)).configured,true);
     });
     await t.test('recovery and activity share durable SMTP pacing and record only acceptance',async()=>{
-      const job=await queue();await onlyOutbox(job.id);await sql`INSERT INTO password_recovery_mail(email,kind) VALUES(${member.email},'reset')`;await clearPacing();
+      const job=await queue();await onlyOutbox(job.id);const [recovery]=await sql`INSERT INTO password_recovery_mail(email,kind) VALUES(${member.email},'reset') RETURNING id`;await onlyRecovery(recovery.id);await clearPacing();
       const before=capture.length;assert.equal(await processEmailOutbox({sql,origin,send}),true);const accepted=await outbox(job.id);assert.equal(accepted.provider,'smtp');assert.equal(accepted.status,'accepted');assert.equal(accepted.provider_id,null);assert.equal(accepted.delivered_at,null);
       assert.equal(await processRecoveryMail({sql,origin,send}),false);assert.equal(capture.length,before+1);assert.equal((await sql`SELECT attempts FROM password_recovery_mail WHERE email=${member.email} AND kind='reset'`)[0].attempts,0);assert.equal((await sql`SELECT token_hash FROM password_recovery_tokens WHERE user_id=${member.id}`).length,0);
       await clearPacing();assert.equal(await processRecoveryMail({sql,origin,send}),true);const [reset]=await sql`SELECT * FROM password_recovery_mail WHERE email=${member.email} AND kind='reset'`;assert.equal(reset.status,'accepted');assert.equal(reset.provider,'smtp');assert.equal(reset.delivered_at,null);
@@ -123,9 +124,9 @@ await test('SMTP and Postal provider selection, recovery, pacing and ambiguous d
       await save({provider:'smtp'});
     });
     await t.test('an uncertain recovery remains redeemable and never stores the outgoing token or retries it',async()=>{
-      await sql`INSERT INTO password_recovery_mail(email,kind) VALUES(${other.email},'reset')`;await clearPacing();let token,calls=0;
-      assert.equal(await processRecoveryMail({sql,origin,send:async(_address,message)=>{calls++;token=message.text.match(/#token=([a-f0-9]{64})/)[1];throw Error('Lost SMTP acknowledgment');}}),true);
-      const [row]=await sql`SELECT * FROM password_recovery_mail WHERE email=${other.email} AND kind='reset'`;assert.equal(row.status,'uncertain');assert.equal(row.attempts,1);assert.equal((await sql`SELECT token_hash FROM password_recovery_tokens WHERE token_hash=${digest(token)}`).length,1);assert.ok(!JSON.stringify(row).includes(token));
+      const [recovery]=await sql`INSERT INTO password_recovery_mail(email,kind) VALUES(${other.email},'reset') RETURNING id`;await onlyRecovery(recovery.id);await clearPacing();let token,calls=0;
+      assert.equal(await processRecoveryMail({sql,origin,send:async(address,message)=>{assert.equal(address,other.email);calls++;const match=message.text.match(/#token=([a-f0-9]{64})/);assert.ok(match,'The selected reset job must contain a recovery link.');token=match[1];throw Error('Lost SMTP acknowledgment');}}),true);
+      const [row]=await sql`SELECT * FROM password_recovery_mail WHERE id=${recovery.id}`;assert.equal(row.status,'uncertain');assert.equal(row.attempts,1);assert.equal((await sql`SELECT token_hash FROM password_recovery_tokens WHERE token_hash=${digest(token)}`).length,1);assert.ok(!JSON.stringify(row).includes(token));
       assert.equal(await processRecoveryMail({sql,origin,send:async()=>{calls++;}}),false);assert.equal(calls,1);
       const redeemed=await request('/api/public/password-recovery/complete',{method:'POST',body:{token,password:'Recovered synthetic uncertain mail password 456',confirm_password:'Recovered synthetic uncertain mail password 456'}});assert.equal(redeemed.status,200);
     });
