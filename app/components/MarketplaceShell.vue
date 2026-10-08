@@ -4,7 +4,7 @@ const auth = useAuth()
 </script>
 <template>
   <div class="marketplace">
-    <header class="page-heading"><div><span class="eyebrow">THE COLLECTORS’ MARKET</span><h1>{{ title }}</h1><p>{{ subtitle || 'Find the next card. Make room for someone else’s collection.' }}</p></div><span class="badge">MEMBERS BETA</span></header>
+    <header class="page-heading"><div><span class="eyebrow">THE COLLECTORS’ MARKET</span><h1>{{ title }}</h1><p>{{ subtitle || 'Find the next card. Make room for someone else’s collection.' }}</p></div><span class="badge">MEMBER MARKETPLACE</span></header>
     <nav class="market-nav" aria-label="Marketplace navigation">
       <NuxtLink to="/marketplace" :class="{ selected: $route.path === '/marketplace' && !$route.query.mine }">Browse cards</NuxtLink>
       <NuxtLink to="/marketplace?mine=1" :class="{ selected: $route.query.mine === '1' }">My listings</NuxtLink>
