@@ -18,7 +18,7 @@ rules coverage. Preserve protected tester grants and existing subscriptions.
 | Finding | Change |
 |---|---|
 | Dependency audit found an issue in Sharp's bundled librsvg | Pin Sharp 0.35.5 and its patched native dependencies. See the [upstream advisory](https://github.com/lovell/sharp/security/advisories/GHSA-wq5f-xc86-pv6w). No exploitation was tested or established. |
-| Broader audit flagged Vue's server renderer and build tools | Pin Vue 3.5.43, update compatible source-map/shell parsing packages, and scope simple-git 4.0.2 to the disabled Nuxt development tools. Audit critical build issues, production dependencies and exact generated server dependencies in CI. See the dependency boundary below. |
+| Broader audit flagged Vue's server renderer and build tools | Pin Vue 3.5.43, update compatible source-map/shell parsing packages, and scope simple-git 4.0.2 to the disabled Nuxt development tools. Adapt its one legacy factory import during installation and test the actual consumer module. Audit critical build issues, production dependencies and exact generated server dependencies in CI. See the dependency boundary below. |
 | Arena walkthrough exhausted its 4,000-action safety limit by turn 6 | CPU was repeatedly resetting its prepared opening before the human selected who starts. It now waits, including saved Core v1 matches; the UI polls without idle writes until that choice. The safety cap remains. |
 | Conceding player saw “The opponent conceded” | Use a viewpoint-independent concession reason. |
 | Public pages invited private-beta testers despite Live subscriptions | Normal registration/contact CTAs and launch copy; protected grants remain unchanged. Registration pause is still honestly shown. |
@@ -56,6 +56,11 @@ The generated-server audit resolves a separate lockfile and checks every exact
 version, including platform-specific Sharp packages; it never changes the shipped
 manifest or runs dependency install scripts.
 
+The development-tool compatibility patch changes only its import from the old
+default factory to `simpleGit`. It is idempotent and rejects unexpected package
+versions or import shapes. The consumer module-load regression and the Git
+methods used by Nuxt were checked; upstream Git safety guards are unchanged.
+
 The full root audit still reports **11 high-severity package entries and zero
 critical entries**, from two unpatched development-tool dependencies:
 [braces 3.0.3](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) and
@@ -81,7 +86,7 @@ disposable localhost `_test` database, never production credentials.
 | Member | Dashboard, account/membership/referrals, emails/push, games/cards, binder shelf, scanner/settings, marketplace/create/inbox |
 | Administrator | Home, readiness, pricing/Test preview, Stripe, memberships, Arena, provider imports, scanning, emails/recovery, website requests, Free/sponsors, affiliates, advertising, moderation |
 | Dynamic workflows | Existing dedicated integration/browser suites cover card detail/editing, binder detail/completion/sharing/printing, marketplace detail/photos/conversations, Arena deck/match/tournament/watch routes and access failures. A populated binder and an actual training match were also inspected live. |
-| Retired assisted play | `/battle` routes redirect to `/arena` and `/admin/battle` redirects to `/admin/arena`; old records remain stored and old APIs return 410. Existing version/archive tests remain in place. |
+| Retired assisted play | Live `/battle` and `/admin/battle` navigation redirected to `/arena` and `/admin/arena`. Old records remain stored and old APIs return 410; existing version/archive tests remain in place. |
 
 Booting a route does not prove every mutation, external connection or device
 workflow. CI fixtures test actual SQL/application behavior with deterministic
@@ -94,7 +99,7 @@ provider doubles; they do not prove external provider delivery.
 | Baseline Node suite | 2,094 passed; no failures/skips | Actual source on Node 24.19.0 |
 | Baseline Nuxt typecheck/build | Passed | Volar plugin warning is nonfatal |
 | Arena idle-loop regression and UI suite | 45 passed; no failures/skips | Both engines wait unchanged through 150 polls, then complete a game; browser tick uses reads while first choice is pending |
-| Final release Node/typecheck/build | **2,106 passed, 0 failed, 0 skipped; typecheck and production build passed** | New readiness contracts and existing regressions; Node 24.19.0 |
+| Final release Node/typecheck/build | **2,107 passed, 0 failed, 0 skipped; typecheck and production build passed** | New readiness/consumer contracts and existing regressions; clean locked install on Node 24.19.0 |
 | Dependency audits | Root production and generated server: 0 known vulnerabilities; full root: 0 critical, 11 high development-tool entries | Exact generated server versions checked; two remaining unpatched build dependencies documented above |
 | PostgreSQL/real browser/image CI | Results updated on the pull request | This local environment cannot initialize native PostgreSQL as a non-root owner and cannot download Playwright engines; no tests were bypassed. |
 | Live browser inspection | Findings above | Retained administrator session; read-only configuration plus one disposable training match |

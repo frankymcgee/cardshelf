@@ -12,7 +12,7 @@
     "build": "nuxt build",
     "audit:runtime": "node scripts/audit-runtime.mjs",
     "start": "node .output/server/index.mjs",
-    "postinstall": "nuxt prepare",
+    "postinstall": "node scripts/prepare-dependencies.mjs && nuxt prepare",
     "typecheck": "nuxt typecheck",
     "test": "node --test tests/*.test.mjs",
     "test:integration": "node --test --test-concurrency=1 tests/integration/*.test.mjs",
