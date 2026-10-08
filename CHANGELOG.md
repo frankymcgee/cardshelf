@@ -1,3 +1,13 @@
+## 0.51.0 — 2026-10-08
+
+- Update Sharp to 0.35.5 and Vue to 3.5.43 for the librsvg and server-renderer advisories; update compatible source-map/shell parsing dependencies and scope a patched simple-git 4.0.2 override to the disabled Nuxt development tools. Adapt the pinned consumer's factory import during installation and verify the actual module loads.
+- Add critical build, production and exact generated-server dependency audits to CI. Include every platform-specific native dependency in the audit; leave the shipped server unchanged. Record remaining unpatched development-tool advisories in the inspection report.
+- Fix Arena CPU polling before the human chooses who starts. A prepared computer waits instead of repeatedly resetting its opening field and exhausting the action limit; cover both current and saved Core engines and idle browser polling.
+- Add an administrator-only, read-only release readiness page with 17 configuration/evidence checks and six explicit operational acceptance checks. Never expose credentials, create keys, contact providers or enqueue work from the report.
+- Replace private-beta marketing and invitation CTAs with Free registration and contact flows, preserve legacy access links with a safe permanent redirect, and align plan names and integration descriptions.
+- Correct privacy disclosures for the two advertising providers and report the installed version in server status.
+- Add desktop/phone route inspection to CI and refresh the scope/parity report. Existing tester grants, paid tiers, advertising isolation and unsupported Arena card exclusions are preserved. No migration is required.
+
 ## 0.50.0 — 2026-10-08
 
 - Fix Adsterra banner startup by making `window.atOptions` removable by the vendor loader.

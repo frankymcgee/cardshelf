@@ -18,9 +18,9 @@ async function save() {
   <section class="panel game-access-panel">
     <h2>Your card games</h2><p v-if="error" class="alert warning">{{ error }}</p>
     <template v-if="state">
-      <p v-if="state.mode === 'unlimited'">All supported games are included in your Collector Pro or protected full-access membership.</p>
+      <p v-if="state.mode === 'unlimited'">All supported games are included in your Collector Plus or protected full-access membership.</p>
       <p v-else-if="state.mode === 'single'">Collector manages one game at a time: <strong>{{ gameName(state.selected) }}</strong>. Other games remain available in the free public catalogue.</p>
-      <p v-else>Free card information and source prices are available for every supported game. Collector adds private tracking for one game; Collector Pro supports all games and detailed collection tools.</p>
+      <p v-else>Free card information and source prices are available for every supported game. Collector adds private tracking for one game; Collector Plus supports all games and detailed collection tools.</p>
       <div class="game-access-grid"><article v-for="game in state.games" :key="game.code"><h3>{{ game.name }}</h3><span class="badge" :class="game.manageable ? 'green' : ''">{{ game.manageable ? 'Collection management included' : 'Public lookup / existing records read-only' }}</span><NuxtLink :to="'/explore?game=' + game.code" class="text-button">Browse cards</NuxtLink></article></div>
       <form v-if="state.mode === 'single'" class="form-stack" @submit.prevent="save"><GamePicker v-model="selected" :disabled="busy" /><label class="checkbox-label"><input v-model="confirmed" type="checkbox" :disabled="busy">I understand my other games will be read-only. No cards or binders will be deleted.</label><button class="button primary" :disabled="busy || !confirmed">{{ busy ? 'Saving…' : 'Select managed game' }}</button></form>
       <p class="data-note">Existing binders remain readable and can be deleted; collection exports remain available. A downgrade never deletes another game’s data. A game selection does not change billing.</p>

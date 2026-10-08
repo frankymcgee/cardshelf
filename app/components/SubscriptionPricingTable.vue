@@ -22,7 +22,7 @@ const money = (n: number) => new Intl.NumberFormat('en-AU', { style: 'currency',
   <FreePlanCard :preview="mode === 'preview'" :scan-allowances="scanAllowances" />
   <article v-for="plan in plans" :key="plan.code" class="m-plan stripe-plan" :class="plan.code === 'plus' ? 'm-plan-current' : 'm-plan-future'">
     <div class="stripe-plan-heading"><div>
-      <span class="m-plan-label">{{ mode === 'preview' ? 'TEST PREVIEW · NOT ON SALE' : mode === 'live' && plan.offers.length ? 'PLATFORM MEMBERSHIP' : 'PLANNED MEMBERSHIP · NOT ON SALE' }}</span>
+      <span class="m-plan-label">{{ mode === 'preview' ? 'TEST PREVIEW · NOT ON SALE' : mode === 'live' && plan.offers.length ? 'PLATFORM MEMBERSHIP' : 'MEMBERSHIP · CURRENTLY UNAVAILABLE' }}</span>
       <h2>{{ plan.name }}</h2>
     </div><img v-if="plan.product.images[0] && !brokenImages[imageKey(plan)]" :src="plan.product.images[0]" :alt="plan.name" width="72" height="72" loading="lazy" referrerpolicy="no-referrer" @error="brokenImages[imageKey(plan)] = true"></div>
     <p class="stripe-description">{{ plan.description }}</p>
@@ -31,13 +31,13 @@ const money = (n: number) => new Intl.NumberFormat('en-AU', { style: 'currency',
       <p class="stripe-tax-note">{{ offerTaxLabel(plan.selected) }}</p>
       <p v-if="cadence === 'ANNUAL' && annualSaving(plan) > 0" class="stripe-saving">Save {{ money(annualSaving(plan)) }} compared with 12 monthly payments.</p>
     </template>
-    <p v-else class="stripe-amount"><strong>{{ mode === 'paused' ? 'Pricing to be announced.' : 'Not offered for this period' }}</strong></p>
+    <p v-else class="stripe-amount"><strong>{{ mode === 'paused' ? 'New subscriptions unavailable.' : 'Not offered for this period' }}</strong></p>
     <ul class="stripe-feature-list"><li v-for="(feature, index) in plan.features" :key="index"><AppIcon name="check" :size="18"/><span>{{ feature.name }}</span></li></ul>
     <PlanScanAllowance :plan-code="plan.code" :allowances="scanAllowances" />
     <div class="stripe-plan-footer">
       <p v-if="mode === 'preview'" class="m-fine preview-purchase-note">Preview only. Checkout and subscription changes are unavailable here.</p>
       <template v-else-if="mode === 'live' && plan.selected"><NuxtLink :to="{ path: '/membership', query: { plan: plan.code, cadence } }" class="m-button">Choose {{ plan.name }}<AppIcon name="arrow" :size="18"/></NuxtLink><p class="m-fine">Recurring subscription. Review the full terms before continuing to Stripe.</p></template>
-      <template v-else><p v-if="mode === 'paused'" class="m-fine">New subscription checkout is paused. Existing renewals are not cancelled.</p><NuxtLink to="/early-access" class="m-button">Request testing access<AppIcon name="arrow" :size="18"/></NuxtLink></template>
+      <template v-else><p v-if="mode === 'paused'" class="m-fine">New subscription checkout is paused. Existing renewals are not cancelled.</p><NuxtLink to="/contact?purpose=early_access" class="m-button">Ask about membership<AppIcon name="arrow" :size="18"/></NuxtLink></template>
     </div>
   </article>
 </section>

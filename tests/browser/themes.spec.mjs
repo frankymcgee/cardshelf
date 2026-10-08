@@ -61,7 +61,7 @@ for(const mode of ['light','dark']){
     for(const [url,panel,selectors] of [
       ['/','.m-feature-card',['.m-lead','.m-feature-card p','.m-footer p']],
       ['/pricing','[data-testid="free-plan"]',['.m-lead','[data-testid="free-plan"] h2','[data-testid="free-plan"] .m-button']],
-      ['/early-access','.m-form-card',['.m-form-card h2','.m-form-card label','.m-form-card input','.m-form-card .m-button']],
+      ['/contact','.m-form-card',['.m-form-card h2','.m-form-card label','.m-form-card input','.m-form-card .m-button']],
       ['/explore','.public-card-tile',['.catalogue-heading p','.public-card-tile small','.catalogue-search input']]
     ]){
       await page.goto(url);await expect(page.locator('html')).toHaveAttribute('data-theme',mode);await surface(page,panel,mode);await readable(page,selectors);await fits(page);
