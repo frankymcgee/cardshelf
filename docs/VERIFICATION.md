@@ -9,8 +9,9 @@ This source change does not install 0.52.1 or configure an external mailbox.
 ## Current change and release boundary
 
 The Postal/SMTP functionality from PR #66 is merged. The 0.52.1 follow-up
-installs OpenSSL in the Docker build stage so real SMTP/TLS protocol tests can
-generate disposable certificates in both native release-image builds. The
+installs OpenSSL and curl in the Docker build stage so real SMTP/TLS protocol
+tests can generate disposable certificates and Postal's HTTP health probe can
+run in both native release-image builds. The
 application, PostgreSQL and browser gates passed on 0.52.0; both native builds
 identified this missing test prerequisite. The complete gates are required again
 for the follow-up revision.

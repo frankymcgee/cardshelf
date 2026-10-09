@@ -272,8 +272,8 @@ Do not use `docker compose down -v`; keep secured off-server backups and rehears
 ## Development and validation
 
 The project uses Node.js 24, Nuxt, PostgreSQL and Docker Compose for deployment.
-Local validation also needs the OpenSSL command for disposable SMTP/TLS test
-certificates; the Docker build stage installs it before running the same tests.
+Local validation also needs OpenSSL for disposable SMTP/TLS test certificates
+and curl for the Postal health probe; the Docker build stage installs both tools.
 
 ```sh
 npm ci

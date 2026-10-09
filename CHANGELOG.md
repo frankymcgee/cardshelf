@@ -1,6 +1,6 @@
 ## 0.52.1 — 2026-10-09
 
-- Install OpenSSL in the Docker build stage so the real SMTP/TLS protocol tests can generate disposable certificates on AMD64 and ARM64. The release images must pass these tests before publication.
+- Install OpenSSL and curl in the Docker build stage so the real SMTP/TLS certificate tests and Postal deployment health probe run on AMD64 and ARM64. The release images must pass the complete test suite before publication.
 - Document the local test prerequisite and synchronize installer, environment and UI release stamps.
 
 ## 0.52.0 — 2026-10-09
