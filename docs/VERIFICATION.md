@@ -8,11 +8,13 @@ This source change does not install 0.52.1 or configure an external mailbox.
 
 ## Current change and release boundary
 
-The Postal/SMTP functionality from PR #66 is merged. The 0.52.1 follow-up
+The Postal/SMTP functionality from PR #66 is merged. The 0.52.1 follow-up discards
+unknown-account recovery requests in bounded worker batches before SMTP pacing,
+so that backlog cannot consume scarce sending slots or delay a known reset. It
 installs OpenSSL and curl in the Docker build stage so real SMTP/TLS protocol
 tests can generate disposable certificates and Postal's HTTP health probe can
-run in both native release-image builds. The
-application, PostgreSQL and browser gates passed on 0.52.0; both native builds
+run in both native release-image builds. The application, PostgreSQL and browser
+gates passed on 0.52.0; both native builds
 identified this missing test prerequisite. The complete gates are required again
 for the follow-up revision.
 
@@ -57,7 +59,8 @@ coverage remain outside the implemented scope in [PARITY_CHECKLIST.md](PARITY_CH
 The PR's required CI also runs real PostgreSQL/HTTP recovery and provider tests,
 including a private-schema pre-031 upgrade with preserved Postal secrets and
 held old attempts. It exercises shared SMTP pacing and fair progress for both
-queues under competing backlogs, actual recovery redemption,
+queues under competing backlogs, a 250-request unknown-account backlog without
+lost SMTP capacity or delayed known recovery, actual recovery redemption,
 late signed Postal events after a switch, secret-free endpoints and concurrent
 verification changes. Desktop/phone browser coverage saves/reloads WPMU settings
 through real APIs without revealing its synthetic password. Native AMD64/ARM64

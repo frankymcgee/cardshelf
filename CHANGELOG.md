@@ -1,5 +1,6 @@
 ## 0.52.1 — 2026-10-09
 
+- Discard queued password-reset requests for unknown accounts in bounded worker batches before SMTP reservation. Known accounts can be selected immediately without an unknown-address backlog consuming sending slots; public recovery responses remain generic.
 - Install OpenSSL and curl in the Docker build stage so the real SMTP/TLS certificate tests and Postal deployment health probe run on AMD64 and ARM64. The release images must pass the complete test suite before publication.
 - Document the local test prerequisite and synchronize installer, environment and UI release stamps.
 

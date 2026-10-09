@@ -61,6 +61,10 @@ atomic PostgreSQL reservation and space submissions evenly, with a small margin.
 When both queues have eligible work, they alternate reservations so an activity
 backlog cannot monopolize every slot and delay password recovery. Either queue
 can use the available capacity when the other has no eligible work.
+The recovery worker discards requests for unknown accounts in bounded batches
+before reserving a sending slot and selects known accounts independently of that
+backlog. Public recovery responses stay generic; no SMTP request or reset token
+is created for an unknown account.
 This limits CardShelf's attempts across processes; it does not reserve capacity
 with the provider or include other applications' messages. A blocked reservation
 does not claim a job, consume a delivery attempt or generate a recovery token.
