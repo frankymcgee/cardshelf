@@ -1,4 +1,4 @@
-CARDSHELF ARENA AUDIO — 0.18.0
+CARDSHELF ARENA AUDIO — expanded in 0.52.4
 
 SOURCED INTERFACE SAMPLES
 Kenney — Interface Sounds (2020), Creative Commons Zero (CC0).
@@ -26,6 +26,15 @@ All playback is self-hosted from /audio/arena/. Preferences are local to the
 browser. Audio stays silent until the player explicitly enables it, and is
 stopped on navigation, loss of arena access, or window/tab deactivation.
 See manifest.json for file hashes.
+
+ADDITIONAL ORIGINAL CUES — 0.52.4
+Draw, Energy attachment, Bench play, evolution, Trainer play, switching/retreat,
+Prizes, abilities/Stadium activation, healing, condition/effect damage,
+missed attacks and deck shuffling each have a distinct short cue.
+Reproduce these twelve WAVs with: python3 scripts/generate-arena-effects.py
+The generator uses only mathematical oscillators and seeded noise; it requires
+the Python standard library only. Existing interface samples/music remain intact.
+Runtime playback uses the bundled files, never Python or an external service.
 
 OPTIONAL FURTHER SOURCES (NOT BUNDLED)
 Kenney Casino Audio (card handling and dice; CC0):

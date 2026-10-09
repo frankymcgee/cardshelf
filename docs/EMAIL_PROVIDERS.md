@@ -1,4 +1,4 @@
-# Email providers — CardShelf 0.52.3
+# Email providers — CardShelf 0.52.4
 
 CardShelf can send password recovery, security notices and opted-in activity
 notifications through **Postal API** or **authenticated SMTP**. Select the

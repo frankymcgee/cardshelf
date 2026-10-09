@@ -1,4 +1,4 @@
-# Functional scope and parity — 0.52.3
+# Functional scope and parity — 0.52.4
 
 Updated 9 October 2026 (Australia/Perth). This matrix describes shipped CardShelf capabilities,
 not a certificate of complete BinderBuilder or official Pokémon game parity.

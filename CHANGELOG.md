@@ -1,3 +1,19 @@
+## 0.52.4 — 2026-10-09
+
+- Add twelve original, self-hosted cues for draws, Energy attachment, Bench play,
+  evolution, Trainers, switches/retreats/promotions, Prizes, abilities/Stadium
+  activation, healing, condition/effect damage, misses and shuffling.
+- Use acknowledged public event kinds, including the previously silent `energy`
+  event. Prefer a resolved effect over its Trainer and a major battle event over
+  routine movement; play one cue per update without a replay backlog.
+- Add a labelled sound selector and preview button under Table tools → Sound &
+  music, using the existing explicit activation, mute and effects-volume controls.
+- Include a deterministic standard-library generator, source notes and integrity
+  manifest; retain the existing music and CC0 interface sounds.
+- Cover all event mappings, malformed/replayed/gapped history and private-detail
+  isolation; exercise previews, real acknowledged actions, refresh deduplication,
+  mute and remembered-preference activation in Chromium and WebKit.
+
 ## 0.52.3 — 2026-10-09
 
 - Render the complete privacy advertising and sponsor notice once, rather than from both the page and marketing layout. Retain all provider disclosures and exclusions.

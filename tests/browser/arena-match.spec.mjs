@@ -1,11 +1,55 @@
 import { test, expect, action, json } from './arena-match-fixtures.mjs';
 import { openTableTools as tools } from './arena-match-controls.mjs';
+import { ARENA_AUDIO, arenaEventCue } from '../../shared/arena-audio.mjs';
 const status = page => page.getByRole('region', { name: 'Match status' });
 const endButton = page => page.locator('.arena-turn-actions').getByRole('button', { name: /end turn/i });
 const review = page => page.getByRole('dialog', { name: 'End your turn?', exact: true });
 const writes = (page, game) => {
   const bodies = []; page.on('request', request => { if (request.method() === 'POST' && request.url().endsWith('/matches/' + game.id + '/actions')) bodies.push(request.postDataJSON()); }); return bodies;
 };
+
+test('audio previews and acknowledged action cues respect activation, refresh and mute', async ({ page, context, game }) => {
+  // Observe playback calls, not loud output from a headless runner. Real bundled
+  // bytes/content types are separately checked through the production HTTP server.
+  await page.addInitScript(() => {
+    window.__arenaSounds = [];
+    window.Audio = class {
+      paused = true; src = ''; volume = 0;
+      play() { this.paused = false; window.__arenaSounds.push(this.src); queueMicrotask(() => this.onended?.()); return Promise.resolve(); }
+      pause() { this.paused = true; }
+      load() {}
+      removeAttribute(name) { if (name === 'src') this.src = ''; }
+    };
+  });
+  await page.reload(); await expect(page.locator('.arena-connection')).toContainText('Connected');
+  const played = () => page.evaluate(() => window.__arenaSounds);
+  await tools(page); const audio = page.getByRole('region', { name: 'Arena audio' });
+  await expect(audio.getByRole('button', { name: 'Preview sound', exact: true })).toBeDisabled();
+  expect(await played()).toEqual([]);
+  await audio.getByRole('button', { name: 'Enable audio', exact: true }).click();
+  await expect.poll(played).toEqual([ARENA_AUDIO.select]);
+  for (const kind of ['draw','energy','bench','evolve','trainer','switch','prize','ability','heal','damage','miss','shuffle']) {
+    await audio.getByLabel('Sound preview', { exact: true }).selectOption(kind);
+    await audio.getByRole('button', { name: 'Preview sound', exact: true }).click();
+    await expect.poll(async () => (await played()).at(-1)).toBe(ARENA_AUDIO[kind]);
+  }
+  const baseline = (await played()).length;
+  const move = game.table.legal.find(move => move.action?.type === 'energy')?.action || { type: 'end_turn' };
+  const acknowledged = await action(context.request, game, move);
+  const cue = arenaEventCue(acknowledged.table.events, game.table.events.at(-1).n, acknowledged.table.result, game.seat);
+  expect(cue).toBeTruthy();
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await expect.poll(async () => (await played()).length).toBe(baseline + 1);
+  expect((await played()).at(-1)).toBe(ARENA_AUDIO[cue]);
+  const repeated = page.waitForResponse(r => r.request().method() === 'GET' && new URL(r.url()).pathname === '/api/arena/matches/' + game.id);
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click(); await repeated;
+  await expect(page.locator('.arena-connection')).toContainText('Connected');
+  expect((await played()).length).toBe(baseline + 1);
+  await audio.getByRole('button', { name: 'Mute audio', exact: true }).click();
+  await expect(audio.getByRole('button', { name: 'Preview sound', exact: true })).toBeDisabled();
+  await page.reload(); await expect(page.locator('.arena-connection')).toContainText('Connected');
+  expect(await played()).toEqual([]); // Remembered effects still require a new explicit activation.
+});
 
 test('signed-in focused table retains status, controls and inspection without writes', async ({ page, game }, info) => {
   const sent = writes(page, game);

@@ -16,5 +16,5 @@ test('audio source/licence notes and integrity manifest are included in the depl
   const [credits,manifest]=await Promise.all([fetch(base+'/audio/arena/CREDITS.txt'),fetch(base+'/audio/arena/manifest.json')]);
   assert.equal(credits.status,200);assert.equal(manifest.status,200);
   const text=await credits.text();assert.match(text,/Kenney/);assert.match(text,/CC0/);assert.match(text,/ORIGINAL SYNTHESIZED AUDIO/);
-  const body=await manifest.json();assert.equal(body.files.length,10);
+  const body=await manifest.json();assert.equal(body.files.length,Object.keys(ARENA_AUDIO).length+ARENA_TRACKS.length);
 });
