@@ -28,9 +28,9 @@ function removePreviousCount(_element: Element, done: () => void) { done() }
       <div class="arena-table-reserve" :aria-label="alias + ' deck and discard'">
         <ArenaCardStack kind="deck" :count="player.deck_count" :alias="alias" />
         <ArenaDiscardPile :count="player.discard_count" :top="player.discardTop" :alias="alias" @inspect="emit('discard', seat)" />
-        <ArenaRuleResources :alias="alias" :gx-used="player.gx_used" :vstar-used="player.vstar_used" :lost-zone="player.lost_zone" @select="emit('select', $event)" />
       </div>
       <ArenaCardStack kind="prizes" :count="player.prize_count" :alias="alias" :self="self && !spectator" />
+      <ArenaRuleResources :alias="alias" :gx-used="player.gx_used" :vstar-used="player.vstar_used" :lost-zone="player.lost_zone" @select="emit('select', $event)" />
     </div>
   </section>
 </template>

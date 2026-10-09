@@ -21,6 +21,3 @@ function inspect(unit: any) { if (cards.value.includes(unit)) { open.value = fal
     </ArenaModal>
   </div>
 </template>
-<style scoped>
-.arena-rule-resources{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12px;max-width:100%;grid-column:1/-1}.arena-rule-resources small{white-space:nowrap}.arena-rule-resources button{min-height:44px}
-</style>

@@ -91,6 +91,11 @@
 .arena-table .arena-active-spot::before { inset: -5px; border-radius: 12px; }
 .arena-table .arena-empty-slot { color: #b7cdd0; border-color: #bedad144; }
 .arena-table .arena-table-reserve { grid-area: reserve; display: flex; flex-direction: column; gap: 20px; align-items: center; min-width: 0; }
+/* Full-width public resource row, never a third cramped card-pile column.
+   Global styles also apply to the actual-component browser review harness. */
+.arena-rule-resources { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 12px; min-width: 0; max-width: 100%; padding-top: 6px; border-top: 1px solid #91c9bf2b; font-size: 11px; line-height: 1.4; }
+.arena-rule-resources small { white-space: nowrap; font-size: inherit; }
+.arena-rule-resources button { min-height: 44px; white-space: nowrap; }
 .arena-table .arena-deck-stack { width: 58px; height: 81px; flex-shrink: 0; }
 .arena-table .arena-table-discard {
   display: flex;

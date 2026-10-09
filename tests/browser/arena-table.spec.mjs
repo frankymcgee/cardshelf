@@ -4,6 +4,10 @@ for(const width of [320,1440])for(const seat of [0,1])test(`rulebook HUD ${width
   await page.setViewportSize({width,height:1100});await page.goto('/?rules&seat='+seat);
   const resources=page.getByLabel((seat===0?'North':'South')+' player game resources');
   await expect(resources).toContainText(seat===0?'GX: Used':'GX: Available');await expect(resources).toContainText(seat===0?'VSTAR: Available':'VSTAR: Used');
+  const geometry=await resources.evaluate(element=>{
+    const piles=element.parentElement.querySelector('.arena-table-reserve').getBoundingClientRect(),row=element.getBoundingClientRect();
+    return {separateRow:row.top>=piles.bottom-1,labelsFit:[...element.querySelectorAll('small')].every(label=>label.scrollWidth<=label.clientWidth+1&&getComputedStyle(label).whiteSpace==='nowrap')};
+  });expect(geometry).toEqual({separateRow:true,labelsFit:true});
   const lost=resources.getByRole('button',{name:'Lost Zone · 1',exact:true});await lost.click();
   const dialog=page.getByRole('dialog',{name:(seat===0?'North':'South')+' player · Public Lost Zone',exact:true});await expect(dialog).toBeVisible();await expect(dialog).toContainText('cannot be recovered');await expect(page.locator('body')).not.toContainText('SECRET');
   await dialog.getByRole('button',{name:'Public Prism-'+seat+', 100 of 100 HP',exact:true}).click();await expect(dialog).not.toBeVisible();
