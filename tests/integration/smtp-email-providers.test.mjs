@@ -86,6 +86,8 @@ await test('SMTP and Postal provider selection, recovery, pacing and ambiguous d
       assert.equal((await recoveryDeliveryStatus(sql)).configured,false);assert.equal((await recoveryDeliveryStatus(sql)).provider,'smtp');
     });
     await t.test('Pro preset saves both TLS modes and changing only its label preserves the encrypted identity',async()=>{
+      const previousAdmin=admin;admin=await account('admin');
+      try {
       await save({smtp_preset:'custom',smtp_host:'mail.mailconfig.net',smtp_password:smtpSecret});
       const [before]=await sql`SELECT * FROM email_settings`;
       await save({smtp_preset:'wpmu_pro'});const [labelled]=await sql`SELECT * FROM email_settings`;
@@ -94,14 +96,21 @@ await test('SMTP and Postal provider selection, recovery, pacing and ambiguous d
       await save({smtp_port:465,smtp_security:'tls',smtp_password:smtpSecret});assert.equal(settings.smtp_port,465);assert.equal(settings.configured,true);
       assert.equal((await request('/api/admin/emails/settings',{user:admin,method:'POST',body:body({smtp_host:'other.example.com',smtp_password:smtpSecret})})).status,400);
       await save({smtp_preset:'wpmu',smtp_host:'mailu.wpmudev.host',smtp_port:587,smtp_security:'starttls',smtp_password:smtpSecret});
+      } finally {admin=previousAdmin;await overview();}
     });
     await t.test('known SMTP rejection diagnostics survive queue history without raw provider data',async()=>{
+      const previousAdmin=admin,previousPacing=await sql`SELECT * FROM email_dispatch_state`;admin=await account('admin');
+      try {
       await save({enabled:true});const job=await queue();await onlyOutbox(job.id);await clearPacing();
       const raw='Private provider text '+smtpSecret;
       assert.equal(await processEmailOutbox({sql,origin,send:async()=>{throw Object.assign(Error(raw),{emailProvider:'smtp',emailCode:'SMTP_AUTH_FAILED',emailDelivery:'rejected'});}}),true);
       const row=await outbox(job.id);assert.equal(row.last_error,'SMTP_AUTH_FAILED');assert.equal(row.status,'queued');assert.equal(row.dispatch_started_at,null);assert.equal(row.attempts,1);
       const data=await overview(),visible=data.recent.find(r=>r.id===job.id);assert.equal(visible.last_error,'SMTP_AUTH_FAILED');assert.ok(!JSON.stringify(data).includes(raw));
       await sql`UPDATE email_outbox SET available_at=now()+interval '1 day' WHERE id=${job.id}`;await save({enabled:false});
+      } finally {
+        await sql`DELETE FROM email_dispatch_state`;if(previousPacing.length)await sql`INSERT INTO email_dispatch_state ${sql(previousPacing)}`;
+        admin=previousAdmin;await overview();
+      }
     });
     await t.test('SMTP connection endpoints reject guests, members, wrong passwords, cross-origin requests and extra fields',async()=>{
       const input={password,revision:settings.revision};
