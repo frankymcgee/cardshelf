@@ -129,7 +129,7 @@ await test('Postal settings, personal preferences, queue hooks and authenticated
     });
     await t.test('queue event deduplication, private templates and bounded failed-send retries',async()=>{
       const job=await queueEvent('password_changed',sender);await enqueueEmail(sql,{eventKey:job.event_key,kind:'password_changed',userId:sender.id});assert.equal((await sql`SELECT id FROM email_outbox WHERE event_key=${job.event_key}`).length,1);
-      for(let attempt=1;attempt<=3;attempt++){const failed=await deliver(job,async()=>{throw Error('Secret provider response '+apiKey+' recipient='+sender.email);});assert.equal(failed.attempts,attempt);assert.ok(!JSON.stringify(failed).includes(apiKey));assert.ok(!failed.last_error.includes(sender.email));assert.equal(failed.status,attempt<3?'queued':'failed');}
+      for(let attempt=1;attempt<=3;attempt++){const failed=await deliver(job,async()=>{throw Object.assign(Error('Secret provider response '+apiKey+' recipient='+sender.email),{emailDelivery:'rejected'});});assert.equal(failed.attempts,attempt);assert.ok(!JSON.stringify(failed).includes(apiKey));assert.ok(!failed.last_error.includes(sender.email));assert.equal(failed.status,attempt<3?'queued':'failed');}
       const result=await request('/api/admin/emails/retry',{user:admin,method:'POST',body:{password,id:job.id}});assert.equal(result.status,200,JSON.stringify(result.data));
       const accepted=await deliver(job);assert.equal(accepted.status,'accepted');const message=recorded.at(-1).message;assert.match(message.subject,/password/i);assert.ok(!message.text.includes(password));assert.ok(!message.text.includes(apiKey));
       assert.equal((await request('/api/admin/emails/retry',{user:admin,method:'POST',body:{password,id:job.id}})).status,409);

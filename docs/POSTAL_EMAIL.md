@@ -1,5 +1,8 @@
 # CardShelf email with Postal
 
+Postal is one optional sending provider. For WPMU DEV or another SMTP service,
+use [EMAIL_PROVIDERS.md](EMAIL_PROVIDERS.md); its setup does not require this stack.
+
 CardShelf uses `https://cardshelf.cloud`. Its application email controls are under **More → Emails**: sender identity, Postal API credential, tests, delivery history and the sending switch. The credential is encrypted using the existing `CARDSHELF_INTEGRATION_KEY`; keep that key when upgrading or restoring. `POSTAL_ORIGIN=https://postal.cardshelf.cloud` is a server-controlled HTTPS endpoint, not a user-supplied delivery URL.
 
 This bundle runs Postal beside the existing CardShelf stack. It adds MariaDB and Postal's web, SMTP and worker services. The existing Caddy remains the only listener on ports 80/443; Postal's web port 5000 and database port 3306 stay internal. SMTP receives bounces on port 25. Postal 3.3.7, MariaDB 11.4.13 and Caddy 2.11.4 are pinned release tags, verified against their official release/image sources on 20 September 2026. No `latest` image is used. Postal needs all three processes, with configuration mounted at `/config`. [Postal containers](https://docs.postalserver.io/other/containers/), [Postal 3.3.7](https://github.com/postalserver/postal/releases/tag/3.3.7).

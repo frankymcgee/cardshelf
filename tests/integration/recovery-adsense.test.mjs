@@ -131,7 +131,7 @@ await test('password recovery and Free-only AdSense on an isolated installation'
       await request('/api/public/password-recovery/request',{method:'POST',body:{email:collector.email}});
       const before=(await sql`SELECT password_hash FROM app_users WHERE id=${collector.id}`)[0].password_hash;
       for(let n=1;n<=3;n++){
-        const ran=await processRecoveryMail({sql,origin,send:async()=>{throw Error('SMTP password=do-not-store token=do-not-store');}});assert.equal(ran,true);
+        const ran=await processRecoveryMail({sql,origin,send:async()=>{throw Object.assign(Error('SMTP password=do-not-store token=do-not-store'),{emailDelivery:'rejected'});}});assert.equal(ran,true);
         const [job]=await sql`SELECT * FROM password_recovery_mail WHERE email=${collector.email} AND kind='reset'`;assert.equal(job.attempts,n);assert.equal(job.last_error,'SMTP_DELIVERY_FAILED');assert.ok(!JSON.stringify(job).includes('do-not-store'));
         assert.equal((await sql`SELECT * FROM password_recovery_tokens WHERE user_id=${collector.id}`).length,0);
         if(n<3)await sql`UPDATE password_recovery_mail SET available_at=now() WHERE id=${job.id}`;else assert.equal(job.status,'failed');

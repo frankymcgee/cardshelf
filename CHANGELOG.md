@@ -1,3 +1,12 @@
+## 0.52.0 — 2026-10-09
+
+- Add an administrator choice of Postal API or authenticated external SMTP, with a WPMU DEV Basic Email preset using port 587 and required STARTTLS. Both recovery and optional notifications use the selected provider; paused settings never revive the legacy environment fallback.
+- Encrypt SMTP passwords separately, bind them to server/port/TLS/account, preserve inactive provider credentials, and require password re-entry for a changed connection. Keep revision checks, administrator reauthentication and secret-free responses/audit records.
+- Pin SMTP connections to validated public DNS addresses, verify certificates and hostnames, and require TLS 1.2 or newer. Bound connections/submissions and disable mail content logging and remote/file loading.
+- Add a no-message SMTP connection check and provider-specific setup, DNS diagnostics, delivery history and release readiness. Keep receiving-inbox acceptance explicit; historical Postal events do not verify SMTP delivery.
+- Pace SMTP recovery and notifications through one durable database reservation, alternating when both queues have work so neither backlog monopolizes the limit. Hold unknown acknowledgments and interrupted submissions as Delivery uncertain rather than automatically resending; potentially accepted recovery links retain normal validity.
+- Preserve historical Postal event verification after a provider switch. Add real local STARTTLS/TLS, database/recovery/provider-switch and desktop/phone settings coverage. Update privacy, deployment instructions and parity limits. Migration 031 preserves credentials and history.
+
 ## 0.51.0 — 2026-10-08
 
 - Update Sharp to 0.35.5 and Vue to 3.5.43 for the librsvg and server-renderer advisories; update compatible source-map/shell parsing dependencies and scope a patched simple-git 4.0.2 override to the disabled Nuxt development tools. Adapt the pinned consumer's factory import during installation and verify the actual module loads.

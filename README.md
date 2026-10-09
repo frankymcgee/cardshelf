@@ -1,4 +1,4 @@
-# CardShelf 0.51.0
+# CardShelf 0.52.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -147,16 +147,19 @@ bounded image preparation; recognition runs through the OpenAI API. See
 
 ## Emails
 
-**More → Emails** brings Postal connection settings, setup checks and delivery
-management into CardShelf. Administrators manage the sending identity and encrypted
-Postal API credential; members choose their optional activity notifications.
+**More → Emails** selects Postal or authenticated external SMTP, including a
+WPMU DEV Basic Email preset. Administrators manage the sending identity, encrypted
+credentials, connection checks and delivery history; members choose their optional
+activity notifications. Recovery and notifications share SMTP pacing, and
+uncertain submissions are held to prevent duplicate sending.
 Password recovery and account security notices use the same delivery service.
 
 The new installation defaults are `https://cardshelf.cloud` and
 `https://postal.cardshelf.cloud`. Existing installations retain their configured
 origin until the operator changes it. Postal is an optional, separately operated
 mail service: saving application settings does not install containers, publish DNS
-records or establish compliance. See [Postal setup and operation](docs/POSTAL_EMAIL.md)
+records or establish compliance. See [email provider setup and acceptance](docs/EMAIL_PROVIDERS.md) and
+[optional Postal setup and operation](docs/POSTAL_EMAIL.md)
 for installation, domain authentication, certificates and acceptance checks.
 See [v0.20 validation](docs/POSTAL_VALIDATION.md) for executed checks and their limits.
 
