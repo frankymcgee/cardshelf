@@ -89,6 +89,9 @@ printed protection or rule. Therefore:
   classifications are added. No HP/name/artwork heuristic decides Tera status.
 - A VSTAR profile must include its compiled Power and once-per-game reminder.
   Additional Pokémon text is never ignored because a Tera flag is present.
+- LEGEND names remain rejected even if the provider omits the suffix. Radiant
+  and Prism Star rarity/name disagreements also reject the whole record; missing
+  family metadata must not turn a restricted card into an ordinary Basic.
 - V-UNION piece positions, set and artist are checked against the reviewed
   catalogue identities. Every attack and Ability on the combined profile must
   compile, and every accepted quarter remains one conserved physical card.

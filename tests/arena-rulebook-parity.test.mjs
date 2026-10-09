@@ -92,6 +92,13 @@ test('p28: one Radiant total, not one per name; Radiant cannot evolve',()=>{
   assert.equal(deckValidation(deck([{card:a,quantity:1}])).playable,true);
   const s=readyFixture();const previous=setActive(s,0,a),c=put(s,0,card('Impossible Evolution',{stage:'Stage1',evolveFrom:'Radiant A'}));rejected(s,0,{type:'evolve',card:c.id,target:previous.id});
 });
+for(const [name,raw]of [
+  ['Example LEGEND',{}],['Example & Partner LEGEND',{types:['Fire','Water']}],
+  ['Missing Radiant name',{rarity:'Radiant Rare'}],['Missing Prism symbol',{rarity:'Rare Holo Prism Star'}]
+])test(`catalogue safety: incomplete special-family record cannot become an ordinary Basic: ${name}`,()=>{
+  const result=compile({...row(raw),name});assert.equal(result.supported,false);
+  assert.match(result.reason,/special rule|Special-family rarity/);
+});
 test('pp28/30: VSTAR and VMAX evolve only from the matching Basic V',()=>{
   for(const stage of ['VSTAR','VMAX']){const s=readyFixture(),previous=setActive(s,0,card('Example V',{suffix:'V'})),c=put(s,0,card('Example '+stage,{stage,evolveFrom:'Example V'}));
     assert.equal(legal(s,0).some(m=>m.action.card===c.id&&m.action.target===previous.id),true);
