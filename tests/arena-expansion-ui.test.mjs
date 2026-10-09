@@ -22,7 +22,7 @@ function state(file, api = async () => ({}), props = {}) {
   const add = node => { if (ts.isIdentifier(node)) names.push(node.text); else if (ts.isObjectBindingPattern(node) || ts.isArrayBindingPattern(node)) for (const entry of node.elements) if (ts.isBindingElement(entry)) add(entry.name); };
   for (const node of ast.statements) { if (ts.isVariableStatement(node)) for (const declaration of node.declarationList.declarations) add(declaration.name); if (ts.isFunctionDeclaration(node) && node.name) names.push(node.name.text); }
   const js = ts.transpileModule(script, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
-  const scope = { ...contract, useCardImage, ref: value => ({ value }), computed: fn => ({ get value() { return fn(); } }), watch() {}, onMounted() {}, onBeforeUnmount() {}, defineProps: () => props, defineEmits: () => () => {}, useApi: () => api, useAuth: () => ({ state: { value: { user: { id: 'user' } } } }), useRoute: () => ({ params: { id: 'table' } }), definePageMeta() {}, useSeoMeta() {}, errorMessage: error => error.message, navigateTo: async () => {}, crypto: { randomUUID }, sessionStorage: { getItem() {}, setItem() {}, removeItem() {} }, setTimeout() {}, clearTimeout() {}, clearInterval() {}, window: {}, document: { hidden: false }, console };
+  const scope = { ...contract, useCardImage, ref: value => ({ value }), computed: fn => ({ get value() { return fn(); } }), watch() {}, onMounted() {}, onBeforeUnmount() {}, defineProps: () => props, withDefaults: value => value, defineEmits: () => () => {}, useApi: () => api, useAuth: () => ({ state: { value: { user: { id: 'user' } } } }), useRoute: () => ({ params: { id: 'table' } }), definePageMeta() {}, useSeoMeta() {}, errorMessage: error => error.message, navigateTo: async () => {}, crypto: { randomUUID }, sessionStorage: { getItem() {}, setItem() {}, removeItem() {} }, setTimeout() {}, clearTimeout() {}, clearInterval() {}, window: {}, document: { hidden: false }, console };
   return vm.runInNewContext('(function(){' + js + '; return {' + names.join(',') + '};})()', scope);
 }
 // Compile and render the real components, including their templates and child imports.
@@ -75,3 +75,30 @@ test('rendered facts preserve EX versus ex, effective stats and Ability text', a
 test('rendered attachments provide inspectable names without hidden descendants', async () => { const html = await render('ArenaAttachments', { unit: unit('Active', {}, { tools: [unit('Tool card')], energy: [unit('Energy card')], under: [unit('Earlier stage'), { hidden: true, card: { name: 'SECRET' } }] }) }); assert.match(html, /Attached Tools/); assert.match(html, /Inspect Tool card/); assert.match(html, /Attached Energy/); assert.match(html, /Evolution stack/); assert.match(html, /Earlier stage/); assert.doesNotMatch(html, /SECRET/); });
 test('board renders one shared Stadium and server-provided activation, plus v1 without a Stadium', async () => { const f = frame({ stadium: { seat: 1, unit: unit('Public Park', { kind: 'trainer', hp: undefined }) } }); const html = await render('ArenaBoard', { table: f.table, aliases: ['You', 'CPU'], stadiumMoves: [{ label: 'Use Stadium: Public Park', action: { type: 'stadium' } }] }); assert.equal((html.match(/aria-label="Shared Stadium"/g) || []).length, 1); assert.match(html, /Played by CPU/); assert.match(html, /Use Stadium: Public Park/); const old = await render('ArenaBoard', { table: frame().table, aliases: ['You', 'CPU'] }); assert.doesNotMatch(old, /Shared Stadium/); assert.match(old, /Your private hand/); });
 test('rendered multi-prize choices stay face down and confirmation waits for all choices', async () => { const html = await render('ArenaDecision', { prompt: { kind: 'prize', title: 'Choose 3 Prize cards', min: 3, max: 3, options: [{ id: '0', label: 'Prize 1', hidden: true, card: { card: { image_url: '/secret.png' } } }] } }); assert.match(html, /Choose 3 face-down Prize cards/); assert.match(html, /RESOLVE BEFORE CONTINUING/); assert.doesNotMatch(html, /secret.png/); assert.match(html, /disabled[^>]*>Take 0 Prize cards/); });
+test('rulebook resource HUD renders public per-game markers but does not fabricate legacy markers', async () => {
+  const html=await render('ArenaRuleResources',{alias:'Member',gxUsed:true,vstarUsed:false,lostZone:[unit('Public Prism')]});assert.match(html,/GX: Used/);assert.match(html,/VSTAR: Available/);assert.match(html,/Lost Zone · 1/);
+  const legacy=await render('ArenaRuleResources',{alias:'Member'});assert.doesNotMatch(legacy,/GX:|VSTAR:|Lost Zone/);
+});
+test('Lost Zone inspector refuses hidden or unknown cards and emits only disclosed public units',()=>{
+  const publicUnit=unit('Prism'),h=state('app/components/arena/ArenaRuleResources.vue',undefined,{alias:'Member',lostZone:[publicUnit,{hidden:true,card:{name:'SECRET'}}]});
+  assert.equal(h.cards.value.length,1);h.open.value=true;h.inspect({id:'invented'});assert.equal(h.open.value,true);h.inspect(publicUnit);assert.equal(h.open.value,false);
+});
+test('card facts label Ancient Traits separately from Abilities and explain public protection',async()=>{
+  const html=await render('ArenaCardFacts',{card:unit('Tera',{types:['Fire','Water'],tera:true,prism_star:true,abilities:[{kind:'trait',name:'α Recovery',text:'Double healing.'}]}).card});
+  assert.match(html,/ANCIENT TRAIT/);assert.match(html,/Types: Fire \/ Water/);assert.match(html,/prevent attack damage while on the Bench/);assert.match(html,/Lost Zone/);assert.doesNotMatch(html,/>ABILITY</);
+});
+test('Retreat decision counts Energy units and rejects unnecessary extra cards in the real component',()=>{
+  const prompt={kind:'retreat_discard',min:1,max:2,retreat_cost:2,options:[{id:'double',energy_value:2},{id:'single',energy_value:1}]},h=state('app/components/arena/ArenaDecision.vue',undefined,{prompt});
+  h.toggle('single');assert.equal(h.valid.value,false);h.toggle('double');assert.equal(h.valid.value,false);h.toggle('single');assert.equal(h.valid.value,true);assert.equal(h.selectedEnergy.value,2);
+});
+test('TAG TEAM decision permits no cost or the complete cost, never a partial cost',()=>{
+  const h=state('app/components/arena/ArenaDecision.vue',undefined,{prompt:{kind:'tag_team_cost',min:0,max:2,allowed_counts:[0,2],options:[{id:'one'},{id:'two'}]}});
+  assert.equal(h.valid.value,true);h.toggle('one');assert.equal(h.valid.value,false);h.toggle('two');assert.equal(h.valid.value,true);
+});
+test('new private viewed-card details are rendered only when supplied to the decision',async()=>{
+  const html=await render('ArenaDecision',{prompt:{kind:'fossil_search',title:'Private fossil search',min:0,max:0,options:[],looked_at:[unit('Viewed card')]}});assert.match(html,/Cards you looked at — private to you/);assert.match(html,/Viewed card/);
+});
+test('match card traversal includes multipart cards and public Lost Zone but skips hidden descendants',()=>{
+  const h=state(match),f=frame();f.table.players[0].active=unit('Union',{}, {parts:[unit('Quarter'),{hidden:true,card:{name:'SECRET-PART'}}]});f.table.players[1].lost_zone=[unit('Public Prism'),{hidden:true,card:{name:'SECRET-LOST'}}];h.accept(f);
+  assert.deepEqual(plain(h.cards.value.map(c=>c.id)),['Union','Quarter','Public Prism']);h.selected.value='Quarter';assert.equal(h.attachmentParent.value.id,'Union');
+});

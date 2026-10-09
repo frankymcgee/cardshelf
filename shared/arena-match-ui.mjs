@@ -19,6 +19,7 @@ export function arenaTurnStatus(table, { status = 'active', connected = true, bu
   if (table.prompt) return result('Your decision is needed', 'Complete or resume the required decision before playing another card.', 'decision');
   if (table.waiting_for != null) return result(table.waiting_for === table.seat ? 'Resolving your decision' : 'Opponent is choosing…', 'Play continues after the required decision resolves.', 'decision');
   if (table.phase === 'setup') {
+    if (table.players?.[table.seat]?.mulligan_waiting) return result('Waiting to resolve your mulligan', 'Your opponent must lock their opening field before your no-Basic hand is revealed and redealt.');
     if (table.players?.[table.seat]?.ready) return result('Opening field confirmed', 'Wait for the remaining setup decisions. Your opening field stays private until setup finishes.');
     return result('Prepare your opening field', 'Select a Basic Pokémon for Active, add optional Bench Pokémon, then confirm Ready.', 'own');
   }

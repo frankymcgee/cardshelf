@@ -13,10 +13,10 @@ const api = useApi(), route = useRoute(), data = ref<any>(null), error = ref('')
 const selected = ref(''), showHistory = ref(false), discardSeat = ref<number | null>(null)
 const aliases = computed(() => [data.value?.host_alias || 'Player one', data.value?.guest_alias || 'Player two'])
 const table = computed(() => data.value?.table)
-function disclosed(units: any[]): any[] { return units.filter(u => u && !u.hidden && u.card).flatMap(u => [u, ...disclosed([...(u.energy || []), ...(u.tools || []), ...(u.under || [])])]) }
-const cards = computed<any[]>(() => table.value ? disclosed([...table.value.players.flatMap((p: any) => [p.active, ...p.bench, ...p.discard, ...(p.resolving || [])]), table.value.stadium?.unit]) : [])
+function disclosed(units: any[]): any[] { return units.filter(u => u && !u.hidden && u.card).flatMap(u => [u, ...disclosed([...(u.energy || []), ...(u.tools || []), ...(u.under || []), ...(u.parts || [])])]) }
+const cards = computed<any[]>(() => table.value ? disclosed([...table.value.players.flatMap((p: any) => [p.active, ...p.bench, ...p.discard, ...(p.lost_zone || []), ...(p.resolving || [])]), table.value.stadium?.unit]) : [])
 const current = computed(() => cards.value.find(c => c.id === selected.value))
-const parent = computed(() => cards.value.find(u => [...(u.energy || []), ...(u.tools || []), ...(u.under || [])].some(c => c.id === selected.value)))
+const parent = computed(() => cards.value.find(u => [...(u.energy || []), ...(u.tools || []), ...(u.under || []), ...(u.parts || [])].some(c => c.id === selected.value)))
 const headline = computed(() => data.value?.status === 'cancelled' ? 'Table closed by organiser' : table.value?.phase === 'finished' ? table.value.result === 'draw' ? 'Draw · rematch required' : aliases.value[table.value.result] + ' wins' : table.value?.phase === 'setup' ? 'Opening setup' : table.value ? aliases.value[table.value.turn] + ' to play' : 'Players getting ready')
 let alive = true, reading = false, timer: ReturnType<typeof setInterval> | undefined
 function clear() { data.value = null; selected.value = ''; showHistory.value = false; discardSeat.value = null }

@@ -1,8 +1,9 @@
 /** Stable, client-safe arena contract. Never put hidden match state in this module. */
 export const LEGACY_ARENA_VERSION = 'pokemon-core-v1';
 export const LEGACY_EXPANDED_ARENA_VERSION = 'pokemon-expanded-v2';
-export const ARENA_VERSION = 'pokemon-expanded-v3';
-export const ARENA_VERSIONS = Object.freeze([LEGACY_ARENA_VERSION, LEGACY_EXPANDED_ARENA_VERSION, ARENA_VERSION]);
+export const LEGACY_RULES_ARENA_VERSION = 'pokemon-expanded-v3';
+export const ARENA_VERSION = 'pokemon-expanded-v4';
+export const ARENA_VERSIONS = Object.freeze([LEGACY_ARENA_VERSION, LEGACY_EXPANDED_ARENA_VERSION, LEGACY_RULES_ARENA_VERSION, ARENA_VERSION]);
 export const ARENA_FORMAT = 'Automated Casual Expanded';
 export const ARENA_LIMITS = Object.freeze({ deck: 60, copies: 4, hand: 7, prizes: 6, bench: 5, decks: 40, activeMatches: 5, actions: 4000 });
 export const ENERGY_TYPES = Object.freeze(['Grass','Fire','Water','Lightning','Psychic','Fighting','Darkness','Metal','Fairy','Dragon','Colorless']);
@@ -92,10 +93,10 @@ export function arenaHandOptions(table, locked = false) {
 export function arenaInteractionStamp(table) {
   if (!table || ![0, 1].includes(table.seat)) return '';
   const unit = value => !value ? null : value.hidden ? 'hidden' : [value.id, value.damage, value.effective_hp,
-    value.conditions, (value.energy || []).map(c => c.hidden ? 'hidden' : c.id), (value.tools || []).map(c => c.hidden ? 'hidden' : c.id), (value.under || []).map(c => c.hidden ? 'hidden' : c.id)];
+    value.conditions, (value.energy || []).map(c => c.hidden ? 'hidden' : c.id), (value.tools || []).map(c => c.hidden ? 'hidden' : c.id), (value.under || []).map(c => c.hidden ? 'hidden' : c.id), (value.parts || []).map(c => c.hidden ? 'hidden' : c.id)];
   return JSON.stringify([table.version, table.seat, table.round, table.phase, table.turn, table.turn_number,
     table.waiting_for, !!table.prompt, table.events?.at(-1)?.n, table.result,
-    table.players?.map((p, seat) => [p?.ready, p?.hand_count, p?.deck_count, p?.prize_count, p?.discard?.length,
+    table.players?.map((p, seat) => [p?.ready, p?.hand_count, p?.deck_count, p?.prize_count, p?.discard?.length, p?.lost_zone?.length, p?.gx_used, p?.vstar_used,
       unit(p?.active), p?.bench?.map(unit), seat === table.seat ? p?.hand?.map(unit) : null]),
     unit(table.stadium?.unit), table.legal?.map(move => arenaActionKey(move.action))]);
 }

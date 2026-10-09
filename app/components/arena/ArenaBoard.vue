@@ -15,7 +15,7 @@ const alias = (seat: number): string => props.aliases[seat] || `Player ${seat + 
 function publicPlayer(seat: number) {
   const p = player(seat)
   const top = p.discard[p.discard.length - 1]
-  return { active: p.active, bench: p.bench, hand_count: p.hand_count, deck_count: p.deck_count, prize_count: p.prize_count, discard_count: p.discard.length, discardTop: top && !top.hidden ? top.card : undefined, ready: p.ready }
+  return { active: p.active, bench: p.bench, hand_count: p.hand_count, deck_count: p.deck_count, prize_count: p.prize_count, discard_count: p.discard.length, discardTop: top && !top.hidden ? top.card : undefined, ready: p.ready, lost_zone:p.lost_zone, gx_used:p.gx_used, vstar_used:p.vstar_used }
 }
 const turnLabel = computed(() => {
   if (props.spectator) return props.table.phase === 'setup' ? 'Opening setup' : props.table.phase === 'finished' ? 'Match complete' : props.table.waiting_for != null ? `${alias(props.table.waiting_for)} is choosing…` : `${alias(props.table.turn)} is playing`

@@ -6,7 +6,7 @@ import {trainingDeck} from '../lib/arena/training.mjs';
 import {ARENA_VERSION,LEGACY_EXPANDED_ARENA_VERSION} from '../shared/arena.mjs';
 import * as frozen from '../lib/arena/engine-v2.mjs';
 
-const choose=s=>{const q=view(s,s.pending.seat).prompt;return act(s,s.pending.seat,{type:'choose',choices:q.options.slice(0,q.min).map(c=>c.id)});};
+const choose=(s,options={})=>{const q=view(s,s.pending.seat).prompt;return act(s,s.pending.seat,{type:'choose',choices:q.options.slice(0,q.min).map(c=>c.id)},options);};
 const legacy=s=>{const old=JSON.parse(JSON.stringify(s).replaceAll(ARENA_VERSION,LEGACY_EXPANDED_ARENA_VERSION));delete old.tiebreaker;return old;};
 test('six-Prize tiebreaker finishes at the first resolved Prize advantage, without taking all six',()=>{
   let s=readyFixture();s.tiebreaker=true;attack(s,0,{damage:500});s=act(s,0,{type:'attack',index:0});s=choose(s);
@@ -18,7 +18,7 @@ test('equal simultaneous tiebreaker Prizes continue; a later unequal award wins'
   attack(s,1,{damage:500});s=act(s,1,{type:'attack',index:0});s=choose(s);assert.equal(s.phase,'finished');assert.equal(s.result,1);assertArena(s);
 });
 test('simultaneous tie actually redeals and sets six private Prizes per player',()=>{
-  let s=readyFixture({bench:false});s.players[0].active.card.hp=30;attack(s,0,{damage:500,effects:[{kind:'recoil',amount:30}]});s=act(s,0,{type:'attack',index:0});while(s.pending)s=choose(s);
+  let s=readyFixture({bench:false});s.players[0].active.card.hp=30;attack(s,0,{damage:500,effects:[{kind:'recoil',amount:30}]});s=act(s,0,{type:'attack',index:0});while(s.pending)s=choose(s,{rng:max=>max-1});
   assert.equal(s.phase,'setup');assert.equal(s.round,2);assert.equal(s.tiebreaker,true);s=act(s,s.toss,{type:'first',seat:0});
   for(const seat of [0,1]){const basic=s.players[seat].hand.find(c=>c.card.stage==='Basic');s=act(s,seat,{type:'setup',card:basic.id,zone:'active'});s=act(s,seat,{type:'ready'});}
   while(s.pending)s=choose(s);

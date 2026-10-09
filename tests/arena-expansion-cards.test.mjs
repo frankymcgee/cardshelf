@@ -35,7 +35,7 @@ test('legacy provider MEGA and MegaEvolution stages compile only with EX predece
   }
   rejected(pokemon('M Synthetic EX',{stage:'MEGA',suffix:'EX',evolveFrom:'Synthetic ex'}));
   rejected(pokemon('M Synthetic EX',{suffix:'EX'}));
-  rejected(pokemon('Mega Synthetic ex',{suffix:'ex',stage:'Stage1',evolveFrom:'Synthetic'}));
+  assert.equal(compiled(pokemon('Mega Synthetic ex',{suffix:'ex',stage:'Stage1',evolveFrom:'Synthetic'})).prizes,3);
   rejected(pokemon('M Synthetic ex',{suffix:'ex',stage:'MEGA',evolveFrom:'Synthetic ex'}));
 });
 test('known prize and Mega reminders are checked in full, unknown rules fail closed',()=>{
@@ -57,8 +57,9 @@ test('complete activated Ability text compiles with per-unit per-turn limits',()
   ])assert.equal(compiled(row({abilities:[{...drawAbility,effect}]})).abilities[0].program.kind,kind);
 });
 test('Abilities never drop costs, positions, conditions or end-turn clauses',()=>{
-  for(const effect of [drawAbility.effect+' Your turn ends.',"Once during your turn, if this Pokemon is in the Active Spot, you may draw cards until you have 5 cards in your hand.",'Once during your turn, you may discard an Energy card to draw 2 cards.',{en:drawAbility.effect},''])rejected(row({abilities:[{...drawAbility,effect}]}));
-  for(const abilities of [{},'unknown',[{...drawAbility,type:'Poke-POWER'}]])rejected(row({abilities}));
+  for(const effect of [drawAbility.effect+' Your turn ends.','Once during your turn, you may discard an Energy card to draw 2 cards.',{en:drawAbility.effect},''])rejected(row({abilities:[{...drawAbility,effect}]}));
+  assert.equal(compiled(row({abilities:[{...drawAbility,effect:"Once during your turn, if this Pokemon is in the Active Spot, you may draw cards until you have 5 cards in your hand."}]})).abilities[0].position,'active');
+  for(const abilities of [{},'unknown',[{...drawAbility,type:'Unknown Power'}]])rejected(row({abilities}));
   rejected(row({abilities:[drawAbility,{...drawAbility,effect:'Prevent all damage.'}]}));
 });
 // Primary exact Tool profiles:

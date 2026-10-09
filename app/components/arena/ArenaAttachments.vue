@@ -5,7 +5,8 @@ const emit = defineEmits<{ select: [unit: any] }>()
 const groups = computed(() => [
   { name: 'Attached Tools', cards: props.unit?.tools || [] },
   { name: 'Attached Energy', cards: props.unit?.energy || [] },
-  { name: 'Evolution stack', cards: props.unit?.under || [] }
+  { name: 'Evolution stack', cards: props.unit?.under || [] },
+  { name: 'Multipart Pokémon pieces', cards: props.unit?.parts || [] }
 ].map(group => ({ ...group, cards: group.cards.filter((unit: any) => !unit.hidden && unit.card) })).filter(group => group.cards.length))
 </script>
 <template>
