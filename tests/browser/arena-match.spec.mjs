@@ -1,12 +1,25 @@
 import { test, expect, action, json } from './arena-match-fixtures.mjs';
 import { openTableTools as tools } from './arena-match-controls.mjs';
 import { ARENA_AUDIO, arenaEventCue } from '../../shared/arena-audio.mjs';
+import { ARENA_VERSION } from '../../shared/arena.mjs';
 const status = page => page.getByRole('region', { name: 'Match status' });
 const endButton = page => page.locator('.arena-turn-actions').getByRole('button', { name: /end turn/i });
 const review = page => page.getByRole('dialog', { name: 'End your turn?', exact: true });
 const writes = (page, game) => {
   const bodies = []; page.on('request', request => { if (request.method() === 'POST' && request.url().endsWith('/matches/' + game.id + '/actions')) bodies.push(request.postDataJSON()); }); return bodies;
 };
+
+test('current engine exposes six-Prize tiebreaker guidance after a persisted refresh', async ({ page, environment, game }) => {
+  expect(game.table.version).toBe(ARENA_VERSION);
+  await expect(status(page)).not.toContainText('Tiebreaker game');
+  // Disposable fixture database only: preserve all card zones and mark this
+  // six-Prize game as a tiebreaker to exercise the real server projection/UI.
+  await environment.sql`UPDATE arena_matches SET state=jsonb_set(state,'{tiebreaker}','true'::jsonb),revision=revision+1 WHERE id=${game.id}`;
+  await page.reload();
+  await expect(status(page)).toContainText('Tiebreaker game · six Prizes at setup.');
+  await expect(status(page)).toContainText('The first Prize advantage wins');
+  await expect(page.locator('.arena-connection')).toContainText('Connected');
+});
 
 test('audio previews and acknowledged action cues respect activation, refresh and mute', async ({ page, context, game }) => {
   // Observe playback calls, not loud output from a headless runner. Real bundled

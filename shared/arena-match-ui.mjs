@@ -1,5 +1,6 @@
 /** Presentation only. Inputs are the seated player's acknowledged projection. */
-const versions = new Set(['pokemon-core-v1', 'pokemon-expanded-v2']);
+import { ARENA_VERSIONS } from './arena.mjs';
+const versions = new Set(ARENA_VERSIONS);
 const seatOK = seat => seat === 0 || seat === 1;
 const integer = (value, max) => Number.isSafeInteger(value) && value >= 0 && value <= max;
 const validTable = table => table && versions.has(table.version) && seatOK(table.seat);

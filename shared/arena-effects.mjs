@@ -1,5 +1,6 @@
 // Client-only presentation of acknowledged views. No rules, hidden-zone reads or persistence.
-const VERSIONS = new Set(['pokemon-core-v1', 'pokemon-expanded-v2']);
+import { ARENA_VERSIONS } from './arena.mjs';
+const VERSIONS = new Set(ARENA_VERSIONS);
 export const ARENA_EFFECT_LIMITS = Object.freeze({ units: 160, events: 120, burst: 12, moves: 8, impacts: 6, accents: 6, cues: 4, lifetime: 1400, flight: 640 });
 const list = value => Array.isArray(value) ? value : [];
 const idOf = unit => unit && !unit.hidden && typeof unit.id === 'string' && unit.id.length <= 160 && unit.card ? unit.id : '';

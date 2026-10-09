@@ -133,8 +133,8 @@ test('no remaining Pokémon is an automatic loss after the awarded Prize is take
 test('empty start-of-turn draw loses, but effect draws simply draw the available cards',()=>{
   const s=readyFixture();s.players[1].discard.push(...s.players[1].deck);s.players[1].deck=[];const n=act(s,0,{type:'end_turn'});assert.equal(n.phase,'finished');assert.equal(n.result,0);
 });
-test('equal simultaneous victories start a fresh one-Prize sudden-death game without losing the action bound',()=>{
-  let s=readyFixture({bench:false});s.players[0].active.card.hp=30;attack(s,0,{damage:500,effects:[{kind:'recoil',amount:30}]});s.actions=100;s=act(s,0,{type:'attack',index:0});assert.equal(s.pending.kind,'prize');s=act(s,0,{type:'choose',choices:['0']});s=act(s,1,{type:'choose',choices:['0']});assert.equal(s.phase,'setup');assert.equal(s.round,2);assert.equal(s.prizeGoal,1);assert.ok(s.actions>100);assertArena(s);
+test('equal simultaneous victories start a fresh six-Prize tiebreaker without losing the action bound',()=>{
+  let s=readyFixture({bench:false});s.players[0].active.card.hp=30;attack(s,0,{damage:500,effects:[{kind:'recoil',amount:30}]});s.actions=100;s=act(s,0,{type:'attack',index:0});assert.equal(s.pending.kind,'prize');s=act(s,0,{type:'choose',choices:['0']});s=act(s,1,{type:'choose',choices:['0']});assert.equal(s.phase,'setup');assert.equal(s.round,2);assert.equal(s.prizeGoal,6);assert.equal(s.tiebreaker,true);assert.ok(s.actions>100);assertArena(s);
 });
 test('opponent hand, Prize identities, draw order, hidden IDs and server continuations never enter a player view',()=>{
   const s=readyFixture();for(let seat=0;seat<2;seat++){const v=view(s,seat),json=JSON.stringify(v),op=s.players[1-seat];for(const key of ['queue','originalDecks','pending'])assert.equal(key in v,false);assert.deepEqual(v.players[1-seat].hand,[]);for(const c of [...op.deck,...op.hand,...op.prizes])assert.ok(!json.includes(c.id));assert.equal('deck' in v.players[seat],false);assert.equal('prizes' in v.players[seat],false);}

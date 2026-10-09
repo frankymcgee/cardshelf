@@ -1,4 +1,4 @@
-# CardShelf 0.52.4
+# CardShelf 0.53.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series

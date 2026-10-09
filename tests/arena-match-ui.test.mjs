@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { arenaTurnStatus, arenaPrizeCounts, arenaEndTurnContext, arenaEndTurnMove, arenaHistoryRows } from '../shared/arena-match-ui.mjs';
+import { ARENA_VERSIONS } from '../shared/arena.mjs';
 const end = () => ({ label: 'End turn', action: { type: 'end_turn' } });
 const table = (seat = 0, version = 'pokemon-expanded-v2') => ({ version, seat, phase: 'playing', turn: seat, turn_number: 3,
   players: [{ prize_count: 6, ready: false }, { prize_count: 4, ready: false }], legal: [end()], prompt: null, waiting_for: null });
-for (const seat of [0, 1]) for (const version of ['pokemon-core-v1', 'pokemon-expanded-v2']) {
+for (const seat of [0, 1]) for (const version of ARENA_VERSIONS) {
   test(`${version}, seat ${seat}: guidance and public Prize counts are relative to the viewer`, () => {
     const view = table(seat, version), before = structuredClone(view);
     assert.equal(arenaTurnStatus(view).title, 'Your move');

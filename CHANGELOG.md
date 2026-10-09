@@ -1,3 +1,10 @@
+## 0.53.0 — 2026-10-09
+
+- Add the versioned V3 Arena engine with six-Prize tiebreaker games, first-Prize-advantage victory, updated optional Trainer recovery choices and zero-card shuffle behavior.
+- Preserve frozen V1/V2 saved games and tournament engines; accept all three versions throughout compiler, match, effects and status dispatch.
+- Correct discard-and-draw legality with an empty deck, add tiebreaker guidance and regressions for current rules and legacy compatibility.
+- Document official-source audit limits, unsupported rules/card families and concrete backend 1.0 release gates. This release does not claim full official Pokémon parity or production acceptance.
+
 ## 0.52.4 — 2026-10-09
 
 - Add twelve original, self-hosted cues for draws, Energy attachment, Bench play,

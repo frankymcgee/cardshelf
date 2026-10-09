@@ -1,4 +1,7 @@
-# Functional scope and parity — 0.52.4
+# Functional scope and parity — 0.53.0
+
+Backend launch gates are tracked in [V1_RELEASE_CHECKLIST.md](V1_RELEASE_CHECKLIST.md);
+current Arena corrections and limits are in [ARENA_RULES.md](ARENA_RULES.md).
 
 Updated 9 October 2026 (Australia/Perth). This matrix describes shipped CardShelf capabilities,
 not a certificate of complete BinderBuilder or official Pokémon game parity.
