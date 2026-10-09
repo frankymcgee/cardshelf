@@ -1,4 +1,36 @@
-# Production readiness follow-up — CardShelf 0.52.1
+# SMTP investigation — CardShelf 0.52.2
+
+Updated 9 October 2026 (Australia/Perth). Baseline: merged main
+`e135cb2`; branch `fix/wpmu-pro-smtp`.
+
+The signed-in live installation is **0.52.1**. Its saved custom SMTP connection
+uses Pro Email's `mail.mailconfig.net`, required STARTTLS on 587 and a stored
+mailbox credential. A test notification failed after three attempts with the
+generic `EMAIL_DELIVERY_FAILED` code. A fresh administrator-authenticated
+**no-message** check reproduced the generic 502 SMTP failure. No email was sent,
+no existing delivery was retried and no saved connection setting was changed.
+
+The current release hides the underlying transport failure. Consequently the
+live cause is **not yet established**; DNS/connectivity, TLS and authentication
+must not be guessed. This follow-up supplies fixed, credential-free failure
+categories in the check and both queue histories, fixes the misleading delivery
+warning on no-message checks and adds separate Pro setup. Migration 032 only
+expands the preset constraint and retains existing saved state.
+
+Tests cover both Pro TLS modes, selecting Pro without changing a saved 587
+identity, secret-free failure categories, unchanged lost-acknowledgment safety,
+real SMTP sockets using the production pinned callback, and desktop/phone
+save/reload and no-message errors. Local and exact-head CI results are recorded
+on the PR; no failing gate is bypassed.
+
+After merge and upgrade, rerun the saved no-message connection check to identify
+the live failure category, correct that specific provider/network condition,
+then complete actual inbox and recovery acceptance. Existing generic failures
+cannot retrospectively reveal their cause. Pro account sending allowances are
+separate from the Basic preset's source-IP limit. The earlier platform/parity
+and live acceptance boundaries below still apply.
+
+## Historical 0.52.1 production readiness follow-up
 
 Updated 9 October 2026 (Australia/Perth). Baseline: merged main
 `a6eaa5a2b3abfeb0120082ca05da11dfad7586e7`; changes:

@@ -67,6 +67,7 @@ await test('SMTP and Postal provider selection, recovery, pacing and ambiguous d
           }
         }
         await tx.unsafe(readFileSync(new URL('../../migrations/031_email_providers.sql',import.meta.url),'utf8'),[],{prepare:false});
+        await tx.unsafe(readFileSync(new URL('../../migrations/032_wpmu_pro_email.sql',import.meta.url),'utf8'),[],{prepare:false});
         const [row]=await tx`SELECT * FROM email_settings`;assert.equal(row.api_secret,encrypted);assert.equal(row.provider,'postal');assert.equal(row.enabled,true);assert.equal(emailConfigurationFromRow(row).secret,postalSecret);assert.equal(row.smtp_secret,null);
         for(const table of ['email_outbox','password_recovery_mail']){
           const rows=await tx`SELECT * FROM ${tx(table)} ORDER BY attempts`;
@@ -83,6 +84,33 @@ await test('SMTP and Postal provider selection, recovery, pacing and ambiguous d
       assert.equal(settings.provider,'smtp');assert.equal(settings.configured,true);assert.equal(settings.api_key_set,true);assert.equal(settings.smtp_password_set,true);assert.equal(settings.origin,'');
       const [row]=await sql`SELECT * FROM email_settings`;assert.ok(row.api_secret);assert.ok(row.smtp_secret);secretFree(row);assert.equal(decryptSmtpSecret(row.smtp_secret,row),smtpSecret);
       assert.equal((await recoveryDeliveryStatus(sql)).configured,false);assert.equal((await recoveryDeliveryStatus(sql)).provider,'smtp');
+    });
+    await t.test('Pro preset saves both TLS modes and changing only its label preserves the encrypted identity',async()=>{
+      const previousAdmin=admin;admin=await account('admin');
+      try {
+      await save({smtp_preset:'custom',smtp_host:'mail.mailconfig.net',smtp_password:smtpSecret});
+      const [before]=await sql`SELECT * FROM email_settings`;
+      await save({smtp_preset:'wpmu_pro'});const [labelled]=await sql`SELECT * FROM email_settings`;
+      assert.equal(settings.smtp_preset,'wpmu_pro');assert.equal(labelled.smtp_secret,before.smtp_secret);assert.equal(decryptSmtpSecret(labelled.smtp_secret,labelled),smtpSecret);
+      assert.equal((await request('/api/admin/emails/settings',{user:admin,method:'POST',body:body({smtp_port:465,smtp_security:'tls'})})).status,409);
+      await save({smtp_port:465,smtp_security:'tls',smtp_password:smtpSecret});assert.equal(settings.smtp_port,465);assert.equal(settings.configured,true);
+      assert.equal((await request('/api/admin/emails/settings',{user:admin,method:'POST',body:body({smtp_host:'other.example.com',smtp_password:smtpSecret})})).status,400);
+      await save({smtp_preset:'wpmu',smtp_host:'mailu.wpmudev.host',smtp_port:587,smtp_security:'starttls',smtp_password:smtpSecret});
+      } finally {admin=previousAdmin;await overview();}
+    });
+    await t.test('known SMTP rejection diagnostics survive queue history without raw provider data',async()=>{
+      const previousAdmin=admin,previousPacing=await sql`SELECT * FROM email_dispatch_state`;admin=await account('admin');
+      try {
+      await save({enabled:true});const job=await queue();await onlyOutbox(job.id);await clearPacing();
+      const raw='Private provider text '+smtpSecret;
+      assert.equal(await processEmailOutbox({sql,origin,send:async()=>{throw Object.assign(Error(raw),{emailProvider:'smtp',emailCode:'SMTP_AUTH_FAILED',emailDelivery:'rejected'});}}),true);
+      const row=await outbox(job.id);assert.equal(row.last_error,'SMTP_AUTH_FAILED');assert.equal(row.status,'queued');assert.equal(row.dispatch_started_at,null);assert.equal(row.attempts,1);
+      const data=await overview(),visible=data.recent.find(r=>r.id===job.id);assert.equal(visible.last_error,'SMTP_AUTH_FAILED');assert.ok(!JSON.stringify(data).includes(raw));
+      await sql`UPDATE email_outbox SET available_at=now()+interval '1 day' WHERE id=${job.id}`;await save({enabled:false});
+      } finally {
+        await sql`DELETE FROM email_dispatch_state`;if(previousPacing.length)await sql`INSERT INTO email_dispatch_state ${sql(previousPacing)}`;
+        admin=previousAdmin;await overview();
+      }
     });
     await t.test('SMTP connection endpoints reject guests, members, wrong passwords, cross-origin requests and extra fields',async()=>{
       const input={password,revision:settings.revision};

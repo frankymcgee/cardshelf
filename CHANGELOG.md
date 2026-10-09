@@ -1,3 +1,9 @@
+## 0.52.2 — 2026-10-09
+
+- Add a separate WPMU DEV Pro Email preset and account-quota guidance. Preserve existing Pro connections on port 587 when selecting the preset; default new Pro connections to verified TLS on port 465. Migration 032 only extends the preset constraint and preserves saved credentials and mail history.
+- Replace ambiguous SMTP errors with fixed, credential-free DNS, destination, connection, TLS, authentication, timeout and rejection diagnostics. Retain those safe codes in both delivery queues without changing uncertain-delivery retry protection.
+- Correct no-message connection checks to say no email was sent, rather than imply a potentially delivered message. Exercise the production pinned-socket callback in real TLS tests and cover both WPMU presets on desktop and phone.
+
 ## 0.52.1 — 2026-10-09
 
 - Discard queued password-reset requests for unknown accounts in bounded worker batches before SMTP reservation. Known accounts can be selected immediately without an unknown-address backlog consuming sending slots; public recovery responses remain generic.

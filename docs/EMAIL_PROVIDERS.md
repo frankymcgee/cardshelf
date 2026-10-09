@@ -1,4 +1,4 @@
-# Email providers — CardShelf 0.52.1
+# Email providers — CardShelf 0.52.2
 
 CardShelf can send password recovery, security notices and opted-in activity
 notifications through **Postal API** or **authenticated SMTP**. Select the
@@ -11,6 +11,7 @@ mail queues; it does not create a mailbox or download incoming email.
 |---|---|---|---|
 | Postal | Deployment-pinned HTTPS API | Postal server API credential | API acceptance; correlated signed Postal delivery/bounce events |
 | WPMU DEV Basic Email | `mailu.wpmudev.host`, port **587**, required **STARTTLS** | Full mailbox address and its password | SMTP acceptance; inspect the inbox, message headers and provider bounce reports |
+| WPMU DEV Pro Email | `mail.mailconfig.net`, **465 / TLS** or **587 / STARTTLS** | Full mailbox address and its password | SMTP acceptance; receiving-inbox acceptance remains separate |
 | Custom SMTP | Public provider hostname, port **587 / STARTTLS** or **465 / TLS** | SMTP username and password or provider app password | SMTP acceptance; inspect the inbox and provider bounce reports |
 
 External SMTP needs no Postal origin, API credential, signing public key,
@@ -19,6 +20,21 @@ HTTPS and database/worker services. Allow the selected outbound submission port
 through the host firewall. SMTP providers without password/app-password login,
 or requiring OAuth-only authentication or an API-only transport, need a separate
 adapter; their support is not implied by this SMTP option.
+
+## WPMU DEV Pro Email
+
+Pro is a separate paid mailbox service, not the Basic hosting mailbox. Its
+[official guide](https://wpmudev.com/docs/hub-2-0/pro-email/) documents an initial
+daily allowance of approximately 25 messages, increasing to 500 after about two
+weeks. Check the current Hub allowance; CardShelf's per-minute pace does not
+enforce that rolling daily quota.
+
+Select **WPMU DEV Pro Email**, use the full mailbox username and saved mailbox
+password, and verify the connection before sending. A new preset uses port 465
+with TLS. Selecting Pro for an existing `mail.mailconfig.net` connection retains
+its valid TLS/port pair; it does not silently change a saved 587 connection.
+Changing the hostname, port, encryption or username requires password re-entry
+because the encrypted credential is bound to that identity.
 
 ## WPMU DEV Basic Email
 
@@ -86,6 +102,15 @@ events after selecting SMTP; those events cannot update SMTP rows. History from
 Postal does not establish delivery through the new SMTP connection.
 
 ## Credentials, checks and upgrade
+
+Version 0.52.2 adds migration 032 for the Pro preset, without changing existing
+mail settings or queue state. Its connection errors identify fixed categories
+such as `SMTP_AUTH_FAILED`, `SMTP_TLS_FAILED`, `SMTP_DNS_FAILED` and
+`SMTP_CONNECT_FAILED`. No provider response or credential is exposed. A
+connection check sends no email and has no ambiguous delivery result. New queue
+failures retain safe categories; historical generic failures are not rewritten.
+Unknown submission acknowledgments still require provider/history review before
+any fresh send, and are never automatically retried.
 
 Migration **031_email_providers.sql** retains existing Postal credentials,
 settings and deliveries. Previously sending jobs and unaccepted retry jobs with attempts are held as

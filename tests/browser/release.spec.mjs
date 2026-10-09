@@ -65,7 +65,7 @@ test('registration pause directs a new member to account help rather than a beta
   await expect(page).toHaveURL(/\/contact\?purpose=early_access$/);
   await expect(page.getByLabel('What brings you here?')).toHaveValue('early_access');
 });
-test('WPMU SMTP settings save through authenticated APIs and reload without revealing credentials',async({page,context,admin},info)=>{
+for(const preset of ['wpmu','wpmu_pro'])test(preset+' SMTP settings save through authenticated APIs and reload without revealing credentials',async({page,context,admin},info)=>{
   if(process.env.EMAIL_WORKER_ENABLED!=='false')throw Error('Pause the mail worker before changing disposable SMTP settings.');
   const sql=postgres(database,{max:2}),previous=await sql`SELECT * FROM email_settings`;
   const smtpPassword='Disposable SMTP browser credential '+randomUUID();
@@ -73,14 +73,18 @@ test('WPMU SMTP settings save through authenticated APIs and reload without reve
     await sql`DELETE FROM email_settings`;
     await context.addCookies([{name:'cardshelf_session',value:admin,url:baseURL,httpOnly:true,sameSite:'Strict'}]);
     await inspect(page,'/admin/emails');
-    await page.locator('#email-provider').selectOption('smtp');await page.locator('#smtp-preset').selectOption('wpmu');
-    await expect(page.locator('#smtp-host')).toHaveValue('mailu.wpmudev.host');await expect(page.locator('#smtp-security')).toHaveValue('starttls');await expect(page.locator('#smtp-rate')).toHaveValue('10');
+    const host=preset==='wpmu'?'mailu.wpmudev.host':'mail.mailconfig.net',security=preset==='wpmu'?'starttls':'tls';
+    await page.locator('#email-provider').selectOption('smtp');await page.locator('#smtp-preset').selectOption(preset);
+    await expect(page.locator('#smtp-host')).toHaveValue(host);await expect(page.locator('#smtp-security')).toHaveValue(security);await expect(page.locator('#smtp-rate')).toHaveValue('10');
     await expect(page.getByRole('heading',{name:'External SMTP setup',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'One-time Postal setup',exact:true})).toHaveCount(0);
     await page.locator('#smtp-password').fill(smtpPassword);await page.locator('#email-admin-password').fill('Disposable release browser password 123');
     const saved=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/admin/emails/settings'&&response.request().method()==='POST');
     await page.getByRole('button',{name:'Save email settings',exact:true}).click();const response=await saved;expect(response.status()).toBe(200);const data=await response.json();expect(data.provider).toBe('smtp');expect(data.smtp_password_set).toBe(true);expect(JSON.stringify(data)).not.toContain(smtpPassword);expect(data.smtp_password).toBeUndefined();
     await expect(page.getByRole('status').filter({hasText:'Email settings saved.'})).toBeVisible();
-    await page.reload();await expect(page.locator('#smtp-host')).toHaveValue('mailu.wpmudev.host');await expect(page.locator('#email-provider')).toHaveValue('smtp');await expect(page.locator('#smtp-password')).toHaveValue('');await expect(page.getByRole('button',{name:'Check SMTP connection',exact:true})).toBeDisabled();
+    await page.reload();await expect(page.locator('#smtp-host')).toHaveValue(host);await expect(page.locator('#smtp-security')).toHaveValue(security);await expect(page.locator('#smtp-preset')).toHaveValue(preset);await expect(page.locator('#email-provider')).toHaveValue('smtp');await expect(page.locator('#smtp-password')).toHaveValue('');await expect(page.getByRole('button',{name:'Check SMTP connection',exact:true})).toBeDisabled();
+    await page.route('**/api/admin/emails/connection',route=>route.fulfill({status:502,contentType:'application/json',body:JSON.stringify({statusCode:502,message:'[SMTP_AUTH_FAILED] The SMTP service rejected authentication.'})}));
+    await page.locator('#connection-admin-password').fill('Disposable release browser password 123');await page.getByRole('button',{name:'Check SMTP connection',exact:true}).click();
+    await expect(page.getByRole('alert')).toContainText('SMTP_AUTH_FAILED');await expect(page.getByRole('alert')).toContainText('did not send an email');await expect(page.getByRole('alert')).not.toContainText('delivery history');await expect(page.locator('#connection-admin-password')).toHaveValue('');
     await expect(page.getByRole('button',{name:'Send test email',exact:true})).toBeDisabled();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
     await page.screenshot({path:info.outputPath('wpmu-email-settings.png'),fullPage:true});
   }finally{await sql`DELETE FROM email_settings`;if(previous.length)await sql`INSERT INTO email_settings ${sql(previous)}`;await sql.end();}

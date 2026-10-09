@@ -39,6 +39,16 @@ test('SMTP check uses the saved revision and password without sending form crede
   let sent;const h=ui(admin,async(url,options)=>{if(options){sent={url,body:plain(options.body)};return {verified:true};}return overview({settings:settings({provider:'smtp',smtp_password_set:true})});});await h.load();h.setup.smtp_password='unsaved-secret';h.connectionPassword.value='current';await h.checkConnection();
   assert.deepEqual(sent,{url:'/api/admin/emails/connection',body:{password:'current',revision:2}});assert.equal(h.connectionPassword.value,'');assert.equal(h.setup.smtp_password,'unsaved-secret');
 });
+test('Pro preset preserves an existing Pro TLS identity and uses implicit TLS for a new identity',async()=>{
+  const h=ui(admin,async()=>overview());await h.load();h.setup.smtp_preset='wpmu_pro';h.setup.smtp_password='temporary';h.applySmtpPreset();
+  assert.equal(h.setup.smtp_host,'mail.mailconfig.net');assert.equal(h.setup.smtp_port,465);assert.equal(h.setup.smtp_security,'tls');assert.equal(h.setup.smtp_password,'');
+  h.setup.smtp_port=587;h.setup.smtp_security='starttls';h.applySmtpPreset();assert.equal(h.setup.smtp_port,587);assert.equal(h.setup.smtp_security,'starttls');
+});
+test('failed no-message checks do not display a delivery uncertainty warning',async()=>{
+  const h=ui(admin,async(url,options)=>{if(options)throw {statusCode:502,message:'[SMTP_AUTH_FAILED] Authentication rejected.'};return overview({settings:settings({provider:'smtp'})});});
+  await h.load();h.connectionPassword.value='current';await h.checkConnection();assert.match(h.error.value,/SMTP_AUTH_FAILED/);assert.match(h.error.value,/did not send an email/);assert.doesNotMatch(h.error.value,/delivery history/);assert.equal(h.connectionPassword.value,'');
+  h.testPassword.value='current';await h.sendTest();assert.match(h.error.value,/delivery history/);
+});
 test('removing an SMTP password submits no replacement and preserves the inactive Postal controls',async()=>{
   let sent;const h=ui(admin,async(url,options)=>{if(options){sent=plain(options.body);return settings({provider:'smtp',revision:3,enabled:false});}return overview({settings:settings({provider:'smtp',smtp_password_set:true})});});await h.load();h.setup.smtp_password='temporary';h.setup.clear_smtp_password=true;h.setup.password='current';await h.save();assert.equal(sent.smtp_password,'');assert.equal(sent.clear_smtp_password,true);assert.equal(sent.clear_api_key,false);
 });
