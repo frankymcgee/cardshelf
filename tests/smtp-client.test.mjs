@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { publicSmtpAddress, smtpDestination, smtpSend, smtpVerify, smtpDeliveryFailure } from '../lib/smtp-client.mjs';
 import { smtpSettingsInput, encryptSmtpSecret, decryptSmtpSecret } from '../lib/smtp-settings.mjs';
 import { emailConfigurationFromRow, emailSettings, emailSettingsInput } from '../lib/email-settings.mjs';
+import { smtpFailureCode, smtpHistoryCode } from '../lib/smtp-errors.mjs';
 const env={APP_ORIGIN:'https://cardshelf.cloud',CARDSHELF_INTEGRATION_KEY:'a1'.repeat(32),POSTAL_ORIGIN:'invalid-unused-Postal-setting'};
 const smtp={smtp_preset:'wpmu',smtp_host:'mailu.wpmudev.host',smtp_port:587,smtp_security:'starttls',smtp_user:'noreply@cardshelf.cloud',smtp_rate_limit:10};
 const secret='SYNTHETIC SMTP PASSWORD', config={...smtp,provider:'smtp',enabled:true,configured:true,smtp_password:secret,sender_name:'CardShelf',from_address:'noreply@cardshelf.cloud',reply_to:'support@cardshelf.cloud'};
@@ -33,6 +34,27 @@ test('SMTP input rejects unsafe destinations, TLS downgrades, malformed credenti
     {smtp_user:'user\r\nAUTH attacker'},{smtp_password:'secret\npassword'},{smtp_password:secret,clear_smtp_password:true},{clear_smtp_password:'true'},
     {smtp_host:''},{smtp_user:''},{smtp_rate_limit:0},{smtp_rate_limit:1.5},{tls:{rejectUnauthorized:false}}])assert.throws(()=>emailSettingsInput({...input,...patch}),JSON.stringify(patch));
   assert.equal(smtpSettingsInput({...smtp,smtp_preset:'custom',smtp_host:'smtp.example.com',smtp_port:465,smtp_security:'tls',smtp_rate_limit:60}).smtp_port,465);
+});
+test('WPMU Pro is distinct from Basic and supports both verified TLS submission modes',()=>{
+  for(const [smtp_port,smtp_security] of [[465,'tls'],[587,'starttls']]){
+    const pro={...smtp,smtp_preset:'wpmu_pro',smtp_host:'mail.mailconfig.net',smtp_port,smtp_security};
+    assert.equal(smtpSettingsInput(pro).smtp_preset,'wpmu_pro');
+    const encrypted=encryptSmtpSecret(secret,pro,env);assert.equal(decryptSmtpSecret(encrypted,{...pro,smtp_preset:'custom'},env),secret);
+    assert.throws(()=>smtpSettingsInput({...pro,smtp_host:'mailu.wpmudev.host'}));
+  }
+});
+test('SMTP diagnostics classify failures without copying provider text and preserve retry uncertainty',async()=>{
+  for(const [error,code] of [[{code:'EAUTH'},'SMTP_AUTH_FAILED'],[{code:'ETLS'},'SMTP_TLS_FAILED'],[{code:'ERR_TLS_CERT_ALTNAME_INVALID'},'SMTP_TLS_FAILED'],[{code:'EDNS'},'SMTP_DNS_FAILED'],[{code:'ECONNECTION'},'SMTP_CONNECT_FAILED'],[{code:'ETIMEDOUT'},'SMTP_TIMEOUT'],[{responseCode:550},'SMTP_REJECTED'],[{},'SMTP_DELIVERY_FAILED']]){
+    const raw=Object.assign(Error('DO NOT EXPOSE '+secret),error);assert.equal(smtpFailureCode(raw),code);
+    await assert.rejects(smtpVerify(config,{env,resolver,createTransport:()=>({verify:async()=>{throw raw;},close(){}})}),failure=>{
+      assert.equal(failure.emailCode,code);assert.match(failure.message,new RegExp(code));assert.ok(!failure.message.includes(secret));assert.ok(!failure.message.includes('DO NOT EXPOSE'));assert.equal(smtpHistoryCode(failure),code);return true;
+    });
+    assert.equal(smtpDeliveryFailure(raw),smtpDeliveryFailure(error));
+  }
+  assert.equal(smtpHistoryCode({emailProvider:'smtp',emailCode:'SECRET '+secret}),'SMTP_DELIVERY_FAILED');
+  assert.equal(smtpHistoryCode({emailProvider:'postal',emailCode:'SMTP_AUTH_FAILED'}),null);
+  await assert.rejects(smtpVerify(config,{env,resolver:{resolve4:async()=>[],resolve6:async()=>[]}}),e=>e.emailCode==='SMTP_DNS_FAILED'&&e.emailDelivery==='not_sent');
+  await assert.rejects(smtpVerify(config,{env,resolver:{resolve4:async()=>['127.0.0.1'],resolve6:async()=>[]}}),e=>e.emailCode==='SMTP_DESTINATION_BLOCKED'&&e.emailDelivery==='not_sent');
 });
 test('SMTP destinations reject loopback, private, link-local, metadata, documentation, multicast and mapped addresses',()=>{
   for(const address of ['0.0.0.0','10.1.2.3','100.64.0.1','127.0.0.1','169.254.169.254','172.16.0.1','172.31.255.255','192.0.0.1','192.0.2.4','192.168.1.1','198.18.0.1','198.51.100.1','203.0.113.1','224.1.2.3','255.255.255.255',

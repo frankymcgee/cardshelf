@@ -56,13 +56,12 @@ async function fixture({implicit=false,starttls=true,rejectAuth=false,dropAfterD
     const server=implicit?tls.createServer({key,cert},socket=>session(socket,true)):net.createServer(socket=>session(socket));
     server.on('tlsClientError',()=>{});
     await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});
-    const options={env:{APP_ORIGIN:'https://cardshelf.cloud'},resolver:{resolve4:async()=>['93.184.216.34'],resolve6:async()=>[]},createTransport:original=>{
+    const options={env:{APP_ORIGIN:'https://cardshelf.cloud'},resolver:{resolve4:async()=>['93.184.216.34'],resolve6:async()=>[]},connectSocket:original=>{
+      assert.equal(original.host,'93.184.216.34');assert.equal(original.port,implicit?465:587);
+      const socket=net.connect({host:'127.0.0.1',port:server.address().port});sockets.add(socket);return socket;
+    },createTransport:original=>{
       assert.equal(original.host,'93.184.216.34');assert.equal(original.tls.rejectUnauthorized,true);
-      return nodemailer.createTransport({...original,tls:{...original.tls,...(trust?{ca:cert}:{})},getSocket(_options,callback){
-        const socket=net.connect({host:'127.0.0.1',port:server.address().port});sockets.add(socket);let returned=false;
-        socket.once('error',error=>{if(!returned){returned=true;callback(error);}});
-        socket.once('connect',()=>{returned=true;callback(null,{connection:socket});});
-      }});
+      return nodemailer.createTransport({...original,tls:{...original.tls,...(trust?{ca:cert}:{})}});
     }};
     try{await run({options,record,config:implicit?{...config,smtp_port:465,smtp_security:'tls'}:config});}
     finally{for(const socket of sockets)socket.destroy();await new Promise(resolve=>server.close(resolve));}
@@ -76,7 +75,7 @@ test('real SMTP STARTTLS and implicit TLS verify login without MAIL, RCPT or DAT
 });
 test('real SMTP requires a verified certificate and hostname before sending credentials',async()=>{
   for(const trust of [false,true])await fixture({trust},async({options,record,config})=>{
-    await assert.rejects(smtpVerify(trust?{...config,smtp_host:'different.example.com'}:config,options));
+    await assert.rejects(smtpVerify(trust?{...config,smtp_host:'different.example.com'}:config,options),e=>e.emailCode==='SMTP_TLS_FAILED');
     assert.equal(record.auth.length,0);assert.equal(record.messages.length,0);
   });
 });
