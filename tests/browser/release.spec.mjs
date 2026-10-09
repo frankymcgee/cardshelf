@@ -45,6 +45,8 @@ test('public release pages and legacy contact links are reachable without creden
   await expect(page.getByLabel('What brings you here?')).toHaveValue('privacy');
   await page.getByRole('textbox', { name: 'Your name', exact: true }).fill('Contact layout inspection');
   await expect(page.getByRole('button', { name: 'Send my request' })).toBeVisible();
+  await page.goto('/privacy');
+  await expect(page.getByRole('heading', { name: 'Free accounts, public card data and sponsor placements', exact: true })).toHaveCount(1);
 });
 test('member and administrator pages boot against real authenticated APIs on both layouts', async ({ page, context, admin }, info) => {
   await context.addCookies([{ name: 'cardshelf_session', value: admin, url: baseURL, httpOnly: true, sameSite: 'Strict' }]);
@@ -57,6 +59,53 @@ test('member and administrator pages boot against real authenticated APIs on bot
   await expect(page.locator('.readiness-check')).toHaveCount(17);
   await expect(page.getByRole('heading', { name: 'Acceptance checks still required', exact: true })).toBeVisible();
   await page.screenshot({ path: info.outputPath('release-readiness.png'), fullPage: true });
+  await page.goto('/binders');
+  await page.getByRole('button', { name: 'Blank binder', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Create a new binder', exact: true })).toContainText('Collector Plus can manage all supported games');
+  await expect(page.getByRole('dialog', { name: 'Create a new binder', exact: true })).not.toContainText('Collector Pro');
+});
+
+test('slow or failed collection reads never pretend the collection is empty and can be retried', async ({ page, context, admin }) => {
+  await context.addCookies([{ name: 'cardshelf_session', value: admin, url: baseURL, httpOnly: true, sameSite: 'Strict' }]);
+  for (const [path, endpoint, loading, empty] of [
+    ['/app', '/api/dashboard', 'Loading your collection overview…', 'Your first binder starts here.'],
+    ['/binders', '/api/binders', 'Loading binders…', 'Your next collection starts here.']
+  ]) {
+    let release;
+    const held = new Promise(resolve => { release = resolve; });
+    const handler = async route => { await held; await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ statusCode: 503, message: 'Temporary inspection failure' }) }); };
+    await page.route('**' + endpoint, handler);
+    try {
+      await page.goto(path);
+      await expect(page.getByRole('status').filter({ hasText: loading })).toBeVisible();
+      await expect(page.getByRole('heading', { name: empty, exact: true })).toHaveCount(0);
+      if (path === '/app') await expect(page.locator('.stats-grid strong')).toHaveText(['—', '—', '—', '—']);
+      release();
+      await expect(page.getByRole('alert')).toContainText('Temporary inspection failure');
+      await expect(page.getByRole('heading', { name: empty, exact: true })).toHaveCount(0);
+      await expect(page.getByText('Your catalogue is empty. Import a set to start collecting.', { exact: true })).toHaveCount(0);
+      if (path === '/app') await expect(page.locator('.stats-grid strong')).toHaveText(['—', '—', '—', '—']);
+    } finally { release(); await page.unroute('**' + endpoint, handler); }
+    const success = page.waitForResponse(response => new URL(response.url()).pathname === endpoint && response.status() === 200);
+    await page.getByRole('button', { name: 'Retry', exact: true }).click(); await success;
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(page.getByText(loading, { exact: true })).toHaveCount(0);
+  }
+});
+
+test('an unavailable registration check is not presented as closed registration', async ({ page }) => {
+  const pattern = '**/api/public/free-registration';
+  await page.route(pattern, route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ statusCode: 503, message: 'Temporary registration inspection failure' }) }));
+  await page.goto('/register');
+  await expect(page.getByRole('alert')).toContainText('Could not check account registration');
+  await expect(page.getByText('New Free account registration is currently paused.', { exact: false })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Create Free account', exact: true })).toHaveCount(0);
+  await page.unroute(pattern);
+  const success = page.waitForResponse(response => new URL(response.url()).pathname === '/api/public/free-registration' && response.status() === 200);
+  await page.getByRole('button', { name: 'Retry', exact: true }).click(); await success;
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByText('Checking account registration…', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('New Free account registration is currently paused.', { exact: false })).toBeVisible();
 });
 test('registration pause directs a new member to account help rather than a beta invitation', async ({ page }) => {
   await page.goto('/register');

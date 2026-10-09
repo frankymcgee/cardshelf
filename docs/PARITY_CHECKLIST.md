@@ -1,4 +1,4 @@
-# Functional scope and parity — 0.52.2
+# Functional scope and parity — 0.52.3
 
 Updated 9 October 2026 (Australia/Perth). This matrix describes shipped CardShelf capabilities,
 not a certificate of complete BinderBuilder or official Pokémon game parity.
@@ -19,7 +19,7 @@ must survive any later work on the remaining features.
 | Membership | Free, Collector, Collector Plus, explicit Complimentary assignments; protected tester grants; Stripe offers/checkout/portal/verified periods; approved referrals | Fresh Live purchase/renewal/cancel acceptance on deployed version; account email verification and MFA absent |
 | Marketplace | Member listings/photos, exact printing selection, private enquiries/replies, seller tools, moderation, affiliate links | No integrated card-sale checkout, settlement, shipping or escrow; these are external workflows |
 | Recognition | Single and sequential batch photo scan, English/Japanese imported Pokémon matches, manual confirmation, binder destination and guarded undo; usage/budget limits | Other-game recognition, graded-card recognition, offline/local-model inference; physical camera acceptance |
-| Emails/push | Postal or encrypted authenticated SMTP (WPMU DEV preset), verified TLS/login checks, shared pacing, uncertain-delivery holds, recovery, optional email preferences; session-bound encrypted Web Push and per-device preferences | Configure and accept the selected live provider, sender signing and receiving-inbox recovery; physical iPhone/Android push and install tests |
+| Emails/push | Postal or encrypted authenticated SMTP (separate WPMU DEV Basic/Pro presets), verified TLS/login checks, shared pacing, uncertain-delivery holds, recovery, optional email preferences; session-bound encrypted Web Push and per-device preferences | WPMU Pro TLS/login and test acceptance observed; complete sender-signing and receiving-inbox recovery acceptance, plus physical iPhone/Android push and install tests |
 | Arena | Versioned server engine, hidden hands, supported Casual Expanded cards, original tutorials, CPU/saved opponents, private matches, deck import/export/workshop, tournaments and commentary, accessible motion/audio controls | **Full official card/rules parity is absent.** Special Energy and unsupported effects remain rejected; current two-account/tournament/reconnect acceptance needed |
 | PWA/offline | Installable manifest, service worker and offline information page; private APIs are not cached | Offline collection reads/writes and conflict reconciliation; native App Store/Play Store apps |
 | Advertising | First-party Free sponsor; Google Auto ads and isolated Adsterra banners/native; eligibility and private-page exclusions | Real provider fill and applicable consent acceptance; provider availability is not a code-only guarantee |
