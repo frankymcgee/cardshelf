@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { AUDIO_PREFERENCE_KEY, ARENA_TRACKS, audioPreferences, arenaEventCue, createArenaAudio } from '../../../shared/arena-audio.mjs'
+import { AUDIO_PREFERENCE_KEY, ARENA_EFFECT_CHOICES, ARENA_TRACKS, audioPreferences, arenaEventCue, createArenaAudio } from '../../../shared/arena-audio.mjs'
 const props = defineProps<{ events?: any[]; matchId: string; result?: number | string | null; seat: number; available: boolean; selected?: string }>()
 const options = reactive(audioPreferences()), started = ref(false), error = ref('')
+const preview = ref('energy')
 let player: ReturnType<typeof createArenaAudio> | undefined, lastEvent = -1
 function remember() { try { localStorage.setItem(AUDIO_PREFERENCE_KEY, JSON.stringify(audioPreferences(options))) } catch { /* Browser storage may be disabled. */ } }
 function apply() { remember(); player?.configure(options) }
@@ -31,6 +32,8 @@ onBeforeUnmount(() => { player?.dispose(); window.removeEventListener('focus', v
     <div class="arena-audio-heading"><strong>Sound & music</strong><button type="button" class="arena-button" :disabled="!available" :aria-pressed="started" @click="started ? mute() : enable()">{{ started ? 'Mute audio' : 'Enable audio' }}</button></div>
     <label class="arena-audio-check"><input v-model="options.effects" type="checkbox">Sound effects</label>
     <label>Effects volume<input v-model.number="options.effectsVolume" type="range" min="0" max="1" step="0.05" aria-label="Effects volume"></label>
+    <label>Sound preview<select v-model="preview" aria-label="Sound preview"><option v-for="effect in ARENA_EFFECT_CHOICES" :key="effect.id" :value="effect.id">{{ effect.name }}</option></select></label>
+    <button type="button" class="arena-button quiet" :disabled="!available || !started || !options.effects || !options.effectsVolume" @click="player?.cue(preview)">Preview sound</button>
     <label class="arena-audio-check"><input v-model="options.music" type="checkbox">Background music</label>
     <label>Music track<select v-model="options.track" aria-label="Music track"><option v-for="track in ARENA_TRACKS" :key="track.id" :value="track.id">{{ track.name }}</option></select></label>
     <label>Music volume<input v-model.number="options.musicVolume" type="range" min="0" max="1" step="0.05" aria-label="Music volume"></label>

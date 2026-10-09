@@ -1,11 +1,23 @@
 {
-  "release": "0.18.0",
+  "release": "0.52.4",
   "files": [
+    {
+      "file": "ability.wav",
+      "bytes": 16802,
+      "sha256": "56508506b9a36f12783a2a64cade67f594dd5abfddaf535e051d35665ed41167",
+      "source": "Original synthesized CardShelf audio; scripts/generate-arena-effects.py"
+    },
     {
       "file": "attack.wav",
       "bytes": 12390,
       "sha256": "35e34859830d810f64d26ebdaac1c547ec26f74dbdbc07d088b9ceb8eb9af906",
       "source": "Original synthesized CardShelf audio"
+    },
+    {
+      "file": "bench.wav",
+      "bytes": 9746,
+      "sha256": "9ddb7afe0916d58b1365f506e63a13649079382568ab413a3e6357fcc13b4f45",
+      "source": "Original synthesized CardShelf audio; scripts/generate-arena-effects.py"
     },
     {
       "file": "coin.wav",
@@ -14,10 +26,40 @@
       "source": "Original synthesized CardShelf audio"
     },
     {
+      "file": "damage.wav",
+      "bytes": 9746,
+      "sha256": "a8c9155c5fba086ab6e3fdc1584cfee14f5cf3cf8bbf0766a0d5b47e5d911b50",
+      "source": "Original synthesized CardShelf audio; scripts/generate-arena-effects.py"
+    },
+    {
       "file": "defeat.wav",
       "bytes": 37970,
       "sha256": "b8a8ceb7bfc13472044b8cdb18154e49ccdd17f000011bc36d90b110562f1a59",
       "source": "Original synthesized CardShelf audio"
+    },
+    {
+      "file": "draw.wav",
+      "bytes": 7982,
+      "sha256": "5c87eb4b9d1707b3d922e1dd0551ad07108eb97553a62d9c1a5df1e3e2413fda",
+      "source": "Original synthesized CardShelf audio; scripts/generate-arena-effects.py"
+    },
+    {
+      "file": "energy.wav",
+      "bytes": 14156,
+      "sha256": "80ceddac4e19c21073184ccd5a02789c7f910bb04cf8aea9f37f9b74a3e31eb0",
+      "source": "Original synthesized CardShelf audio; scripts/generate-arena-effects.py"
+    },
+    {
+      "file": "evolve.wav",
+      "bytes": 24300,
+      "sha256": "278650282102d1b90719b83b67c6af5ed1ddbcbb22496140e06c07b0172623c2",
+      "source": "Original synthesized CardShelf audio; scripts/generate-arena-effects.py"
+    },
+    {
+      "file": "heal.wav",
+      "bytes": 20330,
+      "sha256": "45eb5f32835760d26fc6a83e56ba50842d8a21c4499c278955e42387415e6d13",
+      "source": "Original synthesized CardShelf audio; scripts/generate-arena-effects.py"
     },
     {
       "file": "kenney-card.wav",
@@ -38,6 +80,18 @@
       "source": "Original synthesized CardShelf audio"
     },
     {
+      "file": "miss.wav",
+      "bytes": 12392,
+      "sha256": "3b8b9a9ab5160f8966b8fdd610d703e6a8ac276b7d58b8afac755d3428d3bb7a",
+      "source": "Original synthesized CardShelf audio; scripts/generate-arena-effects.py"
+    },
+    {
+      "file": "prize.wav",
+      "bytes": 18566,
+      "sha256": "cb76504141544d9ff53b550c6640c47bbe89de6b098dad3e80c64df935639f81",
+      "source": "Original synthesized CardShelf audio; scripts/generate-arena-effects.py"
+    },
+    {
       "file": "pulse-table.mp3",
       "bytes": 288749,
       "sha256": "814cc63f7cb74bc534fbbcda8eea3596157cd1749b25ec5f73374970cef325d3",
@@ -48,6 +102,24 @@
       "bytes": 384670,
       "sha256": "46f3c13ec055b1b27fa124e47a888525759200f00978511b548b8f26e719c366",
       "source": "Original synthesized CardShelf audio"
+    },
+    {
+      "file": "shuffle.wav",
+      "bytes": 14156,
+      "sha256": "0b4b8a35d57c9f0cc6409b9768cd5678d0131aa98823be090d2e3431823c16c4",
+      "source": "Original synthesized CardShelf audio; scripts/generate-arena-effects.py"
+    },
+    {
+      "file": "switch.wav",
+      "bytes": 13274,
+      "sha256": "ed9e0be44f3f47d65629f8d8cccd5ac7d2feac6d829d99da3123633156c889fd",
+      "source": "Original synthesized CardShelf audio; scripts/generate-arena-effects.py"
+    },
+    {
+      "file": "trainer.wav",
+      "bytes": 11510,
+      "sha256": "bb9d9d761d93d02cd4333868e7eca2aaa2ea95e415ed25ebe5e96983ba729b4d",
+      "source": "Original synthesized CardShelf audio; scripts/generate-arena-effects.py"
     },
     {
       "file": "turn.wav",

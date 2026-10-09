@@ -4,8 +4,34 @@ export const ARENA_AUDIO=Object.freeze({
   select:'/audio/arena/kenney-click.wav', card:'/audio/arena/kenney-card.wav',
   attack:'/audio/arena/attack.wav', knockout:'/audio/arena/knockout.wav',
   coin:'/audio/arena/coin.wav', turn:'/audio/arena/turn.wav',
-  victory:'/audio/arena/victory.wav', defeat:'/audio/arena/defeat.wav'
+  victory:'/audio/arena/victory.wav', defeat:'/audio/arena/defeat.wav',
+  draw:'/audio/arena/draw.wav', energy:'/audio/arena/energy.wav',
+  bench:'/audio/arena/bench.wav', evolve:'/audio/arena/evolve.wav',
+  trainer:'/audio/arena/trainer.wav', switch:'/audio/arena/switch.wav',
+  prize:'/audio/arena/prize.wav', ability:'/audio/arena/ability.wav',
+  heal:'/audio/arena/heal.wav', damage:'/audio/arena/damage.wav',
+  miss:'/audio/arena/miss.wav', shuffle:'/audio/arena/shuffle.wav'
 });
+export const ARENA_EFFECT_CHOICES=Object.freeze([
+  ['select','Card selection'],['card','Card handling'],['draw','Draw cards'],
+  ['energy','Attach Energy'],['bench','Play to the Bench'],['evolve','Evolution'],
+  ['trainer','Play a Trainer'],['switch','Switch or retreat'],['prize','Take Prizes'],
+  ['ability','Use an ability'],['heal','Heal damage'],['damage','Condition or effect damage'],
+  ['miss','Attack misses'],['shuffle','Shuffle the deck'],['attack','Attack'],
+  ['knockout','Knock Out'],['coin','Coin flip'],['turn','New turn'],
+  ['victory','Victory'],['defeat','Defeat']
+].map(([id,name])=>Object.freeze({id,name})));
+const EVENT_CUES=Object.freeze({
+  draw:'draw',energy:'energy',attach:'energy',bench:'bench',evolve:'evolve',
+  trainer:'trainer',switch:'switch',retreat:'switch',promote:'switch',prize:'prize',
+  ability:'ability',stadium:'ability',heal:'heal',condition:'damage',recoil:'damage',
+  confusion:'damage',effect_damage:'damage',attack_miss:'miss',shuffle:'shuffle',
+  mulligan:'shuffle',attack:'attack',knockout:'knockout',coin:'coin',turn:'turn'
+});
+// One concise cue per acknowledged update. Prefer the resolved effect over its
+// initiating Trainer, and a major battle event over routine turn/card movement.
+const CUE_PRIORITY=['knockout','attack','miss','damage','evolve','ability','heal',
+  'energy','prize','switch','bench','shuffle','draw','trainer','coin','turn'];
 export const ARENA_TRACKS=Object.freeze([
   {id:'quiet',name:'Quiet table',url:'/audio/arena/quiet-table.mp3'},
   {id:'pulse',name:'Pulse table',url:'/audio/arena/pulse-table.mp3'}
@@ -18,13 +44,14 @@ export function audioPreferences(value={}) {
 }
 /** @param {Array<{n:number,kind:string}>} events @param {number} previous @param {string|number|null|undefined} result @param {number} seat */
 export function arenaEventCue(events=[],previous=-1,result=null,seat=0) {
-  if(previous<0||!Array.isArray(events))return null;
+  if(!Number.isSafeInteger(previous)||previous<0||!Array.isArray(events))return null;
   const recent=events.filter(e=>Number.isSafeInteger(e?.n)&&e.n>previous);
   // A reconnect does not play the entire buffered action history.
-  if(!recent.length||recent.length>12)return null;
-  if(recent.some(e=>e.kind==='result'))return result==='draw'?'turn':result===seat?'victory':'defeat';
-  for(const kind of ['knockout','attack','coin','turn'])if(recent.some(e=>e.kind===kind))return kind;
-  return recent.some(e=>['draw','attach','bench','evolve','prize','trainer','switch','retreat'].includes(e.kind))?'card':null;
+  if(!recent.length||recent.length>12||recent.some((e,i)=>e.n!==previous+i+1))return null;
+  if(recent.some(e=>e.kind==='result'))return result==='draw'?'turn':
+    [0,1].includes(result)&&[0,1].includes(seat)?result===seat?'victory':'defeat':null;
+  const cues=new Set(recent.map(e=>Object.hasOwn(EVENT_CUES,e.kind)?EVENT_CUES[e.kind]:null));
+  return CUE_PRIORITY.find(cue=>cues.has(cue))||null;
 }
 /** Injected browser environment makes lifecycle and failure handling testable. */
 export function createArenaAudio(win,onError=(_message)=>{}) {
