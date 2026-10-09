@@ -11,6 +11,7 @@ const turnLabel = computed(() => props.table?.phase === 'setup' ? 'OPENING SETUP
   <section class="arena-match-status" :data-tone="guidance.tone" aria-label="Match status">
     <div class="arena-match-guidance" role="status" aria-live="polite" aria-atomic="true">
       <span class="arena-kicker">{{ turnLabel }}</span><strong>{{ guidance.title }}</strong><p>{{ guidance.detail }}</p>
+      <p v-if="table?.tiebreaker">Tiebreaker game · six Prizes at setup. The first Prize advantage wins; normal loss conditions still apply.</p>
     </div>
     <dl class="arena-prize-score" aria-label="Prizes remaining">
       <div v-for="row in prizes" :key="row.seat"><dt>{{ row.own ? 'Your Prizes left' : 'Opponent Prizes left' }}</dt><dd>{{ row.count ?? '—' }}</dd></div>
