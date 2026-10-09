@@ -1,3 +1,8 @@
+## 0.52.1 — 2026-10-09
+
+- Install OpenSSL in the Docker build stage so the real SMTP/TLS protocol tests can generate disposable certificates on AMD64 and ARM64. The release images must pass these tests before publication.
+- Document the local test prerequisite and synchronize installer, environment and UI release stamps.
+
 ## 0.52.0 — 2026-10-09
 
 - Add an administrator choice of Postal API or authenticated external SMTP, with a WPMU DEV Basic Email preset using port 587 and required STARTTLS. Both recovery and optional notifications use the selected provider; paused settings never revive the legacy environment fallback.

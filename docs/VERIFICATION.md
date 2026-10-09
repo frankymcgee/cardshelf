@@ -1,12 +1,19 @@
-# Production readiness follow-up — CardShelf 0.52.0
+# Production readiness follow-up — CardShelf 0.52.1
 
 Updated 9 October 2026 (Australia/Perth). Baseline: merged main
-`2099c262039cfa508c8e7b260aab63d0c01d1d2e`; changes:
-`feature/email-provider-choice`. The live application was rechecked through its
+`a6eaa5a2b3abfeb0120082ca05da11dfad7586e7`; changes:
+`fix/smtp-tls-image-tests`. The live application was rechecked through its
 signed-in Data & settings and Release readiness pages and is now **0.51.0**.
-This source change does not install 0.52.0 or configure an external mailbox.
+This source change does not install 0.52.1 or configure an external mailbox.
 
 ## Current change and release boundary
+
+The Postal/SMTP functionality from PR #66 is merged. The 0.52.1 follow-up
+installs OpenSSL in the Docker build stage so real SMTP/TLS protocol tests can
+generate disposable certificates in both native release-image builds. The
+application, PostgreSQL and browser gates passed on 0.52.0; both native builds
+identified this missing test prerequisite. The complete gates are required again
+for the follow-up revision.
 
 Postal API and authenticated external SMTP now share recovery and notification
 flows. The WPMU DEV Basic Email preset supplies its verified host/port, requires
@@ -60,7 +67,7 @@ checks for the exact commit result; this report is not a replacement for CI.
 
 | Area | Required next action |
 |---|---|
-| Selected mail provider | Upgrade to 0.52.0 and configure Postal or an eligible WPMU/custom SMTP account. Verify the connection, receive a test and recovery message, inspect sender signing and redeem the reset. Use signed delivery events for Postal; use inbox/provider reports for SMTP. |
+| Selected mail provider | Upgrade to 0.52.1 and configure Postal or an eligible WPMU/custom SMTP account. Verify the connection, receive a test and recovery message, inspect sender signing and redeem the reset. Use signed delivery events for Postal; use inbox/provider reports for SMTP. |
 | Public registration | Still closed on the inspected 0.51.0 deployment. Open only through the existing administrator flow after intended launch acceptance; preserve protected tester grants. |
 | Live billing | Configuration and recent recorded evidence pass. A fresh purchase, correct entitlement, portal cancellation/renewal acceptance remains separate; no charge was initiated by this inspection. |
 | Physical devices | iPhone/Android installation, opted-in push and actual camera acceptance remain required. Browser emulation is not physical-device evidence. |

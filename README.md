@@ -1,4 +1,4 @@
-# CardShelf 0.52.0
+# CardShelf 0.52.1
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -272,6 +272,8 @@ Do not use `docker compose down -v`; keep secured off-server backups and rehears
 ## Development and validation
 
 The project uses Node.js 24, Nuxt, PostgreSQL and Docker Compose for deployment.
+Local validation also needs the OpenSSL command for disposable SMTP/TLS test
+certificates; the Docker build stage installs it before running the same tests.
 
 ```sh
 npm ci
