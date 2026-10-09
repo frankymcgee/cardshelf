@@ -112,8 +112,13 @@ await test('automated arena: paid eligibility, private decks, multiplayer, CPU a
       for(const [user,seat]of [[host,0],[guest,1]]){const r=await current(user),json=JSON.stringify(r);assert.match((await request('/api/arena/matches/'+match.id,{user})).headers.get('cache-control'),/private, no-store/);assert.equal('state' in r,false);assert.equal('invite_hash' in r,false);assert.equal('originalDecks' in r.table,false);assert.deepEqual(r.table.players[1-seat].hand,[]);for(const card of [...saved.state.players[1-seat].hand,...saved.state.players[1-seat].deck])assert.ok(!json.includes(card.id));}
     });
     await t.test('an applied setup move is not applied twice when its response is retried',async()=>{
-      const before=await current(),move=before.table.legal.find(m=>m.action.type==='setup'&&m.action.zone==='active'),body={revision:before.revision,request_id:randomUUID(),action:move.action},path='/api/arena/matches/'+match.id+'/actions';const r=await request(path,{user:host,method:'POST',body});assert.equal(r.status,200);const again=await request(path,{user:host,method:'POST',body});assert.equal(again.status,200);assert.equal(again.data.revision,r.data.revision);assert.equal(again.data.replayed,true);assert.equal(again.data.table.players[0].hand_count,r.data.table.players[0].hand_count);
-      assert.equal((await request(path,{user:host,method:'POST',body:{...body,action:{type:'concede'}}})).status,409);
+      // A lone mulligan waits until the other player locks their opening field.
+      // Exercise replay using the player who actually has a Basic to place.
+      let before,move,user,seat;
+      for(const [candidate,index] of [[host,0],[guest,1]]){const view=await current(candidate),legal=view.table.legal.find(m=>m.action.type==='setup'&&m.action.zone==='active');if(legal){before=view;move=legal;user=candidate;seat=index;break;}}
+      assert.ok(move,'At least one player must have a Basic after shared mulligans.');
+      const body={revision:before.revision,request_id:randomUUID(),action:move.action},path='/api/arena/matches/'+match.id+'/actions';const r=await request(path,{user,method:'POST',body});assert.equal(r.status,200);const again=await request(path,{user,method:'POST',body});assert.equal(again.status,200);assert.equal(again.data.revision,r.data.revision);assert.equal(again.data.replayed,true);assert.equal(again.data.table.players[seat].hand_count,r.data.table.players[seat].hand_count);assert.deepEqual(again.data.table,r.data.table);
+      assert.equal((await request(path,{user,method:'POST',body:{...body,action:{type:'concede'}}})).status,409);
     });
     await t.test('CPU controls and arbitrary manual counters cannot be used to cheat a PvP game',async()=>{
       const before=await current(),path='/api/arena/matches/'+match.id+'/actions';assert.equal((await request(path,{user:host,method:'POST',body:{revision:before.revision,request_id:randomUUID(),action:{type:'autoplay'}}})).status,403);
@@ -122,7 +127,9 @@ await test('automated arena: paid eligibility, private decks, multiplayer, CPU a
     await t.test('expired opponent access blocks normal play, preserves state and is recoverable on renewal',async()=>{
       const before=await current();await sql`UPDATE account_tier_overrides SET expires_at=now()-interval '1 second' WHERE user_id=${guest.id}`;
       assert.equal((await request('/api/arena/matches/'+match.id,{user:guest})).status,403);
-      const action=before.table.legal[0].action;assert.equal((await request('/api/arena/matches/'+match.id+'/actions',{user:host,method:'POST',body:{revision:before.revision,request_id:randomUUID(),action}})).status,403);
+      // Entitlement is checked before gameplay legality, even if the host is
+      // waiting for a lone mulligan and has no setup move of their own yet.
+      const action=before.table.legal[0]?.action||{type:'end_turn'};assert.equal((await request('/api/arena/matches/'+match.id+'/actions',{user:host,method:'POST',body:{revision:before.revision,request_id:randomUUID(),action}})).status,403);
       await sql`UPDATE account_tier_overrides SET expires_at=NULL WHERE user_id=${guest.id}`;assert.equal((await current()).revision,before.revision);
     });
     await t.test('two authenticated player clients can complete automatic setup and attacks to a server-declared result',async()=>{

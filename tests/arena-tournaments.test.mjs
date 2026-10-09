@@ -6,6 +6,29 @@ import { newArena, applyArenaAction, arenaView } from '../lib/arena/engine.mjs';
 import { trainingDeck } from '../lib/arena/training.mjs';
 import { ARENA_VERSION, LEGACY_ARENA_VERSION } from '../shared/arena.mjs';
 import { readyFixture, rngFor, take, trainer } from './helpers/arena-fixtures.mjs';
+import { prepareTournamentOpening } from './helpers/arena-tournament-setup.mjs';
+
+for (const waitingSeat of [0, 1]) test(`authenticated opening helper locks the other field before seat ${waitingSeat}'s lone mulligan`, async () => {
+  let state = newArena([trainingDeck(), trainingDeck('tide')], { rng: rngFor(44) });
+  for (const [seat, player] of state.players.entries()) {
+    player.deck.push(...player.hand); player.hand = []; player.mulligans = 0;
+    const remove = predicate => player.deck.splice(player.deck.findIndex(predicate), 1)[0];
+    if (seat !== waitingSeat) player.hand.push(remove(u => u.card.kind === 'pokemon' && u.card.stage === 'Basic'));
+    while (player.hand.length < 7) player.hand.push(remove(u => u.card.kind === 'energy'));
+    if (seat === waitingSeat) player.deck.unshift(remove(u => u.card.kind === 'pokemon' && u.card.stage === 'Basic'));
+  }
+  const actions = [];
+  const read = seat => ({ seat, table: arenaView(state, seat) });
+  await prepareTournamentOpening([0, 1], read, (seat, action) => {
+    actions.push({ seat, type: action.type });
+    state = applyArenaAction(state, seat, action, { rng: max => max - 1 });
+    return read(seat);
+  });
+  assert.equal(state.phase, 'playing'); assert.equal(state.setup_complete, true);
+  assert.ok(state.players.every(p => p.active && p.ready && p.prizes.length === 6));
+  assert.equal(state.players[waitingSeat].mulligans, 1);
+  assert.ok(actions.findIndex(a => a.seat === 1 - waitingSeat && a.type === 'ready') < actions.findIndex(a => a.seat === waitingSeat && a.type === 'setup'));
+});
 
 for (const count of [2, 3, 5, 7, 8, 9, 16, 31, 32, 33, 63, 64]) test(`${count} entrants produce a complete bracket with exactly the required byes`, () => {
   const entrants = Array.from({ length: count }, (_, i) => 'entrant-' + i), before = [...entrants];

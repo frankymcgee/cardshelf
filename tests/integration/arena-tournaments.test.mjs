@@ -107,8 +107,11 @@ await test('Invited Arena tournaments and private administrator commentary', asy
       for (const user of [host, guest, outsider, free]) assert.equal((await request(path, user)).status, 403);
       assert.equal(ok(await request(path, admin)).table, null);
       await move(host, { type: 'ready' }); await move(guest, { type: 'ready' }); await move(host, { type: 'start' });
-      const current = await view(host), place = current.table.legal.find(m => m.action.type === 'setup' && m.action.zone === 'active'); await move(host, place.action);
-      let watched = ok(await request(path, admin)); assert.deepEqual(watched.table.players[0].active, { hidden: true });
+      // The player taking a lone mulligan cannot place until the opponent locks.
+      let place, actor, seat;
+      for (const [candidate, index] of [[host, 0], [guest, 1]]) { const current = await view(candidate), legal = current.table.legal.find(m => m.action.type === 'setup' && m.action.zone === 'active'); if (legal) { place = legal; actor = candidate; seat = index; break; } }
+      assert.ok(place, 'At least one player must have an opening Basic.'); await move(actor, place.action);
+      let watched = ok(await request(path, admin)); assert.deepEqual(watched.table.players[seat].active, { hidden: true });
       const [stored] = await sql`SELECT state FROM arena_matches WHERE id=${game.id}`;
       const encoded = JSON.stringify(watched);
       for (const p of stored.state.players) for (const unit of [...p.deck, ...p.hand, ...p.prizes, ...(p.active ? [p.active] : [])]) assert.ok(!encoded.includes(unit.id));
