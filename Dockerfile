@@ -1,5 +1,8 @@
 # GitHub builds releases; --build in upgrade.sh remains an explicit source fallback.
 FROM node:24-bookworm-slim AS build
+# Run real SMTP/TLS certificate tests and the Postal deployment health probe.
+RUN apt-get update && apt-get install -y --no-install-recommends openssl curl \
+ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund

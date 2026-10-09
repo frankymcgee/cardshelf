@@ -18,7 +18,7 @@ import { recoveryDeliveryStatus } from '../../lib/password-recovery-mail.mjs';
 const base=process.env.TEST_BASE_URL,url=process.env.DATABASE_URL,origin=process.env.APP_ORIGIN||base;
 if(process.env.ALLOW_TEST_DATABASE!=='yes'||!base||!new URL(url||'http://invalid').pathname.endsWith('_test')||process.env.EMAIL_WORKER_ENABLED!=='false')throw Error('Use a disposable _test database and pause EMAIL_WORKER_ENABLED.');
 const sql=postgres(url,{max:4}),password='Synthetic email providers administrator password 123',smtpSecret='SYNTHETIC-SMTP-PASSWORD-'+randomUUID(),postalSecret='SYNTHETIC-POSTAL-API-'+randomUUID(),users=[];
-const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048}),publicPem=publicKey.export({type:'spki',format:'pem'}).toString(),webhookIds=[];
+const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048}),publicPem=publicKey.export({type:'spki',format:'pem'}).toString(),webhookIds=[],unknownEmails=[];
 async function request(path,{user,method='GET',body,headers={}}={}){
   const response=await fetch(base+path,{method,headers:{Origin:origin,'X-Requested-With':'cardshelf',...(user?{Cookie:user.cookie}:{}),...(body?{'Content-Type':'application/json'}:{}),...headers},body:body?JSON.stringify(body):undefined});
   return {status:response.status,data:await response.json(),headers:response.headers};
@@ -128,6 +128,19 @@ await test('SMTP and Postal provider selection, recovery, pacing and ambiguous d
       assert.equal((await sql`SELECT status FROM password_recovery_mail WHERE id=${recovery.id}`)[0].status,'accepted');
       await clearPacing();assert.equal(await processEmailOutbox({sql,origin,send}),true);assert.equal((await outbox(second.id)).status,'accepted');
     });
+    await t.test('unknown-address backlogs cannot reserve SMTP slots or delay a known account reset',async()=>{
+      for(let n=0;n<250;n++)unknownEmails.push('missing-'+randomUUID()+'@example.test');
+      await sql`INSERT INTO password_recovery_mail ${sql(unknownEmails.map(email=>({email,kind:'reset',created_at:new Date(Date.now()-300000)})))}`;
+      const [recovery]=await sql`INSERT INTO password_recovery_mail(email,kind) VALUES(${other.email},'reset') RETURNING id`;await onlyRecovery(recovery.id);await clearPacing();
+      const before=capture.length;assert.equal(await processRecoveryMail({sql,origin,send}),true);assert.equal(capture.length,before+1);assert.equal(capture.at(-1).address,other.email);assert.match(capture.at(-1).message.text,/#token=[a-f0-9]{64}/);
+      assert.equal((await sql`SELECT status FROM password_recovery_mail WHERE id=${recovery.id}`)[0].status,'accepted');
+      const firstBatch=(await sql`SELECT count(*)::integer AS count FROM password_recovery_mail WHERE email IN ${sql(unknownEmails)} AND status='ignored'`)[0].count;assert.ok(firstBatch>0&&firstBatch<unknownEmails.length,'Unknown requests are discarded in bounded batches.');
+      const [throttle]=await sql`SELECT next_send_at::text AS next_send_at,last_queue FROM email_dispatch_state WHERE singleton`;
+      let batches=0;while(await processRecoveryMail({sql,origin,send})){assert.ok(++batches<=unknownEmails.length,'The unknown backlog must finish draining.');assert.equal(capture.length,before+1);}assert.equal(capture.length,before+1);
+      assert.deepEqual((await sql`SELECT next_send_at::text AS next_send_at,last_queue FROM email_dispatch_state WHERE singleton`)[0],throttle);
+      const discarded=await sql`SELECT status,attempts,dispatch_started_at,message_id FROM password_recovery_mail WHERE email IN ${sql(unknownEmails)}`;assert.equal(discarded.length,250);
+      for(const row of discarded){assert.equal(row.status,'ignored');assert.equal(row.attempts,1);assert.equal(row.dispatch_started_at,null);assert.equal(row.message_id,null);}
+    });
     await t.test('lost acceptance acknowledgments and interrupted submissions are held without retry across provider changes',async()=>{
       const job=await queue(other);await onlyOutbox(job.id);await clearPacing();let calls=0;
       assert.equal(await processEmailOutbox({sql,origin,send:async()=>{calls++;throw Error('Synthetic lost acknowledgment '+smtpSecret);}}),true);
@@ -167,7 +180,8 @@ await test('SMTP and Postal provider selection, recovery, pacing and ambiguous d
     await sql`DELETE FROM email_settings`;if(oldSettings.length)await sql`INSERT INTO email_settings ${sql(oldSettings)}`;
     await sql`DELETE FROM email_dispatch_state`;if(oldThrottle.length)await sql`INSERT INTO email_dispatch_state ${sql(oldThrottle)}`;
     if(webhookIds.length)await sql`DELETE FROM email_webhook_receipts WHERE event_key IN ${sql(webhookIds.map(id=>digest(id)))}`;
-    if(users.length){await sql`DELETE FROM password_recovery_mail WHERE email IN ${sql(users.map(id=>id+'@example.test'))}`;await sql`DELETE FROM app_users WHERE id IN ${sql(users)}`;}
+    if(users.length||unknownEmails.length)await sql`DELETE FROM password_recovery_mail WHERE email IN ${sql([...users.map(id=>id+'@example.test'),...unknownEmails])}`;
+    if(users.length)await sql`DELETE FROM app_users WHERE id IN ${sql(users)}`;
     await sql.end();await closeDatabase();
   }
 });

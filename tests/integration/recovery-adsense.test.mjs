@@ -83,7 +83,9 @@ await test('password recovery and Free-only AdSense on an isolated installation'
       assert.equal((await sql`SELECT password_hash FROM app_users WHERE id=${tester.id}`)[0].password_hash,before.password_hash);
       assert.equal((await sql`SELECT * FROM password_recovery_tokens WHERE user_id=${tester.id}`).length,0);
       assert.equal((await sql`SELECT * FROM password_recovery_mail WHERE email IN ${sql([tester.email,unknown])}`).length,2);
-      assert.equal(await deliver(),true);assert.equal(await deliver(),true);assert.equal(messages.length,1);assert.equal(messages[0].address,tester.email);
+      // One pass discards the unknown recipient and sends the known reset;
+      // a second pass must find no work or issue another message/token.
+      assert.equal(await deliver(),true);assert.equal(await deliver(),false);assert.equal(messages.length,1);assert.equal(messages[0].address,tester.email);
       const sentToken=secret(messages[0].text.match(/https?:\/\/\S+\/reset-password#token=[a-f0-9]{64}/)[0]);
       assert.equal((await sql`SELECT * FROM password_recovery_tokens WHERE token_hash=${digest(sentToken)}`).length,1);
       assert.equal((await sql`SELECT status FROM password_recovery_mail WHERE email=${unknown}`)[0].status,'ignored');
