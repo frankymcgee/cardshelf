@@ -1,3 +1,11 @@
+## 0.52.3 — 2026-10-09
+
+- Render the complete privacy advertising and sponsor notice once, rather than from both the page and marketing layout. Retain all provider disclosures and exclusions.
+- Make collection overview and binder loading fail-safe: persistent inline errors and retries, no false empty-collection messages or zero totals after a failed initial read, and stale/unmounted response protection.
+- Distinguish a pending or failed Free registration availability check from genuinely paused registration. Add an explicit loading state and retry, and clear an unsaved password when leaving the page.
+- Correct remaining Collector Pro and Postal-only administrator navigation wording. Add desktop/phone regressions for privacy notices, binder plan copy, slow/failed collection reads and registration-check recovery.
+- Record the deployed 0.52.2 page/integration inspection and completed live Arena training game, without claiming payment, physical-device, production-restore or full official card/rules acceptance.
+
 ## 0.52.2 — 2026-10-09
 
 - Add a separate WPMU DEV Pro Email preset and account-quota guidance. Preserve existing Pro connections on port 587 when selecting the preset; default new Pro connections to verified TLS on port 465. Migration 032 only extends the preset constraint and preserves saved credentials and mail history.

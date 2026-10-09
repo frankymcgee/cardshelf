@@ -1,4 +1,89 @@
-# SMTP investigation — CardShelf 0.52.2
+# Production inspection follow-up — CardShelf 0.52.3
+
+Inspected 9 October 2026 (Australia/Perth). Baseline: merged main `7fa84d1`
+(PR #68); branch `review/production-inspection`. The deployed application was
+refreshed and confirmed as **0.52.2**, not the older document left open in the
+browser. This branch does not install 0.52.3 or change production settings.
+
+## Current live evidence
+
+| Area | Observed result | Boundary |
+|---|---|---|
+| Deployment | 32 migrations applied, none missing; current general and billing worker heartbeats | Read-only readiness evidence, not a production restore |
+| Registration | Free registration is open and the Name/Email/Password form renders | No new live account created; existing protected grants remain intact |
+| Email | Successful saved SMTP TLS/login check at 16:18 and an SMTP test accepted at 16:18; operator reports email working | No extra message or recovery link sent; sender signing and recovery redemption remain separate acceptance |
+| Billing | Live mode, both paid tiers, portal configuration, recent signed webhook and reconciliation evidence pass | The credential workspace can show Test independently of the active Live mode; no charge, renewal or cancellation performed |
+| Collection | Overview shows populated ownership, four binders, AUD estimates and dated history; catalogue renders imported cards | No ownership, wishlist, notes or layout changed; estimates are not appraisals |
+| Catalogue | Eight imported sets, 781 cards and 1,128 printings; fresh English (220) and Japanese (184) source lists load; Yu-Gi-Oh! and Magic source selectors also load without errors | No set imported; displayed additional-game options can be search-bounded. Not exhaustive language/printing coverage; some promo artwork remains unavailable and is explicitly labelled |
+| Binder detail | Populated collection binder, planned/represented-owned values and history load; missing-printing view shows 93/203 represented and 110 missing; print preview loads named missing-card placeholders | Read-only check, not physical-copy allocation or printer calibration |
+| Marketplace | Affiliate product/disclosure renders; seller form, empty enquiry inbox and moderation views load | No live listing, message, sale or enquiry created |
+| Scanning | Configured service and remaining shared budget; historical successful scan usage visible | No new OpenAI request, image upload or budget spend |
+| Push/install | Device installation/help and preferences render; this cloud browser reports notifications blocked | Physical iPhone/Android installation, push and camera acceptance still required |
+| Arena | New original-card walkthrough survives an extended opening wait, then actual auto-play completes at turn 11; 63 disclosed events, hidden opponent hand, terminal controls removed; result survives reload | One training game retained in history. No inventory change. Not a two-member match or tournament acceptance |
+| Arena workshop/events | New-deck workshop loads support-filtered cards and import controls; tournament administration loads its empty calendar | No saved deck edited and no tournament, invitation or bracket created |
+| Advertising | Configured Adsterra formats and exclusions visible; public/privacy disclosure inspected | No guarantee of real creative fill or consent acceptance; no ad clicked |
+
+## Page review scope
+
+Live UI navigation covered the public homepage, features, pricing, Arena landing,
+contact, privacy, public catalogue, registration, recovery and missing-token reset;
+authenticated overview, account, membership, referrals, email preferences,
+notifications, games, catalogue, binders, scanner and settings; marketplace list,
+new-listing form, inbox and moderation; administration hub, readiness, pricing,
+Stripe connection and Test preview, memberships, scanning, imports, website
+requests, Free settings, affiliate shops, advertising, email and recovery
+administration; Arena lobby, new workshop, tournament list and the completed
+training match. Authenticated `/login` correctly returns to the workspace.
+Populated binder, completion and print routes were additionally opened. Initial
+loading snapshots were not treated as evidence that real data was absent.
+
+No visible application error or desktop horizontal overflow was found in the
+settled principal views. The missing-token reset message is expected. Public
+unauthenticated and phone behavior is also covered by the disposable-server
+browser suite; the signed-in cloud session is not guest/device acceptance.
+Empty production marketplace/tournament views cannot establish populated detail,
+commentary or advancement acceptance; those paths have separate automated fixtures.
+
+## Corrections and regression checks
+
+- The privacy notice appeared twice because both the page and its layout rendered
+  `FreePrivacyNotice`. The page now owns it once; none of its content is removed.
+- Binder creation still called the higher plan “Collector Pro”; email navigation
+  still described Postal only. Align both with Collector Plus and Postal/SMTP.
+- Source review found overview and binder reads could show an empty collection
+  after an initial API failure, with only a temporary toast. Show a persistent
+  retry error and unknown totals instead; retain successfully loaded data and
+  ignore stale/unmounted responses. This was an error-path defect, not evidence
+  that the inspected production APIs were failing.
+- Registration showed no initial checking state and conflated a failed availability
+  read with a genuinely paused service. Distinguish checking, unavailable and
+  paused, add retry, and clear unsaved passwords when leaving the page.
+
+Five additional unit/actual Vue compilation checks and desktop/phone browser
+regressions cover these changes, including deliberately held and failed reads,
+no false empty/zero states and successful retry through the real authenticated API.
+Local tests and exact-head CI results are recorded on the follow-up PR. Required
+database, platform/Arena browser and native image gates must pass before review.
+
+## Launch and parity boundary
+
+**Full public-launch acceptance and full feature parity remain incomplete.**
+The prior SMTP blocker is resolved according to both saved evidence and the
+operator; a complete test-and-recovery inbox/header/redemption exercise is still
+separate. Remaining launch gates include a fresh Live membership lifecycle,
+physical phone tests, two eligible Arena seats/reconnect/tournament/commentary,
+production-data backup restoration and real advertising/consent acceptance.
+No production setting, credentials, billing record, entitlement, collection or
+private message was changed by this inspection. Only the clearly labelled Arena
+training game was created and completed.
+
+Account verification/MFA, offline writes, native store apps, portable binder-layout
+round trips, physical-copy allocation and complete Pokémon effect/rules support
+are not shipped merely because this inspection passes. See
+[PARITY_CHECKLIST.md](PARITY_CHECKLIST.md). Historical observations below retain
+their original deployment dates/versions and are not the current release status.
+
+## Historical SMTP investigation — CardShelf 0.52.2
 
 Updated 9 October 2026 (Australia/Perth). Baseline: merged main
 `e135cb2`; branch `fix/wpmu-pro-smtp`.
