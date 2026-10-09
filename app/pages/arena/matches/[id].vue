@@ -24,13 +24,13 @@ const aliases = computed(() => [data.value?.host_alias || 'Player one', data.val
 const finished = computed(() => ['finished', 'cancelled'].includes(data.value?.status))
 const locked = computed(() => busy.value || !!pending.value || !connected.value || finished.value)
 // Inspect only units already disclosed by the server; hidden setup cards have no children.
-function publicCards(units: any[]): any[] { return units.filter(unit => unit && !unit.hidden && unit.card).flatMap(unit => [unit, ...publicCards([...(unit.tools || []), ...(unit.energy || []), ...(unit.under || [])])]) }
-const cards = computed<any[]>(() => table.value ? publicCards([...table.value.players.flatMap((p: any, index: number) => [...(index === seat.value ? p.hand : []), p.active, ...p.bench, ...p.discard, ...(p.resolving || [])]), table.value.stadium?.unit]) : [])
+function publicCards(units: any[]): any[] { return units.filter(unit => unit && !unit.hidden && unit.card).flatMap(unit => [unit, ...publicCards([...(unit.tools || []), ...(unit.energy || []), ...(unit.under || []), ...(unit.parts || [])])]) }
+const cards = computed<any[]>(() => table.value ? publicCards([...table.value.players.flatMap((p: any, index: number) => [...(index === seat.value ? p.hand : []), p.active, ...p.bench, ...p.discard, ...(p.lost_zone || []), ...(p.resolving || [])]), table.value.stadium?.unit]) : [])
 const current = computed<any>(() => cards.value.find((c: any) => c.id === selected.value))
-const attachmentParent = computed<any>(() => cards.value.find((unit: any) => [...(unit.tools || []), ...(unit.energy || []), ...(unit.under || [])].some((child: any) => child.id === selected.value)))
+const attachmentParent = computed<any>(() => cards.value.find((unit: any) => [...(unit.tools || []), ...(unit.energy || []), ...(unit.under || []), ...(unit.parts || [])].some((child: any) => child.id === selected.value)))
 const stadiumMoves = computed<any[]>(() => (table.value?.legal || []).filter((move: any) => move.action?.type === 'stadium'))
 const moves = computed<any[]>(() => (table.value?.legal || []).filter((m: any) => m.card === selected.value || (selected.value === table.value?.stadium?.unit?.id && m.action?.type === 'stadium')))
-const globalMoves = computed<any[]>(() => (table.value?.legal || []).filter((m: any) => !m.card && m.action?.type !== 'stadium'))
+const globalMoves = computed<any[]>(() => (table.value?.legal || []).filter((m: any) => (!m.card || m.action?.type === 'union') && m.action?.type !== 'stadium'))
 const own = computed<any>(() => table.value?.players[seat.value])
 const pendingForOther = computed(() => table.value?.waiting_for !== null && table.value?.waiting_for !== undefined && table.value.waiting_for !== seat.value)
 const lostReply = computed(() => !!pending.value && !busy.value)

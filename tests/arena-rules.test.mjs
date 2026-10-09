@@ -20,7 +20,7 @@ test('deck limits aggregate names across collectible variants and exempt only Ba
 test('complete executable card data is required and arbitrary category/foreign records fail closed',()=>{
   assert.equal(compileArenaCard(row()).supported,true);
   for(const change of [{game:'mtg'},{language:'ja'},{raw_data:{category:'Unknown'}}])assert.equal(compileArenaCard({...row(),...change}).supported,false);
-  for(const raw of [{abilities:[{name:'Unknown'}]},{suffix:'ex'},{item:{}},{types:['Fire','Water']},{hp:undefined},{retreat:undefined},{stage:'VSTAR'}])assert.equal(compileArenaCard(row(raw)).supported,false);
+  for(const raw of [{abilities:[{name:'Unknown'}]},{suffix:'ex'},{item:{}},{types:['Fire','Water','Grass']},{hp:undefined},{retreat:undefined},{stage:'VSTAR'}])assert.equal(compileArenaCard(row(raw)).supported,false);
 });
 test('future/unimplemented text cannot silently become a vanilla attack or Trainer',()=>{
   for(const text of ['Deal damage based on a new rule.','Draw 2 cards. Then win the game.','Your opponent cannot play cards.'])assert.throws(()=>attackProgram({name:'Unknown',cost:[],damage:20,effect:text}));

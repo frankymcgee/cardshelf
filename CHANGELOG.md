@@ -1,3 +1,13 @@
+## 0.54.0 — 2026-10-09
+
+- Add V4 Arena rules based on the supplied September 2026 rulebook. Keep V1/V2/V3 engines and compilers frozen for ongoing games, waiting lobbies and tournaments.
+- Correct mulligan sequencing and private bonus-Bench choices before revealing opening fields; normalize Level/δ names without merging owners, forms or EX/ex.
+- Add reviewed modern Mega ex, V/VMAX/VSTAR, GX/TAG TEAM, Radiant, Prism/Lost Zone, dual types, BREAK, Fossil/Restored, Technical Machine, Ancient Trait and Team Flare mechanics. V-UNION is limited to the reviewed Mewtwo SWSH159–162 profile.
+- Enforce per-player/game GX and shared VSTAR markers, conditional extra-Energy bonuses, Energy-unit Retreat, full optional TAG TEAM costs, target/counter allocation, devolution and next-player Checkup ordering with deferred KOs.
+- Preserve original card ownership across opposing Tools and multipart stacks. Expose only public Lost Zone/Power resources; keep searches, viewed cards and decisions private and retain the old-version display fallback.
+- Fail closed on unreviewed effects, missing VSTAR reminders, incomplete special-family records and ambiguous Tera-era metadata. Publish the 28-appendix acceptance matrix with remaining LV.X/LEGEND, label-specific, trigger/profile and production-acceptance gaps. This is a rulebook expansion, **not full parity or version 1.0**.
+- Add synthetic rulebook, real complete-effect-family, actual-component, disposable HTTP/database and Chromium/WebKit regression coverage. No dependency or database migration is required.
+
 ## 0.53.0 — 2026-10-09
 
 - Add the versioned V3 Arena engine with six-Prize tiebreaker games, first-Prize-advantage victory, updated optional Trainer recovery choices and zero-card shuffle behavior.

@@ -23,11 +23,16 @@ import ArenaActionTray from '/app/components/arena/ArenaActionTray.vue';
 import ArenaCardPreview from '/app/components/arena/ArenaCardPreview.vue';
 import ArenaModal from '/app/components/arena/ArenaModal.vue';
 import ArenaPromptModal from '/app/components/arena/ArenaPromptModal.vue';
-import { tableFixture } from '/tests/helpers/arena-table-fixtures.mjs';
+import { tableFixture, tableUnit } from '/tests/helpers/arena-table-fixtures.mjs';
 import { trainingDeck } from '/lib/arena/training.mjs';
 const query = new URLSearchParams(location.search);
 const options = { seat: query.get('seat') === '1' ? 1 : 0, legacy: query.has('legacy'), empty: query.has('empty'), setup: query.has('setup'), longHand: query.has('longHand'), locked: query.has('locked') };
 const props = reactive(tableFixture(options)), events = [], preview = ref(false), discard = ref(null), revision = ref(1);
+if (query.has('rules')) {
+  props.table.version = 'pokemon-expanded-v4';
+  props.table.players.forEach((p, seat) => { p.gx_used = seat === 0; p.vstar_used = seat === 1;
+    p.lost_zone = [tableUnit('Public Prism-' + seat), { hidden: true, card: { name: 'SECRET-LOST-ZONE' } }]; });
+}
 if (query.has('art')) {
   props.table.players.forEach((p, seat) => {
     const cards = trainingDeck(seat === props.table.seat ? 'ember' : 'tide').map(entry => entry.card);
@@ -39,10 +44,10 @@ if (query.has('art')) {
 }
 props.table.legal = props.table.players[props.table.seat].hand.map(unit => ({ card: unit.id, label: 'Play ' + unit.card.name, action: { type: 'bench', card: unit.id } }));
 if (query.has('art')) { props.table.version = 'pokemon-expanded-v2'; props.table.legal.push({ label: 'End turn', action: { type: 'end_turn' } }); }
-function publicCards(units) { return units.filter(unit => unit && !unit.hidden && unit.card).flatMap(unit => [unit, ...publicCards([...(unit.tools || []), ...(unit.energy || []), ...(unit.under || [])])]); }
-const cards = computed(() => publicCards([...props.table.players.flatMap((p, seat) => [...(seat === props.table.seat ? p.hand : []), p.active, ...p.bench, ...p.discard]), props.table.stadium?.unit]));
+function publicCards(units) { return units.filter(unit => unit && !unit.hidden && unit.card).flatMap(unit => [unit, ...publicCards([...(unit.tools || []), ...(unit.energy || []), ...(unit.under || []), ...(unit.parts || [])])]); }
+const cards = computed(() => publicCards([...props.table.players.flatMap((p, seat) => [...(seat === props.table.seat ? p.hand : []), p.active, ...p.bench, ...p.discard, ...(p.lost_zone || [])]), props.table.stadium?.unit]));
 const current = computed(() => cards.value.find(unit => unit.id === props.selected));
-const parent = computed(() => cards.value.find(unit => [...(unit.tools || []), ...(unit.energy || []), ...(unit.under || [])].some(child => child.id === props.selected)));
+const parent = computed(() => cards.value.find(unit => [...(unit.tools || []), ...(unit.energy || []), ...(unit.under || []), ...(unit.parts || [])].some(child => child.id === props.selected)));
 const moves = computed(() => props.table.legal.filter(move => move.card === props.selected));
 const select = unit => { props.selected = unit.id; discard.value = null; events.push(['select', unit.id]); };
 const action = value => events.push(['action', value]);

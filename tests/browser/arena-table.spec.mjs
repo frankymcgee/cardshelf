@@ -1,5 +1,42 @@
 import { test, expect } from './arena-fixtures.mjs';
 const widths = [320, 390, 768, 1024, 1440];
+for(const width of [320,1440])for(const seat of [0,1])test(`rulebook HUD ${width}px seat ${seat}: shared powers and public Lost Zone stay inspectable`,async({page},info)=>{
+  await page.setViewportSize({width,height:1100});await page.goto('/?rules&seat='+seat);
+  const resources=page.getByLabel((seat===0?'North':'South')+' player game resources');
+  await expect(resources).toContainText(seat===0?'GX: Used':'GX: Available');await expect(resources).toContainText(seat===0?'VSTAR: Available':'VSTAR: Used');
+  const geometry=await resources.evaluate(element=>{
+    const piles=element.parentElement.querySelector('.arena-table-reserve').getBoundingClientRect(),row=element.getBoundingClientRect();
+    return {separateRow:row.top>=piles.bottom-1,labelsFit:[...element.querySelectorAll('small')].every(label=>label.scrollWidth<=label.clientWidth+1&&getComputedStyle(label).whiteSpace==='nowrap')};
+  });expect(geometry).toEqual({separateRow:true,labelsFit:true});
+  const lost=resources.getByRole('button',{name:'Lost Zone · 1',exact:true});await lost.click();
+  const dialog=page.getByRole('dialog',{name:(seat===0?'North':'South')+' player · Public Lost Zone',exact:true});await expect(dialog).toBeVisible();await expect(dialog).toContainText('cannot be recovered');await expect(page.locator('body')).not.toContainText('SECRET');
+  await dialog.getByRole('button',{name:'Public Prism-'+seat+', 100 of 100 HP',exact:true}).click();await expect(dialog).not.toBeVisible();
+  await expect.poll(()=>page.evaluate(()=>window.arenaFixture.events.at(-1))).toEqual(['select','Public Prism-'+seat]);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+  if(seat===0)await page.screenshot({path:info.outputPath('rulebook-hud-'+width+'.png'),fullPage:true});
+});
+test('rulebook TAG TEAM cost rejects a partial payment and retains the exact private choice IDs',async({page})=>{
+  await page.goto('/');await page.evaluate(()=>window.arenaFixture.setPrompt({kind:'tag_team_cost',title:'Optional TAG TEAM bonus',min:0,max:2,allowed_counts:[0,2],options:[{id:'one',label:'Private card one'},{id:'two',label:'Private card two'}]}));
+  const decision=page.getByRole('region',{name:'Required game decision'});await expect(decision.getByRole('button',{name:'Confirm no selection',exact:true})).toBeEnabled();
+  await decision.getByRole('button',{name:'Private card one',exact:true}).click();await expect(decision.getByRole('button',{name:'Confirm selection',exact:true})).toBeDisabled();
+  await decision.getByRole('button',{name:'Private card two',exact:true}).click();await decision.getByRole('button',{name:'Confirm selection',exact:true}).click();
+  await expect.poll(()=>page.evaluate(()=>window.arenaFixture.events.at(-1))).toEqual(['choose',['one','two']]);
+});
+test('rulebook Retreat decision uses provided Energy units rather than card count',async({page})=>{
+  await page.goto('/');await page.evaluate(()=>window.arenaFixture.setPrompt({kind:'retreat_discard',title:'Retreat Energy',min:1,max:2,retreat_cost:2,options:[{id:'double',label:'Double Energy',energy_value:2},{id:'single',label:'Single Energy',energy_value:1}]}));
+  const decision=page.getByRole('region',{name:'Required game decision'}),confirm=decision.getByRole('button',{name:'Confirm selection',exact:true});
+  await decision.getByRole('button',{name:/Single Energy/}).click();await expect(confirm).toBeDisabled();await decision.getByRole('button',{name:/Double Energy/}).click();await expect(confirm).toBeDisabled();
+  await decision.getByRole('button',{name:/Single Energy/}).click();await expect(confirm).toBeEnabled();await confirm.click();
+  await expect.poll(()=>page.evaluate(()=>window.arenaFixture.events.at(-1))).toEqual(['choose',['double']]);
+});
+test('rulebook private viewed cards and Checkup ordering render as distinct server decisions',async({page})=>{
+  await page.goto('/');await page.evaluate(()=>window.arenaFixture.setPrompt({kind:'fossil_search',title:'Private bottom seven',min:0,max:0,options:[],looked_at:[{id:'viewed',card:{name:'Privately viewed fossil',kind:'pokemon'}}]}));
+  const decision=page.getByRole('region',{name:'Required game decision'});await decision.getByText('Cards you looked at — private to you',{exact:true}).click();await expect(decision).toContainText('Privately viewed fossil');await decision.getByRole('button',{name:'Confirm no selection',exact:true}).click();
+  await expect.poll(()=>page.evaluate(()=>window.arenaFixture.events.at(-1))).toEqual(['choose',[]]);
+  await page.evaluate(()=>window.arenaFixture.setPrompt({kind:'checkup_order',title:'Choose next Checkup step',min:1,max:1,options:[{id:'conditions',label:'All Special Conditions together'},{id:'ability:0',label:'Healing trigger'}]}));
+  await decision.getByRole('button',{name:'All Special Conditions together',exact:true}).click();await decision.getByRole('button',{name:'Confirm selection',exact:true}).click();
+  await expect.poll(()=>page.evaluate(()=>window.arenaFixture.events.at(-1))).toEqual(['choose',['conditions']]);
+});
 for (const seat of [0, 1]) test(`perspective seat ${seat}: nearer cards enlarge, projected targets remain clickable, hand and actions stay flat`, async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1500 });
   await page.goto('/?seat=' + seat);

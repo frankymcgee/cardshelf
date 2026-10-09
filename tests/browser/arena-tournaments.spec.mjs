@@ -71,6 +71,10 @@ test('commentary is read-only, mobile-friendly and removed after administrator r
     await page.setViewportSize({ width: 390, height: 844 }); await page.locator('[data-arena-drop^="card:"] .arena-card').first().click(); const modal = page.getByRole('dialog', { name: 'Public card details', exact: true }); await expect(modal).toBeVisible(); await page.keyboard.press('Escape'); await expect(modal).not.toBeVisible();
     await page.getByRole('button', { name: 'Match history', exact: true }).click(); await expect(page.getByRole('dialog', { name: 'Public match history', exact: true })).toBeVisible(); await page.keyboard.press('Escape');
     await page.setViewportSize({ width: 320, height: 740 }); await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); expect(writes).toEqual([]);
+    const instruction = page.getByText('Inspect any revealed card for commentary.', { exact: true });
+    await expect(instruction).toBeVisible();
+    const textBox = await instruction.evaluate(element => ({ width: element.getBoundingClientRect().width, height: element.getBoundingClientRect().height, line: parseFloat(getComputedStyle(element).lineHeight) }));
+    expect(textBox.width).toBeGreaterThanOrEqual(160); expect(textBox.height).toBeLessThanOrEqual(textBox.line * 2 + 1);
     await page.screenshot({ path: info.outputPath('commentary-mobile.png'), fullPage: true });
     await environment.sql`UPDATE app_users SET role='user' WHERE id=${f.admin.id}`; await expect(page.getByRole('alert')).toContainText('Administrator access is required'); await expect(page.locator('.at-scoreboard')).toHaveCount(0); await expect(page.locator('.arena-board')).toHaveCount(0);
   } finally { await f.cleanup(); }

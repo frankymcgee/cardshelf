@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import ArenaCardStack from './ArenaCardStack.vue'
 import ArenaFieldZone from './ArenaFieldZone.vue'
 import ArenaDiscardPile from './ArenaDiscardPile.vue'
+import ArenaRuleResources from './ArenaRuleResources.vue'
 const props = defineProps<{ player: any; alias: string; seat: number; self: boolean; turn: boolean; setup: boolean; turnNumber: number; selected?: string; hit?: string; targets?: string[]; over?: string; spectator?: boolean }>()
 const emit = defineEmits<{ select: [unit: any]; discard: [seat: number] }>()
 // DOM order and visual order agree. Do not mutate/reverse the server's Bench array.
@@ -29,6 +30,7 @@ function removePreviousCount(_element: Element, done: () => void) { done() }
         <ArenaDiscardPile :count="player.discard_count" :top="player.discardTop" :alias="alias" @inspect="emit('discard', seat)" />
       </div>
       <ArenaCardStack kind="prizes" :count="player.prize_count" :alias="alias" :self="self && !spectator" />
+      <ArenaRuleResources :alias="alias" :gx-used="player.gx_used" :vstar-used="player.vstar_used" :lost-zone="player.lost_zone" @select="emit('select', $event)" />
     </div>
   </section>
 </template>
