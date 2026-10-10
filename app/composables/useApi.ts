@@ -4,5 +4,8 @@ export function useApi() {
   }
 }
 export function errorMessage(error: any): string {
+  if (error?.data?.data?.code === 'STRONG_AUTH_REQUIRED' || error?.data?.code === 'STRONG_AUTH_REQUIRED') {
+    return 'Verify your password and an existing factor in Account security (/security), then return here and try this action again.'
+  }
   return error?.data?.message || error?.message || 'Something went wrong. Please try again.'
 }

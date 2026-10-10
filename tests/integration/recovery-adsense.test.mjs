@@ -177,7 +177,7 @@ await test('password recovery and Free-only AdSense on an isolated installation'
       assert.equal((await ad(undefined)).data.eligible,true);
       for(const cookie of [admin.cookie,collector.cookie,pro.cookie,complimentary.cookie])assert.deepEqual((await ad(cookie)).data,{eligible:false});
       // Tester sessions were revoked by recovery: a new tester session is still ad-free.
-      const tk=randomToken();await sql`INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(${digest(tk)},${tester.id},now()+interval '1 hour')`;
+      const tk=randomToken();await sql`INSERT INTO sessions(token_hash,user_id,expires_at,security_version) SELECT ${digest(tk)},id,now()+interval '1 hour',security_version FROM app_users WHERE id=${tester.id}`;
       assert.deepEqual((await ad('cardshelf_session='+tk)).data,{eligible:false});
       for(const path of ['/app','/cards','/binders/abc','/account','/login','/reset-password','/membership','/admin/passwords','/marketplace/inbox'])assert.deepEqual((await ad(free.cookie,path)).data,{eligible:false});
       assert.deepEqual(await sql`SELECT * FROM stripe_billing_controls`,protectedSettings);assert.deepEqual(await sql`SELECT * FROM free_platform_settings`,sponsorSettings);

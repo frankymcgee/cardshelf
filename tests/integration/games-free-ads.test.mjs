@@ -101,6 +101,10 @@ await test('multi-game access, public reference data and Free-only sponsorship',
       [freeUser]=await sql`SELECT id,email,role FROM app_users WHERE lower(email)=${email}`;ids.push(freeUser.id);assert.equal(freeUser.role,'user');
       assert.equal((await sql`SELECT * FROM account_access_grants WHERE user_id=${freeUser.id}`).length,0);
       assert.equal((await sql`SELECT plan_code FROM account_memberships WHERE user_id=${freeUser.id}`)[0].plan_code,'free');
+      const pending=await request('/api/login',{method:'POST',body:{email,password}});assert.equal(pending.data.user,null);assert.equal(pending.data.pending.scope,'email_verification');
+      // Dedicated verification tests cover the real mail/token path. Continue
+      // this feature suite with an explicitly verified synthetic fixture.
+      await sql`UPDATE app_users SET email_verified_at=now(),email_verification_required=false WHERE id=${freeUser.id}`;
       const login=await request('/api/login',{method:'POST',body:{email,password}});assert.equal(login.status,200);freeCookie=login.cookie;
       const state=(await request('/api/account/membership',{cookie:freeCookie})).data;assert.equal(state.access.tier,'free');assert.deepEqual(state.access.features,[]);assert.equal(state.access.payment_required,false);
       assert.equal((await request('/api/public/register',{method:'POST',body:{...body,email:tester.email}})).status,409);

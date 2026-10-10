@@ -1,12 +1,14 @@
 export function useAuth() {
-  const state = useState<any>('auth', () => ({ loaded: false, user: null, setup_required: false }))
-  const api = useApi()
+  const state = useState<any>('auth', () => ({ loaded: false, user: null, pending: null, setup_required: false }))
+  const api = useApi(), requestVersion = useState<number>('auth-request-version', () => 0)
   async function refresh() {
+    const current = ++requestVersion.value
     const response = await api('/api/session')
-    state.value = { ...response, loaded: true }
+    if (current === requestVersion.value) state.value = { ...response, loaded: true }
     return state.value
   }
   async function logout() {
+    requestVersion.value++
     await api('/api/logout', { method: 'POST', body: {} })
     // The server session deletion already removes delivery subscriptions.
     // Clear this browser's subscription and previously displayed notifications.
@@ -17,7 +19,8 @@ export function useAuth() {
         for (const notification of await registration?.getNotifications() || []) notification.close()
       } catch { /* Server-side revocation remains authoritative. */ }
     }
-    state.value = { loaded: true, user: null, setup_required: false }
+    requestVersion.value++
+    state.value = { loaded: true, user: null, pending: null, setup_required: false }
     clearNuxtData()
     await navigateTo('/')
   }

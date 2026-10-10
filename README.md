@@ -145,6 +145,19 @@ Usage reports support a future GPU hosting comparison. The existing CPU server h
 bounded image preparation; recognition runs through the OpenAI API. See
 [scanning setup, accounting and privacy](docs/CARD_SCANNING.md).
 
+## Account security
+
+**Your account → Account security** adds authenticator apps, passkeys and FIDO2
+security keys, with separately enrolled spare factors and one-use offline recovery
+codes. New accounts verify their email before private access. Existing accounts
+keep their data and access through a staged rollout; administrator enforcement is
+explicitly opt-in after enrollment and recovery testing.
+
+Password reset does not bypass MFA. Operator recovery and restored backups require
+new-factor enrollment before administrator access. Read [account security](docs/ACCOUNT_SECURITY.md)
+and the [operator recovery/rollout guide](docs/ACCOUNT_SECURITY_OPERATIONS.md)
+before enabling enforcement or restoring a backup.
+
 ## Emails
 
 **More → Emails** selects Postal or authenticated external SMTP, including a

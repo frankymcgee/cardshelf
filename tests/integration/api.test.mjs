@@ -44,6 +44,10 @@ await test('isolated end-to-end API and database checks',async t=> {
     await t.test('collector accounts cannot select their own administrator role',async()=>{
       const created=await request('admin/users',{method:'POST',cookie:adminCookie,body:{...collector,role:'admin'}});
       assert.equal(created.status,200);assert.equal(created.data.role,'user');userId=created.data.id;
+      const pending=await request('login',{method:'POST',body:collector});assert.equal(pending.data.user,null);assert.equal(pending.data.pending.scope,'email_verification');
+      // Mail-token acceptance is covered by email-verification.test; this suite
+      // continues with a verified synthetic collector to inspect collection ACLs.
+      await sql`UPDATE app_users SET email_verified_at=now(),email_verification_required=false WHERE id=${userId}`;
       const login=await request('login',{method:'POST',body:collector});assert.equal(login.status,200);userCookie=login.cookie;
       assert.equal((await request('admin/status',{cookie:userCookie})).status,403);
     });
