@@ -85,7 +85,6 @@ async function resend() {
           </form>
           <button v-if="pending.methods?.includes('passkey')" type="button" class="button secondary full spaced" :disabled="busy" @click="secondFactor('passkey')">Use a passkey or security key</button>
           <p class="small muted spaced">A registered YubiKey works as a FIDO2 security key. Follow your browser’s prompt to use its PIN or touch sensor.</p>
-          <button type="button" class="text-button" :disabled="busy" @click="showRecovery = true; clearSecrets(); error = ''">Use a recovery code instead</button>
         </template>
         <form v-else class="form-stack" @submit.prevent="secondFactor('recovery')">
           <p class="alert warning">Recovery codes are one-time use. You must enroll a new factor before account access is restored. Password reset and email verification do not remove MFA.</p>
@@ -95,7 +94,10 @@ async function resend() {
           <button type="button" class="text-button" :disabled="busy" @click="showRecovery = false; clearSecrets(); error = ''">Back to authenticator or passkey</button>
         </form>
       </template>
-      <button type="button" class="text-button spaced" :disabled="busy" @click="cancel">Cancel sign-in</button>
+      <div class="login-secondary-actions">
+        <button v-if="!expired && !showRecovery" type="button" class="text-button" :disabled="busy" @click="showRecovery = true; clearSecrets(); error = ''">Use a recovery code instead</button>
+        <button type="button" class="text-button" :disabled="busy" @click="cancel">Cancel sign-in</button>
+      </div>
     </template>
     <template v-else>
       <form v-if="!showResend" class="form-stack" @submit.prevent="submit">
@@ -117,3 +119,6 @@ async function resend() {
     </template>
   </div>
 </template>
+<style scoped>
+.login-secondary-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;margin-top:18px}.login-secondary-actions .text-button{min-height:44px;text-align:left}
+</style>

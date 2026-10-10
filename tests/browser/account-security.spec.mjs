@@ -45,7 +45,13 @@ test('password login, pending reload, invalid TOTP retry and cancellation keep p
   await page.getByLabel('Authenticator code', { exact: true }).fill('111111'); await page.getByRole('button', { name: 'Verify and sign in', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('incorrect, expired'); await expect(page.getByLabel('Authenticator code', { exact: true })).toHaveValue('');
   await page.getByRole('button', { name: 'Use a recovery code instead' }).click(); await expect(page.getByLabel('Current password', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Back to authenticator or passkey' }).click(); await noOverflow(page); await page.screenshot({ path: info.outputPath('pending-mfa.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Back to authenticator or passkey' }).click();
+  const recoveryAction = await page.getByRole('button', { name: 'Use a recovery code instead', exact: true }).boundingBox();
+  const cancelAction = await page.getByRole('button', { name: 'Cancel sign-in', exact: true }).boundingBox();
+  expect(recoveryAction).not.toBeNull(); expect(cancelAction).not.toBeNull();
+  expect(Math.max(cancelAction.x - (recoveryAction.x + recoveryAction.width), cancelAction.y - (recoveryAction.y + recoveryAction.height))).toBeGreaterThanOrEqual(12);
+  expect(recoveryAction.height).toBeGreaterThanOrEqual(44); expect(cancelAction.height).toBeGreaterThanOrEqual(44);
+  await noOverflow(page); await page.screenshot({ path: info.outputPath('pending-mfa.png'), fullPage: true });
   await page.getByRole('button', { name: 'Cancel sign-in', exact: true }).click(); await expect(page).toHaveURL(/\/$/); expect(h.state.pending).toBeNull();
   await page.goto('/account'); await expect(page).toHaveURL(/\/login\?next=/); expect(h.errors).toEqual([]);
 });
@@ -66,7 +72,12 @@ test('cancelled setup clears secret and browser Back does not reopen an old setu
   const h = await fixtures(page, { signedIn: true }); await page.goto('/account'); await page.getByRole('link', { name: 'Account security', exact: true }).click();
   await page.getByRole('button', { name: 'Add an authenticator app', exact: true }).click(); await page.getByLabel('Current password', { exact: true }).fill('current password'); await page.getByLabel('Current authenticator code', { exact: false }).fill('123456'); await page.getByRole('button', { name: 'Continue to setup' }).click();
   await expect(page.getByLabel('Manual authenticator setup key')).toBeVisible(); await page.getByRole('button', { name: 'Cancel', exact: true }).click(); await expect(page.getByLabel('Manual authenticator setup key')).toHaveCount(0);
-  await page.getByRole('link', { name: 'Back to account', exact: true }).click(); await page.goBack(); await expect(page.getByRole('button', { name: 'Add an authenticator app', exact: true })).toBeVisible(); await expect(page.getByLabel('Manual authenticator setup key')).toHaveCount(0); expect(h.errors).toEqual([]);
+  await page.getByRole('link', { name: 'Back to account', exact: true }).click();
+  // NuxtLink navigation is asynchronous; wait for its history entry before Back.
+  await expect(page).toHaveURL(/\/account$/);
+  await expect(page.getByRole('heading', { name: 'Your space. Your access.', exact: true })).toBeVisible();
+  await page.goBack(); await expect(page).toHaveURL(/\/security$/);
+  await expect(page.getByRole('button', { name: 'Add an authenticator app', exact: true })).toBeVisible(); await expect(page.getByLabel('Manual authenticator setup key')).toHaveCount(0); expect(h.errors).toEqual([]);
 });
 test('sensitive-action reauthentication is explicit and keeps the return path', async ({ page }) => {
   const h = await fixtures(page, { signedIn: true }); await page.goto('/security?next=/account'); await page.getByRole('button', { name: 'Verify for sensitive actions' }).click();
