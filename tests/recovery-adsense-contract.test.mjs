@@ -17,7 +17,10 @@ test('public initiation does not look up accounts or synchronously deliver email
 test('redemption checks the current credential snapshot under the user lock and signs out every session',async()=>{
   const source=(await text('lib/password-recovery.mjs')).split('export async function completePasswordRecovery')[1].split('export async function passwordRecoveryAdminStatus')[0];
   assert.match(source,/SELECT id,email,password_hash FROM app_users[\s\S]*FOR UPDATE/);assert.match(source,/tokenIsCurrent\(token, user\)/);
-  assert.match(source,/DELETE FROM sessions WHERE user_id/);assert.match(source,/DELETE FROM password_recovery_tokens WHERE user_id/);assert.match(source,/INSERT INTO password_recovery_mail[\s\S]*'changed'/);
+  assert.match(source,/revokeAccountAuthentication\(sql,user.id\)/);
+  const revocation=(await text('lib/account-security.mjs')).split('export async function revokeAccountAuthentication')[1].split('async function completeEnrollment')[0];
+  for(const table of ['sessions','account_pending_auth','account_security_challenges','account_security_proofs']) assert.match(revocation,new RegExp('DELETE FROM '+table+' WHERE user_id'));
+  assert.match(source,/security_version=security_version\+1/);assert.match(source,/DELETE FROM password_recovery_tokens WHERE user_id/);assert.match(source,/INSERT INTO password_recovery_mail[\s\S]*'changed'/);
   assert.ok(!source.includes('newSession('));assert.ok(!source.includes('stripe_subscriptions'));assert.ok(!source.includes('account_access_grants'));
 });
 test('normal password changes also invalidate pre-existing reset links and pending reset mail',async()=>{

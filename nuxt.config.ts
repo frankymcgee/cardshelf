@@ -12,6 +12,7 @@ export default defineNuxtConfig({
     '/scan': { ssr: false },
     '/marketplace': { ssr: false }, '/marketplace/**': { ssr: false },
     '/games': { ssr: false }, '/register': { ssr: false },
+    '/security': { ssr: false }, '/verify-email': { ssr: false },
     '/forgot-password': { ssr: false }, '/reset-password': { ssr: false },
     '/settings': { ssr: false }, '/account': { ssr: false }, '/emails': { ssr: false }, '/notifications': { ssr: false },
     '/membership': { ssr: false }, '/referrals': { ssr: false },

@@ -5,6 +5,8 @@ import { AppError, ensure } from '../../lib/errors.mjs'
 import * as v from '../../lib/validate.mjs'
 import { adminAdView, adsenseSettings } from '../../lib/adsense.mjs'
 import * as auth from '../../lib/auth.mjs'
+import { securityStatus } from '../../lib/account-security.mjs'
+import { authenticationResult, clearAuthCookies, securityTokens } from '../utils/security-api'
 import * as catalogue from '../../lib/catalogue.mjs'
 import * as collection from '../../lib/collection.mjs'
 import * as binders from '../../lib/binders.mjs'
@@ -45,22 +47,23 @@ export default defineEventHandler(async event => {
       if (view === 'preview') {
         try { provider = (await adsenseSettings()).provider } catch { /* Preview remains available. */ }
       }
-      return { user, setup_required: await auth.needsSetup(), admin_placement_view: view, admin_ad_provider: provider }
+      const security = user ? null : await securityStatus(securityTokens(event))
+      return { user, pending: security?.pending || null, setup_required: await auth.needsSetup(), admin_placement_view: view, admin_ad_provider: provider }
     }
     if ((route === 'setup' || route === 'login') && method === 'POST') {
       const ip = getRequestIP(event, { xForwardedFor: configuration().trustProxy }) || 'unknown'
       const result = await auth[route](await readJSON(event), ip)
-      cookie(event, result.token); return { user: result.user }
+      return authenticationResult(event, result)
     }
     if (route === 'logout' && method === 'POST') {
-      await auth.logout(token); deleteCookie(event, COOKIE, { path: '/' }); return { ok: true }
+      await auth.logout(token, securityTokens(event).pendingToken); clearAuthCookies(event); return { ok: true }
     }
     if (parts[0] === 'shared' && parts.length === 2 && method === 'GET') return await binders.getSharedBinder(parts[1])
     const user = await auth.sessionUser(token)
     if (!user) throw new AppError(401, 'Sign in to continue.')
     if (route === 'password' && method === 'POST') {
       await auth.rateLimit('password:' + user.id, 10)
-      const next = await auth.changePassword(user.id, await readJSON(event)); cookie(event, next); return { ok: true }
+      const next = await auth.changePassword(user.id, await readJSON(event), token); cookie(event, next); return { ok: true }
     }
     if (route === 'prices/summary' && method === 'GET') return await prices.priceSummary(user.id, query.binder_id ? v.uuid(query.binder_id) : null)
     if (route === 'prices/refresh' && method === 'POST') {
@@ -126,7 +129,7 @@ export default defineEventHandler(async event => {
   } catch (error: any) {
     if (error instanceof AppError) throw createError({ statusCode: error.status, message: error.message, data: error.details })
     if (error?.statusCode) throw error
-    console.error('CardShelf API:', error)
+    console.error('CardShelf API: request failed; inspect service health without exposing request or credential data.')
     throw createError({ statusCode: 500, message: 'The server could not complete this request. Check the application logs.' })
   }
 })

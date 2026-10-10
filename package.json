@@ -34,17 +34,23 @@
     "test:value-history-ui": "playwright test --config=tests/browser/value-history.config.mjs",
     "test:push-ui": "playwright test --config tests/browser/push.config.mjs",
     "test:card-images-ui": "playwright test --config=tests/browser/card-images.config.mjs",
-    "test:binder-cover-ui": "playwright test --config=tests/browser/binder-cover.config.mjs"
+    "test:binder-cover-ui": "playwright test --config=tests/browser/binder-cover.config.mjs",
+    "test:security-ui": "playwright test --config=tests/browser/account-security.config.mjs"
   },
   "dependencies": {
+    "@simplewebauthn/browser": "14.0.0",
+    "@simplewebauthn/server": "14.0.3",
     "nodemailer": "10.0.10",
+    "otplib": "13.5.0",
     "postgres": "3.4.7",
+    "qrcode": "1.5.4",
     "sharp": "0.35.5",
     "web-push": "3.6.7"
   },
   "devDependencies": {
     "@playwright/test": "1.57.0",
     "@types/node": "24.10.1",
+    "@types/qrcode": "1.5.6",
     "nuxt": "4.5.2",
     "typescript": "5.9.3",
     "vue": "3.5.43",

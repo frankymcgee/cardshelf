@@ -32,7 +32,7 @@ export function safeReturnTo(value) {
     const url = new URL(value, 'https://cardshelf.invalid');
     if (url.origin !== 'https://cardshelf.invalid') return '/app';
     const path = decodeURIComponent(url.pathname);
-    if (/[%\\\r\n\u0000]/.test(path) || !/^\/(?:app|cards|scan|binders|marketplace|settings|games|arena|battle|account|notifications|membership|referrals|admin(?:\/(?:pricing|platform|memberships|integrations|free-platform|game-catalogue|passwords|adsense|scanning|arena|battle))?|print)(?:\/|$)/.test(path)) return '/app';
+    if (/[%\\\r\n\u0000]/.test(path) || !/^\/(?:app|cards|scan|binders|marketplace|settings|games|arena|battle|account|security|notifications|membership|referrals|admin(?:\/(?:pricing|platform|memberships|integrations|free-platform|game-catalogue|passwords|adsense|scanning|arena|battle))?|print)(?:\/|$)/.test(path)) return '/app';
     return url.pathname + url.search + url.hash;
   } catch { return '/app'; }
 }
