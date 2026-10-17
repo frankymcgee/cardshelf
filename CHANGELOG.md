@@ -1,3 +1,10 @@
+## 0.55.0 — 2026-10-17
+
+- Retire Postal API sending, webhooks, signing keys, administration controls, DNS probes and bundled mail-server provisioning. Use external SMTP with the existing WPMU DEV Basic/Pro presets.
+- Add migration 035 to delete retired API credentials and webhook receipts while preserving active SMTP settings/passwords, verification revisions, delivery history and recipient suppressions. Pause installations still selecting the retired provider; never silently switch their sending account.
+- Retire the former overlay’s dedicated containers/networks after a healthy upgrade and restore Caddy’s original application configuration. Provide a targeted, repeatable purge command for old mail data; preserve application PostgreSQL and shared certificate volumes.
+- Update SMTP settings, privacy, readiness and operational documentation, and cover migration preservation, SMTP queue behavior and host cleanup failure handling.
+
 ## 0.54.0 — 2026-10-09
 
 - Add V4 Arena rules based on the supplied September 2026 rulebook. Keep V1/V2/V3 engines and compilers frozen for ongoing games, waiting lobbies and tournaments.

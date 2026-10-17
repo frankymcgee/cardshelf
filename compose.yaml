@@ -54,7 +54,6 @@ services:
     environment:
       <<: *app-environment
       CARDSHELF_INTEGRATION_KEY: ${CARDSHELF_INTEGRATION_KEY:-}
-      POSTAL_ORIGIN: ${POSTAL_ORIGIN:-https://postal.cardshelf.cloud}
       EMAIL_WORKER_ENABLED: ${EMAIL_WORKER_ENABLED:-true}
       RECOVERY_EMAIL_ENABLED: ${RECOVERY_EMAIL_ENABLED:-false}
       SMTP_HOST: ${SMTP_HOST:-}

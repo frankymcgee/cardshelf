@@ -142,8 +142,7 @@ The database need not be stopped for a normal dump.
 A full recovery set consists of the dump, a securely stored `.env`, the source
 and retained lockfile for the application version, plus any proxy configuration
 changes. Caddy's certificate volumes can be preserved separately or certificates
-can be reissued when domain requirements are satisfied. Also retain any separately managed Postal configuration, signing keys and volumes
-when using self-hosted mail; see [Postal operation](POSTAL_EMAIL.md).
+can be reissued when domain requirements are satisfied. Retain the external SMTP account recovery information separately.
 
 Dumps contain password hashes, session records and private collection notes.
 Encrypt them at rest/off-server. The supplied script does not encrypt, upload,
@@ -187,12 +186,16 @@ The helper downloads the image while the old site is running, checks its version
 host deployment compatibility, validates Compose, prepares the private `.env` update,
 and takes a safety backup. Only then does it stop app/worker, migrate the database,
 persist the image digest and wait for healthy replacement containers. It never stops
-the database or proxy and does not recreate volumes. Simultaneous upgrades are refused.
+the database or recreate its volumes. During the one-time mail retirement, it
+recreates Caddy with its original application routing after the app is healthy.
+Simultaneous upgrades are refused.
 
 If the release needs different host files, it stops before any downtime and asks you
 to refresh the reviewed source checkout. Local host-file edits must also be reconciled.
-Application-only releases do not need a routine `git pull`. Existing Postal installs
-continue through the same Postal-aware Compose wrapper.
+Application-only releases do not need a routine `git pull`. Release 0.55.0 changes
+host files: update the source checkout first. Its upgrade retires the old mail
+containers/networks and restores normal HTTPS routing when the old marker exists.
+See [mail retirement](MAIL_RETIREMENT.md) for permanent old-data cleanup.
 
 - Pull, metadata, configuration or backup failure: the old site stays running.
 - Migration failure: app/worker remain stopped, `.env` retains the previous image,

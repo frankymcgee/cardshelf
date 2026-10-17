@@ -6,14 +6,14 @@ const now = Date.parse('2026-10-08T17:00:00Z');
 function configured() {
   return { https: true, appliedMigrations: 30, missingMigrations: 0, workerSeenAt: new Date(now), registration: true,
     stripe: { live: true, enabled: true, accepting: true, configured: true, portal: true, plans: ['collector', 'plus'], webhookSeenAt: new Date(now), workerSeenAt: new Date(now) },
-    email: { enabled: true, configured: true, workerEnabled: true, signedEvents: true, dkim: true, deliveredAt: new Date(now) },
+    email: { enabled: true, configured: true, workerEnabled: true, provider: 'smtp', verifiedAt: new Date(now), dkim: true, deliveredAt: new Date(now) },
     scanning: { enabled: true, configured: true, remaining: 500, reservation: 100 }, cards: 20, arena: true, pushIdentity: true,
     advertising: { enabled: false, ready: false, placeholders: false } };
 }
 test('configured services still require deployment and parity acceptance', () => {
   const result = releaseChecks(configured(), now);
-  assert.equal(result.status, 'configured');
-  assert.ok(result.checks.every(check => check.status === 'pass'));
+  assert.equal(result.status, 'review');
+  assert.ok(result.checks.filter(check=>check.id!=='email-delivery').every(check => check.status === 'pass'));
   assert.equal(result.acceptance.length, 6);
   assert.match(result.acceptance.find(check => check.id === 'arena').detail, /subset.*full official rules parity/);
   assert.equal(result.ready, undefined);
@@ -37,7 +37,7 @@ test('closed registration prevents a self-service public release', () => {
   assert.equal(result.checks.find(check => check.id === 'registration').status, 'blocked');
 });
 test('stored or disabled credentials do not imply a usable email service', () => {
-  for (const field of ['enabled', 'configured', 'workerEnabled', 'signedEvents']) {
+  for (const field of ['enabled', 'configured', 'workerEnabled']) {
     const snapshot = configured(); snapshot.email[field] = false;
     assert.equal(releaseChecks(snapshot, now).status, 'blocked', field);
   }

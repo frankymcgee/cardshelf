@@ -220,8 +220,7 @@ unreviewed accounts recovery-gated even if this delays account access.
 copy of the matching `.env`, especially `CARDSHELF_INTEGRATION_KEY`, separately
 from database backups. Inventory which key belongs to each backup without
 recording the key in the inventory. Test retrieval through the authorized
-operator process. Include separately managed Postal configuration/keys and
-provider recovery procedures where applicable.
+operator process. Retain the external mail provider’s account recovery procedures.
 
 The database contains personal collection/account data, password hashes,
 authenticator ciphertext and other sensitive integration/device credentials.

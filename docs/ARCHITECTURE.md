@@ -122,16 +122,17 @@ normal page visits. Queue processing is single-job/single-card at a time in the
 initial deployment. Scale workers only after measuring API/provider limits and
 confirming acceptable import behaviour.
 
-## Email delivery (v0.20)
+## Email delivery
 
-Postal settings and delivery administration live under **More → Emails**. The
-application submits text email over HTTPS to a configured Postal host. A durable
-outbox records event references, retries and delivery metadata; private marketplace
-message bodies are not copied into notification email. Password recovery keeps its
-separate short-lived queue so link secrets are generated only at delivery time.
-Signed provider webhooks update correlated delivery records. Optional marketplace
-and membership messages require a member preference; account security messages do
-not. See [Postal deployment and operation](POSTAL_EMAIL.md).
+Email administration lives under **More → Emails**. The application submits text
+email through authenticated external SMTP with verified TLS. WPMU DEV Basic and
+Pro presets share the same SMTP client, encrypted credential storage and durable
+pacing across recovery, verification and notification queues. Private marketplace
+message bodies are not copied into notifications. Recovery and verification links
+are generated only when a job is dispatched. Accepted and uncertain jobs are not
+resent automatically; provider acceptance does not establish inbox delivery.
+Optional marketplace and membership messages require a member preference; account
+security messages do not. See [email setup](EMAIL_PROVIDERS.md).
 
 ## Remaining limitations
 

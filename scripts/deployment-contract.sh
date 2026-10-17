@@ -11,10 +11,7 @@ scripts/upgrade.sh
 scripts/deployment-contract.sh
 scripts/backup.sh
 scripts/restore.sh
-deploy/postal/compose.postal.yaml
-deploy/postal/Caddyfile
-deploy/postal/prepare-permissions.sh
-deploy/postal/sync-certificates.sh'
+scripts/retire-postal.sh'
 if [ "${1:-}" = --files ]; then
   printf '%s\n' "$FILES"
 else

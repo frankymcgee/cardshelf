@@ -1,4 +1,4 @@
-# CardShelf 0.54.0
+# CardShelf 0.55.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -160,21 +160,15 @@ before enabling enforcement or restoring a backup.
 
 ## Emails
 
-**More → Emails** selects Postal or authenticated external SMTP, including a
-WPMU DEV Basic Email preset. Administrators manage the sending identity, encrypted
-credentials, connection checks and delivery history; members choose their optional
-activity notifications. Recovery and notifications share SMTP pacing, and
-uncertain submissions are held to prevent duplicate sending.
-Password recovery and account security notices use the same delivery service.
+**More → Emails** configures authenticated external SMTP, with separate WPMU DEV
+Basic and Pro Email presets. Administrators manage the sending identity, encrypted
+password, connection checks, delivery history and suppressed recipients. Recovery,
+email verification and notifications share SMTP pacing; uncertain submissions are
+held to prevent duplicate sending. Members choose optional activity notifications.
 
-The new installation defaults are `https://cardshelf.cloud` and
-`https://postal.cardshelf.cloud`. Existing installations retain their configured
-origin until the operator changes it. Postal is an optional, separately operated
-mail service: saving application settings does not install containers, publish DNS
-records or establish compliance. See [email provider setup and acceptance](docs/EMAIL_PROVIDERS.md) and
-[optional Postal setup and operation](docs/POSTAL_EMAIL.md)
-for installation, domain authentication, certificates and acceptance checks.
-See [v0.20 validation](docs/POSTAL_VALIDATION.md) for executed checks and their limits.
+See [email setup and acceptance](docs/EMAIL_PROVIDERS.md). Postal is retired in
+0.55.0. Existing SMTP settings are retained; see [retiring old mail resources](docs/MAIL_RETIREMENT.md)
+for container cleanup and the optional permanent removal of old mail data.
 
 ## Arena
 
@@ -285,8 +279,8 @@ Do not use `docker compose down -v`; keep secured off-server backups and rehears
 ## Development and validation
 
 The project uses Node.js 24, Nuxt, PostgreSQL and Docker Compose for deployment.
-Local validation also needs OpenSSL for disposable SMTP/TLS test certificates
-and curl for the Postal health probe; the Docker build stage installs both tools.
+Local validation also needs OpenSSL for disposable SMTP/TLS test certificates;
+the Docker build stage installs it.
 
 ```sh
 npm ci
@@ -324,9 +318,8 @@ the recording schedule, privacy boundaries and change breakdown.
   are not included in public binder layouts.
 - Existing accounts are preserved. Public account requests do not automatically create
   a paid subscription. Administrators separately create subscription-ready new accounts.
-- Historical migrations and financial records are preserved. The Postal extension adds
-  email configuration and delivery records; the optional deployment adds Postal and its
-  own MariaDB database alongside the existing CardShelf services.
+- Historical migrations, financial records and email delivery history are preserved.
+  Application email uses the configured external SMTP service.
 
 ## Stripe-managed product catalogue
 

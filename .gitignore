@@ -11,10 +11,7 @@ playwright-report/
 test-results/
 .DS_Store
 .cardshelf-upgrade.lock
+.cardshelf-mail-retirement.lock
 
-# Private self-hosted Postal bootstrap, signing keys and SMTP certificates.
-deploy/postal/config/
-deploy/postal/.env
-deploy/postal/.enabled
-deploy/postal/.bootstrap.*
-deploy/postal/.smtp-sync.lock/
+# Private files retained only until old mail data is explicitly purged.
+deploy/postal/

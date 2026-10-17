@@ -1,5 +1,0 @@
-config/
-.env
-.enabled
-.bootstrap.*
-.smtp-sync.lock/

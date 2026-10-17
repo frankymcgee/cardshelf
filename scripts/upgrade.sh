@@ -63,7 +63,7 @@ sh scripts/compose.sh config --quiet
 TMP=$(mktemp .env.upgrade.XXXXXX)
 trap 'rm -f "$TMP"' EXIT
 trap 'exit 1' HUP INT TERM
-sed '/^APP_VERSION=/d; /^CARDSHELF_IMAGE=/d' .env > "$TMP"
+sed '/^APP_VERSION=/d; /^CARDSHELF_IMAGE=/d; /^POSTAL_ORIGIN=/d' .env > "$TMP"
 printf '\nAPP_VERSION=%s\nCARDSHELF_IMAGE=%s\n' "$VERSION" "$CARDSHELF_IMAGE" >> "$TMP"
 chown --reference=.env "$TMP"
 chmod 600 "$TMP"
@@ -74,10 +74,14 @@ if ! sh scripts/compose.sh run --rm --no-deps --pull never -T migrate; then
   exit 1
 fi
 mv "$TMP" .env
-# Keep PostgreSQL, Caddy and Postal running. Do not pull another tag after migration.
+# Keep PostgreSQL and Caddy running. Do not pull another tag after migration.
 if ! sh scripts/compose.sh up -d --no-build --pull never --no-deps --wait --wait-timeout 180 app worker; then
   echo 'Release migrated but app/worker did not become healthy. The new image remains pinned. Inspect compose logs; do not roll back the image alone after a schema change.' >&2
   exit 1
+fi
+# Only retire the former mail stack after the migrated SMTP application is healthy.
+if [ -f deploy/postal/.enabled ]; then
+  sh scripts/retire-postal.sh
 fi
 sh scripts/compose.sh ps -a
 printf 'CardShelf %s is healthy and pinned to %s.\n' "$VERSION" "$CARDSHELF_IMAGE"

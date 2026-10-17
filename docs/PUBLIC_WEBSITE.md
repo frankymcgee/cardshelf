@@ -22,7 +22,7 @@ and explicit Complimentary access are preserved. The original beta-era document
 is superseded; payment infrastructure and public Free registration now exist.
 
 Privacy covers account/collection data, Stripe, referrals, marketplace,
-Postal/recovery, card photo recognition, Web Push, sharing and reference/artwork
+SMTP/recovery, card photo recognition, Web Push, sharing and reference/artwork
 providers. Advertising notices distinguish first-party sponsorship from Google
 and isolated Adsterra placements and their consent controls.
 

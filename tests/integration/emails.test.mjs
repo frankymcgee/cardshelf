@@ -1,9 +1,9 @@
 // Isolated HTTP + PostgreSQL integration. The background dispatcher must be
 // paused; every manual worker call below injects a recording sender. No real
-// Postal, SMTP or external mailbox is contacted.
+// SMTP or external mailbox is contacted.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { randomUUID, generateKeyPairSync, sign } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import postgres from 'postgres';
 import sharp from 'sharp';
 import { hashPassword, randomToken, digest } from '../../lib/security.mjs';
@@ -15,9 +15,7 @@ const base=process.env.TEST_BASE_URL,url=process.env.DATABASE_URL;
 if(process.env.ALLOW_TEST_DATABASE!=='yes'||!base||!new URL(url||'http://invalid').pathname.endsWith('_test')||process.env.EMAIL_WORKER_ENABLED!=='false')throw Error('Use a disposable _test database and pause EMAIL_WORKER_ENABLED before running email tests.');
 if(!/^[a-f0-9]{64}$/i.test(process.env.CARDSHELF_INTEGRATION_KEY||''))throw Error('Provide a synthetic integration encryption key.');
 const sql=postgres(url,{max:2}),origin=process.env.APP_ORIGIN||base;
-const password='Synthetic CardShelf email integration password 123',apiKey='synthetic-postal-secret-'+randomUUID(),users=[];
-const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048});
-const publicPem=publicKey.export({type:'spki',format:'pem'}).toString();
+const password='Synthetic CardShelf email integration password 123',smtpSecret='synthetic-smtp-secret-'+randomUUID(),users=[];
 async function request(path,{user,method='GET',body,raw,headers={}}={}){
   const response=await fetch(base+path,{method,redirect:'manual',headers:{...(!path.startsWith('/api/webhooks/')?{Origin:origin,'X-Requested-With':'cardshelf'}:{}),...(user?{Cookie:user.cookie}:{}),...(body===undefined&&raw===undefined?{}:{'Content-Type':'application/json'}),...headers},body:raw??(body===undefined?undefined:JSON.stringify(body))});
   const text=await response.text();let data;try{data=JSON.parse(text);}catch{data=text;}
@@ -29,36 +27,29 @@ async function account(name,role='user'){
   await sql`INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(${digest(token)},${id},now()+interval '1 hour')`;
   return {id,email,cookie:'cardshelf_session='+token};
 }
-function assertSecretFree(value){const text=JSON.stringify(value);for(const secret of [apiKey,password,process.env.CARDSHELF_INTEGRATION_KEY])assert.ok(!text.includes(secret),'A credential appeared in a response or record.');}
+function assertSecretFree(value){const text=JSON.stringify(value);for(const secret of [smtpSecret,password,process.env.CARDSHELF_INTEGRATION_KEY])assert.ok(!text.includes(secret),'A credential appeared in a response or record.');}
 
-await test('Postal settings, personal preferences, queue hooks and authenticated delivery events',async t=>{
-  const previousSettings=await sql`SELECT * FROM email_settings`;
+await test('SMTP settings, personal preferences and queue hooks',async t=>{
+  const previousSettings=await sql`SELECT * FROM email_settings`,previousDispatch=await sql`SELECT * FROM email_dispatch_state`;
   const smtpKeys=['RECOVERY_EMAIL_ENABLED','SMTP_HOST','SMTP_FROM','SMTP_PORT','SMTP_SECURITY','SMTP_USER','SMTP_PASSWORD'];
   const oldSmtp=Object.fromEntries(smtpKeys.map(key=>[key,process.env[key]]));
   let admin,guardAdmin,sender,buyer,outsider,settings,setId,printingId,listingId,threadId;
   const existingUserId=randomUUID();let existingQueued=[];
-  const eventIds=[],recorded=[];
+  const recorded=[];
   const queueEvent=async(kind,user,payload={})=>{
     const eventKey='integration-email:'+randomUUID();await enqueueEmail(sql,{eventKey,kind,userId:user.id,payload});
     const [job]=await sql`SELECT * FROM email_outbox WHERE event_key=${eventKey}`;assert.ok(job,'Expected a queued email');return job;
   };
   const jobById=async id=>(await sql`SELECT * FROM email_outbox WHERE id=${id}`)[0];
   const onlyJob=async id=>{await sql`UPDATE email_outbox SET available_at=now()+interval '1 day' WHERE user_id IN ${sql(users)} AND status='queued'`;await sql`UPDATE email_outbox SET available_at=now()-interval '1 second' WHERE id=${id}`;};
-  async function deliver(job,send){await onlyJob(job.id);assert.equal(await processEmailOutbox({sql,origin,send:send||(async(address,message,options)=>{recorded.push({address,message,options});const provider_id=String(100000+recorded.length);return {provider:'postal',provider_id,message_id:options.messageId.slice(1,-1)};})}),true);return jobById(job.id);}
+  async function deliver(job,send){await onlyJob(job.id);await sql`INSERT INTO email_dispatch_state(singleton,next_send_at) VALUES(true,now()-interval '1 second') ON CONFLICT(singleton) DO UPDATE SET next_send_at=excluded.next_send_at,last_queue=NULL`;assert.equal(await processEmailOutbox({sql,origin,send:send||(async(address,message,options)=>{recorded.push({address,message,options});return {provider:'smtp',provider_id:null,message_id:options.messageId};})}),true);return jobById(job.id);}
   async function save(changes={},actor=admin){
     const current=await request('/api/admin/emails',{user:actor});assert.equal(current.status,200,JSON.stringify(current.data));
-    const body={revision:current.data.settings.revision,password,enabled:current.data.settings.enabled,sender_name:'CardShelf',from_address:'noreply@cardshelf.cloud',reply_to:'',api_key:'',clear_api_key:false,dkim_selector:'',dkim_public_key:'',webhook_public_key:publicPem,...changes};
+    const body={revision:current.data.settings.revision,password,enabled:current.data.settings.enabled,sender_name:'CardShelf',from_address:'noreply@cardshelf.cloud',reply_to:'',provider:'smtp',smtp_preset:'wpmu_pro',smtp_host:'mail.mailconfig.net',smtp_port:465,smtp_security:'tls',smtp_user:'noreply@cardshelf.cloud',smtp_rate_limit:10,smtp_password:'',clear_smtp_password:false,dkim_selector:'',dkim_public_key:'',...changes};
     const response=await request('/api/admin/emails/settings',{user:actor,method:'POST',body});assert.equal(response.status,200,JSON.stringify(response.data));
     settings=(await request('/api/admin/emails',{user:actor})).data.settings;return response;
   }
   async function preferences(user,changes){const current=await request('/api/emails/preferences',{user});assert.equal(current.status,200);const response=await request('/api/emails/preferences',{user,method:'PATCH',body:{...current.data,...changes}});assert.equal(response.status,200,JSON.stringify(response.data));return response.data;}
-  async function webhook(event,patch={},options={}){
-    const now=Math.floor(Date.now()/1000),uuid=randomUUID();eventIds.push(uuid);
-    const message={id:Number(event.provider_id),direction:'outgoing',message_id:event.message_id,to:event.email,timestamp:now};
-    const payload={event:'MessageSent',timestamp:now,uuid,payload:{message,status:'Sent',timestamp:now,sent_with_ssl:true},...patch};
-    const raw=JSON.stringify(payload),signature=sign('RSA-SHA256',Buffer.from(raw),privateKey).toString('base64');
-    return {payload,raw,signature,response:await request('/api/webhooks/postal',{method:'POST',raw,headers:{'X-Postal-Signature-256':signature,...options.headers}})};
-  }
   try{
     await sql`DELETE FROM email_settings`;
     // Other integration files deliberately retain their accounts. Password
@@ -80,29 +71,29 @@ await test('Postal settings, personal preferences, queue hooks and authenticated
       assert.equal((await request('/api/admin/emails/diagnostics',{user:sender})).status,403);
       const status=await request('/api/admin/emails',{user:admin});assert.equal(status.status,200);assert.equal(status.data.settings.exists,false);assert.equal(status.data.settings.enabled,false);assertSecretFree(status.data);
     });
-    await t.test('legacy SMTP is considered only before Postal settings have been saved',async()=>{
+    await t.test('legacy SMTP is considered only before email settings have been saved',async()=>{
       Object.assign(process.env,{RECOVERY_EMAIL_ENABLED:'true',SMTP_HOST:'smtp.example.test',SMTP_FROM:'legacy@example.test',SMTP_PORT:'587',SMTP_SECURITY:'starttls',SMTP_USER:'',SMTP_PASSWORD:''});
       const status=await recoveryDeliveryStatus(sql);assert.equal(status.provider,'smtp');assert.equal(status.configured,true);
     });
     await t.test('settings require password reauthentication, same origin and exact fields',async()=>{
       const current=(await request('/api/admin/emails',{user:admin})).data.settings;
-      const body={revision:current.revision,password,enabled:true,sender_name:'CardShelf',from_address:'noreply@cardshelf.cloud',reply_to:'',api_key:apiKey,clear_api_key:false,dkim_selector:'',dkim_public_key:'',webhook_public_key:publicPem};
+      const body={revision:current.revision,password,enabled:true,sender_name:'CardShelf',from_address:'noreply@cardshelf.cloud',reply_to:'',provider:'smtp',smtp_preset:'wpmu_pro',smtp_host:'mail.mailconfig.net',smtp_port:465,smtp_security:'tls',smtp_user:'noreply@cardshelf.cloud',smtp_rate_limit:10,smtp_password:smtpSecret,clear_smtp_password:false,dkim_selector:'',dkim_public_key:''};
       assert.equal((await request('/api/admin/emails/settings',{user:sender,method:'POST',body})).status,403);
       assert.equal((await request('/api/admin/emails/settings',{user:guardAdmin,method:'POST',body:{...body,password:'wrong'}})).status,403);
       assert.equal((await request('/api/admin/emails/settings',{user:guardAdmin,method:'POST',body,headers:{Origin:'https://other.example.test'}})).status,403);
       for(const extra of [{origin:'https://attacker.example.test'},{from_address:'attacker@example.test'},{sender_name:'CardShelf\r\nBcc: attacker@example.test'}])assert.equal((await request('/api/admin/emails/settings',{user:guardAdmin,method:'POST',body:{...body,...extra}})).status,400);
       assert.equal((await sql`SELECT * FROM email_settings`).length,0);
     });
-    await t.test('saved API credentials are encrypted, retained on blank update and never returned',async()=>{
-      await save({enabled:true,api_key:apiKey});assert.equal(settings.configured,true);assert.equal(settings.api_key_set,true);assert.equal(settings.origin,'https://postal.cardshelf.cloud');
-      const [stored]=await sql`SELECT * FROM email_settings`;assert.ok(stored.api_secret);assert.ok(!stored.api_secret.includes(apiKey));assertSecretFree(stored);assertSecretFree(settings);
-      await save({sender_name:'CardShelf test installation'});assert.equal((await sql`SELECT api_secret FROM email_settings`)[0].api_secret,stored.api_secret);
-      const stale=await request('/api/admin/emails/settings',{user:admin,method:'POST',body:{revision:stored.revision,password,enabled:false,sender_name:'Stale overwrite',from_address:'noreply@cardshelf.cloud',reply_to:'',api_key:'',clear_api_key:false}});assert.equal(stale.status,409);assert.equal((await sql`SELECT enabled FROM email_settings`)[0].enabled,true);
+    await t.test('saved SMTP credentials are encrypted, retained on blank update and never returned',async()=>{
+      await save({enabled:true,smtp_password:smtpSecret});assert.equal(settings.configured,true);assert.equal(settings.smtp_password_set,true);
+      const [stored]=await sql`SELECT * FROM email_settings`;assert.ok(stored.smtp_secret);assert.ok(!stored.smtp_secret.includes(smtpSecret));assertSecretFree(stored);assertSecretFree(settings);
+      await save({sender_name:'CardShelf test installation'});assert.equal((await sql`SELECT smtp_secret FROM email_settings`)[0].smtp_secret,stored.smtp_secret);
+      const stale=await request('/api/admin/emails/settings',{user:admin,method:'POST',body:{revision:stored.revision,password,enabled:false,sender_name:'Stale overwrite',from_address:'noreply@cardshelf.cloud',reply_to:'',provider:'smtp',smtp_host:'mail.mailconfig.net',smtp_port:465,smtp_security:'tls',smtp_user:'noreply@cardshelf.cloud',smtp_password:'',clear_smtp_password:false}});assert.equal(stale.status,409);assert.equal((await sql`SELECT enabled FROM email_settings`)[0].enabled,true);
       assertSecretFree(await sql`SELECT detail FROM audit_log WHERE user_id IN ${sql([admin.id,guardAdmin.id])}`);
     });
-    await t.test('disabling configured Postal prevents fallback and leaves queued attempts untouched',async()=>{
+    await t.test('disabling configured SMTP prevents fallback and leaves queued attempts untouched',async()=>{
       const job=await queueEvent('password_changed',sender);await onlyJob(job.id);await save({enabled:false});
-      const status=await recoveryDeliveryStatus(sql);assert.equal(status.provider,'postal');assert.equal(status.configured,false);
+      const status=await recoveryDeliveryStatus(sql);assert.equal(status.provider,'smtp');assert.equal(status.configured,false);
       let calls=0;assert.equal(await processEmailOutbox({sql,origin,send:async()=>{calls++;}}),false);assert.equal(calls,0);assert.equal((await jobById(job.id)).attempts,0);
       await save({enabled:true});
     });
@@ -129,9 +120,9 @@ await test('Postal settings, personal preferences, queue hooks and authenticated
     });
     await t.test('queue event deduplication, private templates and bounded failed-send retries',async()=>{
       const job=await queueEvent('password_changed',sender);await enqueueEmail(sql,{eventKey:job.event_key,kind:'password_changed',userId:sender.id});assert.equal((await sql`SELECT id FROM email_outbox WHERE event_key=${job.event_key}`).length,1);
-      for(let attempt=1;attempt<=3;attempt++){const failed=await deliver(job,async()=>{throw Object.assign(Error('Secret provider response '+apiKey+' recipient='+sender.email),{emailDelivery:'rejected'});});assert.equal(failed.attempts,attempt);assert.ok(!JSON.stringify(failed).includes(apiKey));assert.ok(!failed.last_error.includes(sender.email));assert.equal(failed.status,attempt<3?'queued':'failed');}
+      for(let attempt=1;attempt<=3;attempt++){const failed=await deliver(job,async()=>{throw Object.assign(Error('Secret provider response '+smtpSecret+' recipient='+sender.email),{emailDelivery:'rejected'});});assert.equal(failed.attempts,attempt);assert.ok(!JSON.stringify(failed).includes(smtpSecret));assert.ok(!failed.last_error.includes(sender.email));assert.equal(failed.status,attempt<3?'queued':'failed');}
       const result=await request('/api/admin/emails/retry',{user:admin,method:'POST',body:{password,id:job.id}});assert.equal(result.status,200,JSON.stringify(result.data));
-      const accepted=await deliver(job);assert.equal(accepted.status,'accepted');const message=recorded.at(-1).message;assert.match(message.subject,/password/i);assert.ok(!message.text.includes(password));assert.ok(!message.text.includes(apiKey));
+      const accepted=await deliver(job);assert.equal(accepted.status,'accepted');const message=recorded.at(-1).message;assert.match(message.subject,/password/i);assert.ok(!message.text.includes(password));assert.ok(!message.text.includes(smtpSecret));
       assert.equal((await request('/api/admin/emails/retry',{user:admin,method:'POST',body:{password,id:job.id}})).status,409);
       const adminView=await request('/api/admin/emails',{user:admin});assertSecretFree(adminView.data);assert.ok(!JSON.stringify(adminView.data.recent).includes(sender.email));
     });
@@ -182,35 +173,18 @@ await test('Postal settings, personal preferences, queue hooks and authenticated
       await preferences(buyer,{marketplace:false});let calls=0;const suppressed=await deliver(replies[0],async()=>{calls++;});assert.equal(calls,0);assert.equal(suppressed.status,'suppressed');
       assert.equal((await sql`SELECT id FROM email_outbox WHERE user_id=${outsider.id} AND kind IN ('marketplace_enquiry','marketplace_reply')`).length,0);
     });
-    await t.test('signed Postal webhooks correlate message and recipient, ignore replay and record verified delivery',async()=>{
-      const job=await queueEvent('password_changed',sender),accepted=await deliver(job),event={...accepted,email:sender.email};
-      const unsigned=await request('/api/webhooks/postal',{method:'POST',body:{event:'MessageSent'}});assert.equal(unsigned.status,401);
-      const attempt=await webhook(event);assert.equal(attempt.response.status,200,JSON.stringify(attempt.response.data));
-      const delivered=await jobById(job.id);assert.equal(delivered.status,'delivered');assert.equal(delivered.sent_with_ssl,true);assert.ok(delivered.delivered_at);
-      const count=(await sql`SELECT event_key FROM email_webhook_receipts`).length;
-      const duplicate=await request('/api/webhooks/postal',{method:'POST',raw:attempt.raw,headers:{'X-Postal-Signature-256':attempt.signature}});assert.equal(duplicate.status,200);assert.equal((await sql`SELECT event_key FROM email_webhook_receipts`).length,count);
-      assert.equal((await request('/api/webhooks/postal',{method:'POST',raw:attempt.raw+' ',headers:{'X-Postal-Signature-256':attempt.signature}})).status,401);
-      const oversized=JSON.stringify({padding:'x'.repeat(65536)}),oversizedSignature=sign('RSA-SHA256',Buffer.from(oversized),privateKey).toString('base64');assert.equal((await request('/api/webhooks/postal',{method:'POST',raw:oversized,headers:{'X-Postal-Signature-256':oversizedSignature}})).status,413);
-      const wrong=await webhook({...event,email:outsider.email});assert.equal(wrong.response.status,503);assert.equal((await sql`SELECT event_key FROM email_webhook_receipts`).length,count);
-      const stale=await webhook(event,{timestamp:Math.floor(Date.now()/1000)-90000});assert.equal(stale.response.status,400);
-      assert.equal((await jobById(job.id)).status,'delivered');
-    });
-    await t.test('a signed hard bounce suppresses the exact recipient and cannot be undone by an old sent event',async()=>{
-      const job=await queueEvent('password_changed',sender),accepted=await deliver(job),event={...accepted,email:sender.email},now=Math.floor(Date.now()/1000);
-      const initiallySent=await webhook(event,{timestamp:now,payload:{message:{id:Number(accepted.provider_id),direction:'outgoing',message_id:accepted.message_id,to:sender.email,timestamp:now},status:'Sent',timestamp:now,sent_with_ssl:true}});assert.equal(initiallySent.response.status,200);assert.equal((await jobById(job.id)).status,'delivered');
-      const result=await webhook(event,{event:'MessageBounced',payload:{original_message:{id:Number(accepted.provider_id),direction:'outgoing',message_id:accepted.message_id,to:sender.email,timestamp:now},bounce:{timestamp:now},status:'HardFail',timestamp:now}});assert.equal(result.response.status,200,JSON.stringify(result.response.data));
-      assert.equal((await jobById(job.id)).status,'bounced');assert.equal((await sql`SELECT source FROM email_suppressions WHERE email=${sender.email}`)[0].source,'postal');
-      const old=await webhook(event,{timestamp:now-10,payload:{message:{id:Number(accepted.provider_id),direction:'outgoing',message_id:accepted.message_id,to:sender.email,timestamp:now-10},status:'Sent',timestamp:now-10,sent_with_ssl:true}});assert.equal(old.response.status,200);assert.equal((await jobById(job.id)).status,'bounced');
-      const equal=await webhook(event,{timestamp:now,payload:{message:{id:Number(accepted.provider_id),direction:'outgoing',message_id:accepted.message_id,to:sender.email,timestamp:now},status:'Sent',timestamp:now,sent_with_ssl:true}});assert.equal(equal.response.status,200);assert.equal((await jobById(job.id)).status,'bounced');
-      const next=await queueEvent('password_changed',sender);let calls=0;assert.equal((await deliver(next,async()=>{calls++;})).status,'suppressed');assert.equal(calls,0);
+    await t.test('retired webhook has no route or cross-origin exception',async()=>{
+      assert.equal((await request('/api/webhooks/postal',{method:'POST',body:{},headers:{Origin:origin,'X-Requested-With':'cardshelf'}})).status,401);
+      assert.equal((await request('/api/webhooks/postal',{user:admin,method:'POST',body:{},headers:{Origin:origin,'X-Requested-With':'cardshelf'}})).status,404);
+      assert.equal((await request('/api/webhooks/postal',{user:admin,method:'POST',body:{},headers:{Origin:'https://other.example.test'}})).status,403);
     });
     await t.test('email pages are private, non-indexable and do not contain delivery credentials',async()=>{
       for(const [path,user] of [['/emails',sender],['/admin/emails',admin]]){const response=await request(path,{user});assert.equal(response.status,200);assert.match(response.headers.get('x-robots-tag'),/noindex/);assertSecretFree(response.data);}
       const sitemap=await request('/sitemap.xml');assert.ok(!String(sitemap.data).includes('/admin/emails'));assert.ok(!String(sitemap.data).includes('/emails'));
     });
-    await t.test('removing the API credential disables Postal and never revives legacy SMTP',async()=>{
-      await save({clear_api_key:true});assert.equal(settings.api_key_set,false);assert.equal(settings.enabled,false);assert.equal((await sql`SELECT api_secret FROM email_settings`)[0].api_secret,null);
-      const status=await recoveryDeliveryStatus(sql);assert.equal(status.provider,'postal');assert.equal(status.configured,false);
+    await t.test('removing the SMTP password pauses delivery and never revives legacy SMTP',async()=>{
+      await save({clear_smtp_password:true});assert.equal(settings.smtp_password_set,false);assert.equal(settings.enabled,false);assert.equal((await sql`SELECT smtp_secret FROM email_settings`)[0].smtp_secret,null);
+      const status=await recoveryDeliveryStatus(sql);assert.equal(status.provider,'smtp');assert.equal(status.configured,false);
     });
   }finally{
     try{
@@ -224,9 +198,9 @@ await test('Postal settings, personal preferences, queue hooks and authenticated
     }finally{
       for(const key of smtpKeys){if(oldSmtp[key]===undefined)delete process.env[key];else process.env[key]=oldSmtp[key];}
       await sql`DELETE FROM email_settings`;if(previousSettings.length)await sql`INSERT INTO email_settings ${sql(previousSettings)}`;
+      await sql`DELETE FROM email_dispatch_state`;if(previousDispatch.length)await sql`INSERT INTO email_dispatch_state ${sql(previousDispatch)}`;
       if(users.length){await sql`DELETE FROM email_suppressions WHERE email IN ${sql(users.map(id=>id+'@example.test'))}`;await sql`DELETE FROM app_users WHERE id IN ${sql(users)}`;}
       await sql`DELETE FROM app_users WHERE id=${existingUserId}`;
-      if(eventIds.length)await sql`DELETE FROM email_webhook_receipts WHERE event_key IN ${sql(eventIds.map(id=>digest(id.toLowerCase())))}`;
       if(printingId)await sql`DELETE FROM printings WHERE id=${printingId}`;
       if(setId){await sql`DELETE FROM cards WHERE set_id=${setId}`;await sql`DELETE FROM card_sets WHERE id=${setId}`;}
       await sql.end();await closeDatabase();

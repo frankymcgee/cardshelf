@@ -64,7 +64,7 @@ nonzero counters must advance. Registration requests no identifying attestation.
 Recovery codes and temporary operator grants are hashed, bounded and single-use.
 Security audit entries never contain seeds, passwords, bearer links or raw codes.
 
-The existing Postal/SMTP transport delivers verification mail. The queue stores no
+The SMTP transport delivers verification mail. The queue stores no
 plaintext verification link or token. A possibly accepted send is held as
 uncertain rather than resent automatically. Existing notification and password
 recovery queues share provider pacing with verification mail.
