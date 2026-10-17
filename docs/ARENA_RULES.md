@@ -1,5 +1,8 @@
 # Arena rules audit — 9 October 2026
 
+New matches use `pokemon-expanded-v5`. See [V5 effect coverage and acceptance](ARENA_EFFECTS_V5.md) for the current implementation, source revisions, tests and remaining exclusions. The V4 rulebook matrix below remains the historical baseline; saved V4 matches keep that engine.
+
+
 Arena is an automated **Casual Expanded, supported-card-pool** game. This release
 substantially expands rulebook coverage; it is **not full rulebook/card parity,
 official Standard/Expanded legality, or a 1.0 sign-off**. A printed card enters

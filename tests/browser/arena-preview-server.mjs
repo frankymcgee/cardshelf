@@ -10,7 +10,7 @@ const root = fileURLToPath(new URL('../../', import.meta.url)), require = create
 const components = fs.readdirSync(path.join(root, 'app/components/arena')).filter(name => name.endsWith('.vue')).map(name => 'app/components/arena/' + name);
 const files = new Map([
   ['/vue.js', path.join(path.dirname(require.resolve('vue/package.json')), 'dist/vue.esm-browser.prod.js')],
-  ...[...components, 'app/components/CardImage.vue', 'app/composables/useCardImage.mjs', 'shared/card-images.mjs', 'shared/arena.mjs', 'shared/arena-art.mjs', 'shared/arena-match-ui.mjs', 'lib/arena/training.mjs', 'tests/helpers/arena-table-fixtures.mjs',
+  ...[...components, 'app/components/CardImage.vue', 'app/composables/useCardImage.mjs', 'shared/card-images.mjs', 'shared/arena-status-effects.mjs', 'shared/arena.mjs', 'shared/arena-art.mjs', 'shared/arena-match-ui.mjs', 'lib/arena/training.mjs', 'tests/helpers/arena-table-fixtures.mjs',
     'app/assets/css/main.css', 'app/assets/css/arena.css', 'app/assets/css/arena-table.css', 'app/assets/css/arena-interactions.css', 'app/assets/css/arena-perspective.css', 'app/assets/css/arena-card-art.css', 'app/assets/css/arena-scene.css']
     .map(file => ['/' + file, path.join(root, file)])
 ]);

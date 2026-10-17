@@ -1,3 +1,11 @@
+## 0.56.0 — 2026-10-17
+
+- Add the versioned V5 Arena effect engine; preserve V1–V4 matches, waiting lobbies and tournaments on their original compilers and rules.
+- Resolve attack clauses in printed order, discard Energy after damage, count multi-Energy values separately from physical Energy cards, apply prevention/reduction at the proper damage steps, and clear or expire temporary Pokémon/player restrictions correctly. Simultaneous Active Knock Outs promote the next player first.
+- Add complete profiles for Charizard ex / Rare Candy / Pidgeot ex, Dragapult ex / Drakloak, Munkidori, Budew, Fezandipiti ex, Dudunsparce, Baxcalibur and Gardevoir ex; expand searches, recovery, hand disruption, attachment and movement effects.
+- Keep inspection, ordered deck choices and multi-step Energy choices private and resumable; show temporary effects and retain exact server-authorized choice IDs. Extend CPU decisions and real-card match simulations.
+- Bind missing Tera and free-attack characteristics to exact cross-checked printing fingerprints. Add reproducible characteristic generation and a catalogue coverage audit: 5,880 of 21,291 reference records supported, 1,423 additions and two safety exclusions for unverified modern promo characteristics. Historical effects coverage remains incomplete; unsupported clauses still reject the whole card.
+
 ## 0.55.2 — 2026-10-18
 
 - Keep MFA verification at sign-in and account security changes. Remove the global five-minute MFA renewal requirement from routine administrator and member actions, including catalogue imports, binder edits and Arena saves.

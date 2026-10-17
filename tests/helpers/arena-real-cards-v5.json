@@ -1,0 +1,1517 @@
+[
+  {
+    "id": "en:sv03-125",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv03-125",
+    "local_id": "125",
+    "set_id": "en:sv03",
+    "set_name": "Obsidian Flames",
+    "name": "Charizard ex",
+    "raw_data": {
+      "dexId": [
+        6
+      ],
+      "name": "Charizard ex",
+      "rarity": "Double rare",
+      "category": "Pokemon",
+      "hp": 330,
+      "types": [
+        "Darkness"
+      ],
+      "evolveFrom": "Charmeleon",
+      "stage": "Stage2",
+      "abilities": [
+        {
+          "type": "Ability",
+          "name": "Infernal Reign",
+          "effect": "When you play this Pokémon from your hand to evolve 1 of your Pokémon during your turn, you may search your deck for up to 3 Basic {R} Energy cards and attach them to your Pokémon in any way you like. Then, shuffle your deck."
+        }
+      ],
+      "attacks": [
+        {
+          "cost": [
+            "Fire",
+            "Fire"
+          ],
+          "name": "Burning Darkness",
+          "effect": "This attack does 30 more damage for each Prize card your opponent has taken.",
+          "damage": "180+"
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Grass",
+          "value": "×2"
+        }
+      ],
+      "retreat": 2,
+      "regulationMark": "G",
+      "suffix": "ex",
+      "illustrator": "5ban Graphics"
+    }
+  },
+  {
+    "id": "en:sv03-164",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv03-164",
+    "local_id": "164",
+    "set_id": "en:sv03",
+    "set_name": "Obsidian Flames",
+    "name": "Pidgeot ex",
+    "raw_data": {
+      "dexId": [
+        18
+      ],
+      "name": "Pidgeot ex",
+      "rarity": "Double rare",
+      "category": "Pokemon",
+      "hp": 280,
+      "types": [
+        "Colorless"
+      ],
+      "evolveFrom": "Pidgeotto",
+      "stage": "Stage2",
+      "abilities": [
+        {
+          "type": "Ability",
+          "name": "Quick Search",
+          "effect": "Once during your turn, you may search your deck for a card and put it into your hand. Then, shuffle your deck. You can't use more than 1 Quick Search Ability each turn."
+        }
+      ],
+      "attacks": [
+        {
+          "cost": [
+            "Colorless",
+            "Colorless"
+          ],
+          "name": "Blustery Wind",
+          "effect": "You may discard a Stadium in play.",
+          "damage": 120
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Lightning",
+          "value": "×2"
+        }
+      ],
+      "resistances": [
+        {
+          "type": "Fighting",
+          "value": "-30"
+        }
+      ],
+      "retreat": 0,
+      "regulationMark": "G",
+      "suffix": "ex",
+      "illustrator": "takuyoa"
+    }
+  },
+  {
+    "id": "en:sv03-026",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv03-026",
+    "local_id": "026",
+    "set_id": "en:sv03",
+    "set_name": "Obsidian Flames",
+    "name": "Charmander",
+    "raw_data": {
+      "dexId": [
+        4
+      ],
+      "name": "Charmander",
+      "rarity": "Common",
+      "category": "Pokemon",
+      "hp": 60,
+      "types": [
+        "Fire"
+      ],
+      "stage": "Basic",
+      "attacks": [
+        {
+          "cost": [
+            "Fire"
+          ],
+          "name": "Heat Tackle",
+          "effect": "This Pokémon also does 10 damage to itself.",
+          "damage": 30
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Water",
+          "value": "×2"
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "G",
+      "illustrator": "DOM"
+    }
+  },
+  {
+    "id": "en:sv03-027",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv03-027",
+    "local_id": "027",
+    "set_id": "en:sv03",
+    "set_name": "Obsidian Flames",
+    "name": "Charmeleon",
+    "raw_data": {
+      "dexId": [
+        5
+      ],
+      "name": "Charmeleon",
+      "rarity": "Uncommon",
+      "category": "Pokemon",
+      "hp": 90,
+      "types": [
+        "Fire"
+      ],
+      "evolveFrom": "Charmander",
+      "stage": "Stage1",
+      "attacks": [
+        {
+          "cost": [
+            "Fire",
+            "Fire"
+          ],
+          "name": "Heat Tackle",
+          "effect": "This Pokémon also does 20 damage to itself.",
+          "damage": 70
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Water",
+          "value": "×2"
+        }
+      ],
+      "retreat": 2,
+      "regulationMark": "G",
+      "illustrator": "Ryota Murayama"
+    }
+  },
+  {
+    "id": "en:sv03-162",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv03-162",
+    "local_id": "162",
+    "set_id": "en:sv03",
+    "set_name": "Obsidian Flames",
+    "name": "Pidgey",
+    "raw_data": {
+      "dexId": [
+        16
+      ],
+      "name": "Pidgey",
+      "rarity": "Common",
+      "category": "Pokemon",
+      "hp": 60,
+      "types": [
+        "Colorless"
+      ],
+      "stage": "Basic",
+      "attacks": [
+        {
+          "cost": [
+            "Colorless"
+          ],
+          "name": "Gust",
+          "damage": 20
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Lightning",
+          "value": "×2"
+        }
+      ],
+      "resistances": [
+        {
+          "type": "Fighting",
+          "value": "-30"
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "G",
+      "illustrator": "Naoyo Kimura"
+    }
+  },
+  {
+    "id": "en:sv03-163",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv03-163",
+    "local_id": "163",
+    "set_id": "en:sv03",
+    "set_name": "Obsidian Flames",
+    "name": "Pidgeotto",
+    "raw_data": {
+      "dexId": [
+        17
+      ],
+      "name": "Pidgeotto",
+      "rarity": "Uncommon",
+      "category": "Pokemon",
+      "hp": 90,
+      "types": [
+        "Colorless"
+      ],
+      "evolveFrom": "Pidgey",
+      "stage": "Stage1",
+      "attacks": [
+        {
+          "cost": [
+            "Colorless",
+            "Colorless"
+          ],
+          "name": "Wing Attack",
+          "damage": 40
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Lightning",
+          "value": "×2"
+        }
+      ],
+      "resistances": [
+        {
+          "type": "Fighting",
+          "value": "-30"
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "G",
+      "illustrator": "Kariya"
+    }
+  },
+  {
+    "id": "en:sv06-128",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv06-128",
+    "local_id": "128",
+    "set_id": "en:sv06",
+    "set_name": "Twilight Masquerade",
+    "name": "Dreepy",
+    "raw_data": {
+      "dexId": [
+        885
+      ],
+      "name": "Dreepy",
+      "rarity": "Common",
+      "category": "Pokemon",
+      "hp": 70,
+      "types": [
+        "Dragon"
+      ],
+      "stage": "Basic",
+      "attacks": [
+        {
+          "cost": [
+            "Psychic"
+          ],
+          "name": "Petty Grudge",
+          "damage": 10
+        },
+        {
+          "cost": [
+            "Fire",
+            "Psychic"
+          ],
+          "name": "Bite",
+          "damage": 40
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "H",
+      "illustrator": "Scav"
+    }
+  },
+  {
+    "id": "en:sv06-129",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv06-129",
+    "local_id": "129",
+    "set_id": "en:sv06",
+    "set_name": "Twilight Masquerade",
+    "name": "Drakloak",
+    "raw_data": {
+      "dexId": [
+        886
+      ],
+      "name": "Drakloak",
+      "rarity": "Common",
+      "category": "Pokemon",
+      "hp": 90,
+      "types": [
+        "Dragon"
+      ],
+      "evolveFrom": "Dreepy",
+      "stage": "Stage1",
+      "abilities": [
+        {
+          "type": "Ability",
+          "name": "Recon Directive",
+          "effect": "Once during your turn, you may look at the top 2 cards of your deck and put 1 of them into your hand. Put the other card on the bottom of your deck."
+        }
+      ],
+      "attacks": [
+        {
+          "cost": [
+            "Fire",
+            "Psychic"
+          ],
+          "name": "Dragon Headbutt",
+          "damage": 70
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "H",
+      "illustrator": "cochi8i"
+    }
+  },
+  {
+    "id": "en:sv06-130",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv06-130",
+    "local_id": "130",
+    "set_id": "en:sv06",
+    "set_name": "Twilight Masquerade",
+    "name": "Dragapult ex",
+    "raw_data": {
+      "dexId": [
+        887
+      ],
+      "name": "Dragapult ex",
+      "rarity": "Double rare",
+      "category": "Pokemon",
+      "hp": 320,
+      "types": [
+        "Dragon"
+      ],
+      "evolveFrom": "Drakloak",
+      "stage": "Stage2",
+      "attacks": [
+        {
+          "cost": [
+            "Colorless"
+          ],
+          "name": "Jet Headbutt",
+          "damage": 70
+        },
+        {
+          "cost": [
+            "Fire",
+            "Psychic"
+          ],
+          "name": "Phantom Dive",
+          "effect": "Put 6 damage counters on your opponent's Benched Pokémon in any way you like.",
+          "damage": 200
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "H",
+      "suffix": "ex",
+      "illustrator": "5ban Graphics"
+    }
+  },
+  {
+    "id": "en:sv06-095",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv06-095",
+    "local_id": "095",
+    "set_id": "en:sv06",
+    "set_name": "Twilight Masquerade",
+    "name": "Munkidori",
+    "raw_data": {
+      "dexId": [
+        1015
+      ],
+      "name": "Munkidori",
+      "rarity": "Rare",
+      "category": "Pokemon",
+      "hp": 110,
+      "types": [
+        "Psychic"
+      ],
+      "stage": "Basic",
+      "abilities": [
+        {
+          "type": "Ability",
+          "name": "Adrena-Brain",
+          "effect": "Once during your turn, if this Pokémon has any {D} Energy attached, you may move up to 3 damage counters from 1 of your Pokémon to 1 of your opponent's Pokémon."
+        }
+      ],
+      "attacks": [
+        {
+          "cost": [
+            "Psychic",
+            "Colorless"
+          ],
+          "name": "Mind Bend",
+          "effect": "Your opponent's Active Pokémon is now Confused.",
+          "damage": 60
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Darkness",
+          "value": "×2"
+        }
+      ],
+      "resistances": [
+        {
+          "type": "Fighting",
+          "value": "-30"
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "H",
+      "illustrator": "kodama"
+    }
+  },
+  {
+    "id": "en:sv06.5-038",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv06.5-038",
+    "local_id": "038",
+    "set_id": "en:sv06.5",
+    "set_name": "Shrouded Fable",
+    "name": "Fezandipiti ex",
+    "raw_data": {
+      "dexId": [
+        1016
+      ],
+      "name": "Fezandipiti ex",
+      "rarity": "Double rare",
+      "category": "Pokemon",
+      "hp": 210,
+      "types": [
+        "Darkness"
+      ],
+      "stage": "Basic",
+      "abilities": [
+        {
+          "type": "Ability",
+          "name": "Flip the Script",
+          "effect": "Once during your turn, if any of your Pokémon were Knocked Out during your opponent's last turn, you may draw 3 cards. You can't use more than 1 Flip the Script Ability each turn."
+        }
+      ],
+      "attacks": [
+        {
+          "cost": [
+            "Colorless",
+            "Colorless",
+            "Colorless"
+          ],
+          "name": "Cruel Arrow",
+          "effect": "This attack does 100 damage to 1 of your opponent's Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)"
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Fighting",
+          "value": "×2"
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "H",
+      "suffix": "ex",
+      "illustrator": "takuyoa"
+    }
+  },
+  {
+    "id": "en:sv08.5-004",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv08.5-004",
+    "local_id": "004",
+    "set_id": "en:sv08.5",
+    "set_name": "Prismatic Evolutions",
+    "name": "Budew",
+    "raw_data": {
+      "dexId": [
+        406
+      ],
+      "name": "Budew",
+      "rarity": "Common",
+      "category": "Pokemon",
+      "hp": 30,
+      "types": [
+        "Grass"
+      ],
+      "stage": "Basic",
+      "attacks": [
+        {
+          "name": "Itchy Pollen",
+          "effect": "During your opponent's next turn, they can't play any Item cards from their hand.",
+          "damage": 10
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Fire",
+          "value": "×2"
+        }
+      ],
+      "retreat": 0,
+      "regulationMark": "H",
+      "illustrator": "Yoriyuki Ikegami"
+    }
+  },
+  {
+    "id": "en:sv05-128",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv05-128",
+    "local_id": "128",
+    "set_id": "en:sv05",
+    "set_name": "Temporal Forces",
+    "name": "Dunsparce",
+    "raw_data": {
+      "dexId": [
+        206
+      ],
+      "name": "Dunsparce",
+      "rarity": "Common",
+      "category": "Pokemon",
+      "hp": 60,
+      "types": [
+        "Colorless"
+      ],
+      "stage": "Basic",
+      "attacks": [
+        {
+          "cost": [
+            "Colorless"
+          ],
+          "name": "Gnaw",
+          "damage": 10
+        },
+        {
+          "cost": [
+            "Colorless",
+            "Colorless"
+          ],
+          "name": "Dig",
+          "effect": "Flip a coin. If heads, during your opponent's next turn, prevent all damage from and effects of attacks done to this Pokémon.",
+          "damage": 30
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Fighting",
+          "value": "×2"
+        }
+      ],
+      "retreat": 0,
+      "regulationMark": "H",
+      "illustrator": "Sanosuke Sakuma"
+    }
+  },
+  {
+    "id": "en:sv05-129",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv05-129",
+    "local_id": "129",
+    "set_id": "en:sv05",
+    "set_name": "Temporal Forces",
+    "name": "Dudunsparce",
+    "raw_data": {
+      "dexId": [
+        982
+      ],
+      "name": "Dudunsparce",
+      "rarity": "Rare",
+      "category": "Pokemon",
+      "hp": 140,
+      "types": [
+        "Colorless"
+      ],
+      "evolveFrom": "Dunsparce",
+      "stage": "Stage1",
+      "abilities": [
+        {
+          "type": "Ability",
+          "name": "Run Away Draw",
+          "effect": "Once during your turn, you may draw 3 cards. If you drew any cards in this way, shuffle this Pokémon and all attached cards into your deck."
+        }
+      ],
+      "attacks": [
+        {
+          "cost": [
+            "Colorless",
+            "Colorless",
+            "Colorless"
+          ],
+          "name": "Land Crush",
+          "damage": 90
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Fighting",
+          "value": "×2"
+        }
+      ],
+      "retreat": 3,
+      "regulationMark": "H",
+      "illustrator": "Teeziro"
+    }
+  },
+  {
+    "id": "en:sv05-144",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv05-144",
+    "local_id": "144",
+    "set_id": "en:sv05",
+    "set_name": "Temporal Forces",
+    "name": "Buddy-Buddy Poffin",
+    "raw_data": {
+      "name": "Buddy-Buddy Poffin",
+      "rarity": "Uncommon",
+      "category": "Trainer",
+      "effect": "Search your deck for up to 2 Basic Pokémon with 70 HP or less and put them onto your Bench. Then, shuffle your deck.",
+      "trainerType": "Item",
+      "regulationMark": "H",
+      "illustrator": "AYUMI ODASHIMA"
+    }
+  },
+  {
+    "id": "en:sv01-191",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv01-191",
+    "local_id": "191",
+    "set_id": "en:sv01",
+    "set_name": "Scarlet & Violet",
+    "name": "Rare Candy",
+    "raw_data": {
+      "name": "Rare Candy",
+      "rarity": "Common",
+      "category": "Trainer",
+      "effect": "Choose 1 of your Basic Pokémon in play. If you have a Stage 2 card in your hand that evolves from that Pokémon, put that card onto the Basic Pokémon to evolve it, skipping the Stage 1. You can't use this card during your first turn or on a Basic Pokémon that was put into play this turn.",
+      "trainerType": "Item",
+      "regulationMark": "G",
+      "illustrator": "Studio Bora Inc."
+    }
+  },
+  {
+    "id": "en:sv03-186",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv03-186",
+    "local_id": "186",
+    "set_id": "en:sv03",
+    "set_name": "Obsidian Flames",
+    "name": "Arven",
+    "raw_data": {
+      "name": "Arven",
+      "rarity": "Uncommon",
+      "category": "Trainer",
+      "effect": "Search your deck for an Item card and a Pokémon Tool card, reveal them, and put them into your hand. Then, shuffle your deck.",
+      "trainerType": "Supporter",
+      "regulationMark": "G",
+      "illustrator": "GIDORA"
+    }
+  },
+  {
+    "id": "en:sv02-185",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv02-185",
+    "local_id": "185",
+    "set_id": "en:sv02",
+    "set_name": "Paldea Evolved",
+    "name": "Iono",
+    "raw_data": {
+      "cameoDexIds": [
+        81
+      ],
+      "name": "Iono",
+      "rarity": "Uncommon",
+      "category": "Trainer",
+      "effect": "Each player shuffles their hand and puts it on the bottom of their deck. If either player put any cards on the bottom of their deck in this way, each player draws a card for each of their remaining Prize cards.",
+      "trainerType": "Supporter",
+      "regulationMark": "G",
+      "illustrator": "Sanosuke Sakuma"
+    }
+  },
+  {
+    "id": "en:sv04-160",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv04-160",
+    "local_id": "160",
+    "set_id": "en:sv04",
+    "set_name": "Paradox Rift",
+    "name": "Counter Catcher",
+    "raw_data": {
+      "name": "Counter Catcher",
+      "rarity": "Uncommon",
+      "category": "Trainer",
+      "effect": "You can use this card only if you have more Prize cards remaining than your opponent.\n\nSwitch in 1 of your opponent's Benched Pokémon to the Active Spot.",
+      "trainerType": "Item",
+      "regulationMark": "G",
+      "illustrator": "Toyste Beach"
+    }
+  },
+  {
+    "id": "en:sv01-196",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv01-196",
+    "local_id": "196",
+    "set_id": "en:sv01",
+    "set_name": "Scarlet & Violet",
+    "name": "Ultra Ball",
+    "raw_data": {
+      "name": "Ultra Ball",
+      "rarity": "Uncommon",
+      "category": "Trainer",
+      "effect": "You can use this card only if you discard 2 other cards from your hand.\n\nSearch your deck for a Pokémon, reveal it, and put it into your hand. Then, shuffle your deck.",
+      "trainerType": "Item",
+      "regulationMark": "G",
+      "illustrator": "Ayaka Yoshida"
+    }
+  },
+  {
+    "id": "en:sv06.5-061",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv06.5-061",
+    "local_id": "061",
+    "set_id": "en:sv06.5",
+    "set_name": "Shrouded Fable",
+    "name": "Night Stretcher",
+    "raw_data": {
+      "name": "Night Stretcher",
+      "rarity": "Uncommon",
+      "category": "Trainer",
+      "effect": "Put a Pokémon or a Basic Energy card from your discard pile into your hand.",
+      "trainerType": "Item",
+      "regulationMark": "H",
+      "illustrator": "Toyste Beach"
+    }
+  },
+  {
+    "id": "en:sv06-165",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv06-165",
+    "local_id": "165",
+    "set_id": "en:sv06",
+    "set_name": "Twilight Masquerade",
+    "name": "Unfair Stamp",
+    "raw_data": {
+      "name": "Unfair Stamp",
+      "rarity": "ACE SPEC Rare",
+      "category": "Trainer",
+      "effect": "You can use this card only if any of your Pokémon were Knocked Out during your opponent's last turn.\n\nEach player shuffles their hand into their deck. Then, you draw 5 cards, and your opponent draws 2 cards.",
+      "trainerType": "Item",
+      "regulationMark": "H",
+      "illustrator": "Toyste Beach"
+    }
+  },
+  {
+    "id": "en:sv08.5-105",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv08.5-105",
+    "local_id": "105",
+    "set_id": "en:sv08.5",
+    "set_name": "Prismatic Evolutions",
+    "name": "Crispin",
+    "raw_data": {
+      "name": "Crispin",
+      "rarity": "Uncommon",
+      "category": "Trainer",
+      "effect": "Search your deck for up to 2 Basic Energy cards of different types, reveal them, and put 1 of them into your hand. Attach the other to 1 of your Pokémon. Then, shuffle your deck.",
+      "trainerType": "Supporter",
+      "regulationMark": "H",
+      "illustrator": "GIDORA"
+    }
+  },
+  {
+    "id": "en:sv01-181",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv01-181",
+    "local_id": "181",
+    "set_id": "en:sv01",
+    "set_name": "Scarlet & Violet",
+    "name": "Nest Ball",
+    "raw_data": {
+      "name": "Nest Ball",
+      "rarity": "Uncommon",
+      "category": "Trainer",
+      "effect": "Search your deck for a Basic Pokémon and put it onto your Bench. Then, shuffle your deck.",
+      "trainerType": "Item",
+      "regulationMark": "G",
+      "illustrator": "Toyste Beach"
+    }
+  },
+  {
+    "id": "en:sv02-188",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv02-188",
+    "local_id": "188",
+    "set_id": "en:sv02",
+    "set_name": "Paldea Evolved",
+    "name": "Super Rod",
+    "raw_data": {
+      "name": "Super Rod",
+      "rarity": "Common",
+      "category": "Trainer",
+      "effect": "Shuffle up to 3 in any combination of Pokémon and Basic Energy cards from your discard pile into your deck.",
+      "trainerType": "Item",
+      "regulationMark": "G",
+      "illustrator": "Toyste Beach"
+    }
+  },
+  {
+    "id": "en:sv02-060",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv02-060",
+    "local_id": "060",
+    "set_id": "en:sv02",
+    "set_name": "Paldea Evolved",
+    "name": "Baxcalibur",
+    "raw_data": {
+      "dexId": [
+        998
+      ],
+      "name": "Baxcalibur",
+      "rarity": "Rare",
+      "category": "Pokemon",
+      "hp": 160,
+      "types": [
+        "Water"
+      ],
+      "evolveFrom": "Arctibax",
+      "stage": "Stage2",
+      "abilities": [
+        {
+          "type": "Ability",
+          "name": "Super Cold",
+          "effect": "As often as you like during your turn, you may attach a Basic {W} Energy card from your hand to 1 of your Pokémon."
+        }
+      ],
+      "attacks": [
+        {
+          "cost": [
+            "Water",
+            "Water",
+            "Colorless"
+          ],
+          "name": "Buster Tail",
+          "damage": 130
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Metal",
+          "value": "×2"
+        }
+      ],
+      "retreat": 2,
+      "regulationMark": "G",
+      "illustrator": "Shin Nagasawa"
+    }
+  },
+  {
+    "id": "en:sv01-086",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv01-086",
+    "local_id": "086",
+    "set_id": "en:sv01",
+    "set_name": "Scarlet & Violet",
+    "name": "Gardevoir ex",
+    "raw_data": {
+      "dexId": [
+        282
+      ],
+      "name": "Gardevoir ex",
+      "rarity": "Double rare",
+      "category": "Pokemon",
+      "hp": 310,
+      "types": [
+        "Psychic"
+      ],
+      "evolveFrom": "Kirlia",
+      "stage": "Stage2",
+      "abilities": [
+        {
+          "type": "Ability",
+          "name": "Psychic Embrace",
+          "effect": "As often as you like during your turn, you may attach a Basic {P} Energy card from your discard pile to 1 of your {P} Pokémon. If you attached Energy to a Pokémon in this way, put 2 damage counters on that Pokémon. You can't use this Ability on a Pokémon that would be Knocked Out."
+        }
+      ],
+      "attacks": [
+        {
+          "cost": [
+            "Psychic",
+            "Psychic",
+            "Colorless"
+          ],
+          "name": "Miracle Force",
+          "effect": "This Pokémon recovers from all Special Conditions.",
+          "damage": 190
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Darkness",
+          "value": "×2"
+        }
+      ],
+      "resistances": [
+        {
+          "type": "Fighting",
+          "value": "-30"
+        }
+      ],
+      "retreat": 2,
+      "regulationMark": "G",
+      "suffix": "ex",
+      "illustrator": "N-DESIGN Inc."
+    }
+  },
+  {
+    "id": "en:sv01-097",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv01-097",
+    "local_id": "097",
+    "set_id": "en:sv01",
+    "set_name": "Scarlet & Violet",
+    "name": "Fidough",
+    "raw_data": {
+      "dexId": [
+        926
+      ],
+      "name": "Fidough",
+      "rarity": "Common",
+      "category": "Pokemon",
+      "hp": 50,
+      "types": [
+        "Psychic"
+      ],
+      "stage": "Basic",
+      "attacks": [
+        {
+          "cost": [
+            "Colorless",
+            "Colorless"
+          ],
+          "name": "Rear Kick",
+          "damage": 20
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Metal",
+          "value": "×2"
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "G",
+      "illustrator": "Mizue"
+    }
+  },
+  {
+    "id": "en:swsh9-041",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "swsh9-041",
+    "local_id": "041",
+    "set_id": "en:swsh9",
+    "set_name": "Brilliant Stars",
+    "name": "Manaphy",
+    "raw_data": {
+      "dexId": [
+        490
+      ],
+      "name": "Manaphy",
+      "illustrator": "HYOGONOSUKE",
+      "rarity": "Rare",
+      "category": "Pokemon",
+      "hp": 70,
+      "types": [
+        "Water"
+      ],
+      "stage": "Basic",
+      "abilities": [
+        {
+          "type": "Ability",
+          "name": "Wave Veil",
+          "effect": "Prevent all damage done to your Benched Pokémon by attacks from your opponent's Pokémon."
+        }
+      ],
+      "attacks": [
+        {
+          "cost": [
+            "Water"
+          ],
+          "name": "Rain Splash",
+          "damage": 20
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Lightning",
+          "value": "×2"
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "F"
+    }
+  },
+  {
+    "id": "en:sv01-182",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv01-182",
+    "local_id": "182",
+    "set_id": "en:sv01",
+    "set_name": "Scarlet & Violet",
+    "name": "Pal Pad",
+    "raw_data": {
+      "name": "Pal Pad",
+      "rarity": "Common",
+      "category": "Trainer",
+      "effect": "Shuffle up to 2 Supporter cards from your discard pile into your deck.",
+      "trainerType": "Item",
+      "regulationMark": "G",
+      "illustrator": "Studio Bora Inc."
+    }
+  },
+  {
+    "id": "en:sv01-186",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv01-186",
+    "local_id": "186",
+    "set_id": "en:sv01",
+    "set_name": "Scarlet & Violet",
+    "name": "Pokégear 3.0",
+    "raw_data": {
+      "name": "Pokégear 3.0",
+      "rarity": "Common",
+      "category": "Trainer",
+      "effect": "Look at the top 7 cards of your deck. You may reveal a Supporter card you find there and put it into your hand. Shuffle the other cards back into your deck.",
+      "trainerType": "Item",
+      "regulationMark": "G",
+      "illustrator": "Toyste Beach"
+    }
+  },
+  {
+    "id": "en:sv04-171",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv04-171",
+    "local_id": "171",
+    "set_id": "en:sv04",
+    "set_name": "Paradox Rift",
+    "name": "Professor Turo's Scenario",
+    "raw_data": {
+      "name": "Professor Turo's Scenario",
+      "rarity": "Uncommon",
+      "category": "Trainer",
+      "effect": "Put 1 of your Pokémon in play into your hand. (Discard all cards attached to that Pokémon.)",
+      "trainerType": "Supporter",
+      "regulationMark": "G",
+      "illustrator": "hncl"
+    }
+  },
+  {
+    "id": "en:swsh10-216",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "swsh10-216",
+    "local_id": "216",
+    "set_id": "en:swsh10",
+    "set_name": "Astral Radiance",
+    "name": "Double Turbo Energy",
+    "raw_data": {
+      "name": "Double Turbo Energy",
+      "rarity": "Secret Rare",
+      "category": "Energy",
+      "effect": "As long as this card is attached to a Pokémon, it provides ColorlessColorless Energy.\nThe attacks of the Pokémon this card is attached to do 20 less damage to your opponent's Pokémon (before applying Weakness and Resistance).",
+      "energyType": "Special",
+      "regulationMark": "F"
+    }
+  },
+  {
+    "id": "en:sv01-089",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv01-089",
+    "local_id": "089",
+    "set_id": "en:sv01",
+    "set_name": "Scarlet & Violet",
+    "name": "Drifloon",
+    "raw_data": {
+      "dexId": [
+        425
+      ],
+      "name": "Drifloon",
+      "rarity": "Common",
+      "category": "Pokemon",
+      "hp": 70,
+      "types": [
+        "Psychic"
+      ],
+      "stage": "Basic",
+      "attacks": [
+        {
+          "cost": [
+            "Colorless",
+            "Colorless"
+          ],
+          "name": "Gust",
+          "damage": 10
+        },
+        {
+          "cost": [
+            "Psychic",
+            "Psychic"
+          ],
+          "name": "Balloon Blast",
+          "effect": "This attack does 30 damage for each damage counter on this Pokémon.",
+          "damage": "30×"
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Darkness",
+          "value": "×2"
+        }
+      ],
+      "resistances": [
+        {
+          "type": "Fighting",
+          "value": "-30"
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "G",
+      "illustrator": "Taira Akitsu"
+    }
+  },
+  {
+    "id": "en:sv01-112",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv01-112",
+    "local_id": "112",
+    "set_id": "en:sv01",
+    "set_name": "Scarlet & Violet",
+    "name": "Riolu",
+    "raw_data": {
+      "dexId": [
+        447
+      ],
+      "name": "Riolu",
+      "rarity": "Common",
+      "category": "Pokemon",
+      "hp": 70,
+      "types": [
+        "Fighting"
+      ],
+      "stage": "Basic",
+      "attacks": [
+        {
+          "cost": [
+            "Colorless"
+          ],
+          "name": "Jab",
+          "damage": 10
+        },
+        {
+          "cost": [
+            "Fighting",
+            "Colorless"
+          ],
+          "name": "Low Kick",
+          "damage": 20
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "G",
+      "illustrator": "Naoyo Kimura",
+      "weaknesses": [
+        {
+          "type": "Psychic",
+          "value": "×2"
+        }
+      ]
+    }
+  },
+  {
+    "id": "en:sv08-057",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv08-057",
+    "local_id": "057",
+    "set_id": "en:sv08",
+    "set_name": "Surging Sparks",
+    "name": "Pikachu ex",
+    "raw_data": {
+      "dexId": [
+        25
+      ],
+      "name": "Pikachu ex",
+      "rarity": "Double rare",
+      "category": "Pokemon",
+      "hp": 200,
+      "types": [
+        "Lightning"
+      ],
+      "stage": "Basic",
+      "abilities": [
+        {
+          "type": "Ability",
+          "name": "Resolute Heart",
+          "effect": "If this Pokémon has full HP and would be Knocked Out by damage from an attack, it is not Knocked Out, and its remaining HP becomes 10."
+        }
+      ],
+      "attacks": [
+        {
+          "cost": [
+            "Grass",
+            "Lightning",
+            "Metal"
+          ],
+          "name": "Topaz Bolt",
+          "effect": "Discard 3 Energy from this Pokémon.",
+          "damage": 300
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Fighting",
+          "value": "×2"
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "H",
+      "suffix": "ex",
+      "illustrator": "aky CG Works"
+    }
+  },
+  {
+    "id": "en:sv02-097",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "sv02-097",
+    "local_id": "097",
+    "set_id": "en:sv02",
+    "set_name": "Paldea Evolved",
+    "name": "Mimikyu",
+    "raw_data": {
+      "dexId": [
+        778
+      ],
+      "name": "Mimikyu",
+      "rarity": "Rare",
+      "category": "Pokemon",
+      "hp": 70,
+      "types": [
+        "Psychic"
+      ],
+      "stage": "Basic",
+      "abilities": [
+        {
+          "type": "Ability",
+          "name": "Safeguard",
+          "effect": "Prevent all damage done to this Pokémon by attacks from your opponent's Pokémon ex and Pokémon V."
+        }
+      ],
+      "attacks": [
+        {
+          "cost": [
+            "Psychic",
+            "Colorless"
+          ],
+          "name": "Ghost Eye",
+          "effect": "Put 7 damage counters on your opponent's Active Pokémon."
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Metal",
+          "value": "×2"
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "G",
+      "illustrator": "Kagemaru Himeno"
+    }
+  },
+  {
+    "id": "en:me02.5-160",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "me02.5-160",
+    "local_id": "160",
+    "set_id": "en:me02.5",
+    "set_name": "Ascended Heroes",
+    "name": "Dragapult ex",
+    "raw_data": {
+      "name": "Dragapult ex",
+      "evolveFrom": "Drakloak",
+      "suffix": "ex",
+      "illustrator": "5ban Graphics",
+      "rarity": "Double rare",
+      "category": "Pokemon",
+      "dexId": [
+        887
+      ],
+      "hp": 320,
+      "types": [
+        "Dragon"
+      ],
+      "stage": "Stage2",
+      "attacks": [
+        {
+          "cost": [
+            "Colorless"
+          ],
+          "name": "Jet Headbutt",
+          "damage": 70
+        },
+        {
+          "cost": [
+            "Fire",
+            "Psychic"
+          ],
+          "name": "Phantom Dive",
+          "effect": "Put 6 damage counters on your opponent's Benched Pokémon in any way you like.",
+          "damage": 200
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "H"
+    }
+  },
+  {
+    "id": "en:me02.5-057",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "me02.5-057",
+    "local_id": "057",
+    "set_id": "en:me02.5",
+    "set_name": "Ascended Heroes",
+    "name": "Pikachu ex",
+    "raw_data": {
+      "name": "Pikachu ex",
+      "suffix": "ex",
+      "illustrator": "aky CG Works",
+      "rarity": "Double rare",
+      "category": "Pokemon",
+      "dexId": [
+        25
+      ],
+      "hp": 200,
+      "types": [
+        "Lightning"
+      ],
+      "stage": "Basic",
+      "abilities": [
+        {
+          "type": "Ability",
+          "name": "Resolute Heart",
+          "effect": "If this Pokémon has full HP and would be Knocked Out by damage from an attack, it is not Knocked Out, and its remaining HP becomes 10."
+        }
+      ],
+      "attacks": [
+        {
+          "cost": [
+            "Grass",
+            "Lightning",
+            "Metal"
+          ],
+          "name": "Topaz Bolt",
+          "effect": "Discard 3 Energy from this Pokémon.",
+          "damage": 300
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Fighting",
+          "value": "×2"
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "H"
+    }
+  },
+  {
+    "id": "en:swsh3-104",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "swsh3-104",
+    "local_id": "104",
+    "set_id": "en:swsh3",
+    "set_name": "Darkness Ablaze",
+    "name": "Crobat V",
+    "raw_data": {
+      "dexId": [
+        169
+      ],
+      "name": "Crobat V",
+      "illustrator": "PLANETA Mochizuki",
+      "rarity": "Holo Rare V",
+      "category": "Pokemon",
+      "hp": 180,
+      "types": [
+        "Darkness"
+      ],
+      "abilities": [
+        {
+          "type": "Ability",
+          "name": "Dark Asset",
+          "effect": "When you play this Pokémon from your hand onto your Bench during your turn, you may draw cards until you have 6 cards in your hand. You can't use more than 1 Dark Asset Ability each turn."
+        }
+      ],
+      "attacks": [
+        {
+          "cost": [
+            "Darkness",
+            "Colorless"
+          ],
+          "name": "Venomous Fang",
+          "effect": "Your opponent's Active Pokémon is now Poisoned.",
+          "damage": 70
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Fighting",
+          "value": "×2"
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "D",
+      "stage": "Basic",
+      "suffix": "V"
+    }
+  }
+]
