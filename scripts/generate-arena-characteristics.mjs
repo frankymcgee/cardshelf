@@ -16,14 +16,14 @@ for(const r of rows){const set=r.id.split('-')[0].slice(3),xs=bySet.get(set)||[]
 for(const r of rows){const d=r.raw_data;if(d.stage==='Stage2'&&norm(d.evolveFrom)){const xs=stage1.get(norm(d.evolveFrom));if(xs?.size)roots[norm(r.name)]=xs.size===1?[...xs][0]:[...xs].sort();}}
 for(const file of fs.readdirSync(printings).sort()){
   if(!file.endsWith('.json'))continue;
-  const set=file.slice(0,-5).replace(/^sv(\d+)(pt5)?$/,(_,n,h)=>'sv'+n.padStart(2,'0')+(h?'.5':''));
+  const set=file.slice(0,-5).replace(/^(sv|me)(\d+)(pt5)?$/,(_,prefix,n,h)=>prefix+n.padStart(2,'0')+(h?'.5':''));
   for(const c of JSON.parse(fs.readFileSync(path.join(printings,file),'utf8'))){
-    if(c.supertype!=='Pokémon')continue;
+    if(c.supertype!=='Pokémon'||!Array.isArray(c.subtypes))continue;
     for(const r of bySet.get(set)||[]){
       if(!/^\d+$/.test(r.local_id)||!/^\d+$/.test(c.number)||Number(r.local_id)!==Number(c.number)||norm(r.name)!==norm(c.name))continue;
       const d={hp:c.hp,stage:c.subtypes.includes('Stage 2')?'Stage2':c.subtypes.includes('Stage 1')?'Stage1':'Basic',types:c.types,attacks:c.attacks,abilities:c.abilities,retreat:c.convertedRetreatCost??0};
       const key=hash(r.name,r.raw_data);if(key!==hash(c.name,d))continue;
-      if(/^sv/.test(set)&&c.subtypes.includes('ex'))records[r.id]=[key,c.subtypes.includes('Tera')];
+      if(/^(?:sv|me)/.test(set)&&c.subtypes.includes('ex'))records[r.id]=[key,c.subtypes.includes('Tera')];
       const free=(c.attacks||[]).flatMap((a,i)=>(!a.cost?.length||a.cost.includes('Free'))&&r.raw_data.attacks[i].cost===undefined?[i]:[]);
       if(free.length)freeCosts[r.id]=[key,free];
     }

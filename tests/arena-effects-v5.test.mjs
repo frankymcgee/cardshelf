@@ -201,3 +201,8 @@ test('Mimikyu prevents ex attack damage; its Ghost Eye places counters despite d
   let s=readyFixture();face(s,0,'sv03-125');power(s,0,2,'Fire');face(s,1,'sv02-097');s=act(s,0,{type:'attack',index:0});assert.equal(s.players[1].active.damage,0);
   power(s,1,1,'Psychic');power(s,1,1);s.players[0].active.card.abilities=[{kind:'passive',modifier:{reduce_damage:50}}];s=act(s,1,{type:'attack',index:0});assert.equal(s.players[0].active.damage,70);
 });
+test('newer Tera reprints retain protection and unknown modern printings fail closed',()=>{
+  assert.equal(card('me02.5-160').tera,true);assert.equal(card('me02.5-057').tera,true);
+  const source=rows.find(r=>r.id==='en:sv06-130');assert.equal(compile({...source,id:'en:me99-130'}).supported,false);
+  const unknown={...row({suffix:'ex',regulationMark:'J'}),name:'Synthetic ex'};assert.equal(compile(unknown,LEGACY_EFFECTS_ARENA_VERSION).supported,true);assert.equal(compile(unknown).supported,false);assert.equal(compile({...unknown,raw_data:{...unknown.raw_data,tera:false}}).supported,true);
+});

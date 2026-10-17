@@ -1364,5 +1364,103 @@
       "regulationMark": "G",
       "illustrator": "Kagemaru Himeno"
     }
+  },
+  {
+    "id": "en:me02.5-160",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "me02.5-160",
+    "local_id": "160",
+    "set_id": "en:me02.5",
+    "set_name": "Ascended Heroes",
+    "name": "Dragapult ex",
+    "raw_data": {
+      "name": "Dragapult ex",
+      "evolveFrom": "Drakloak",
+      "suffix": "ex",
+      "illustrator": "5ban Graphics",
+      "rarity": "Double rare",
+      "category": "Pokemon",
+      "dexId": [
+        887
+      ],
+      "hp": 320,
+      "types": [
+        "Dragon"
+      ],
+      "stage": "Stage2",
+      "attacks": [
+        {
+          "cost": [
+            "Colorless"
+          ],
+          "name": "Jet Headbutt",
+          "damage": 70
+        },
+        {
+          "cost": [
+            "Fire",
+            "Psychic"
+          ],
+          "name": "Phantom Dive",
+          "effect": "Put 6 damage counters on your opponent's Benched Pokémon in any way you like.",
+          "damage": 200
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "H"
+    }
+  },
+  {
+    "id": "en:me02.5-057",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "me02.5-057",
+    "local_id": "057",
+    "set_id": "en:me02.5",
+    "set_name": "Ascended Heroes",
+    "name": "Pikachu ex",
+    "raw_data": {
+      "name": "Pikachu ex",
+      "suffix": "ex",
+      "illustrator": "aky CG Works",
+      "rarity": "Double rare",
+      "category": "Pokemon",
+      "dexId": [
+        25
+      ],
+      "hp": 200,
+      "types": [
+        "Lightning"
+      ],
+      "stage": "Basic",
+      "abilities": [
+        {
+          "type": "Ability",
+          "name": "Resolute Heart",
+          "effect": "If this Pokémon has full HP and would be Knocked Out by damage from an attack, it is not Knocked Out, and its remaining HP becomes 10."
+        }
+      ],
+      "attacks": [
+        {
+          "cost": [
+            "Grass",
+            "Lightning",
+            "Metal"
+          ],
+          "name": "Topaz Bolt",
+          "effect": "Discard 3 Energy from this Pokémon.",
+          "damage": 300
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Fighting",
+          "value": "×2"
+        }
+      ],
+      "retreat": 1,
+      "regulationMark": "H"
+    }
   }
 ]

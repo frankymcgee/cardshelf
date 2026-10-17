@@ -12,7 +12,7 @@ V1, V2, V3 and V4 snapshots, waiting lobbies and version-pinned tournaments reta
 - Complete English source profiles: [TCGdex cards-database](https://github.com/tcgdex/cards-database/tree/af57972e8f784c2507ab9e573c99bf02ae2e5e42), revision `af57972e8f784c2507ab9e573c99bf02ae2e5e42`.
 - Missing printing characteristics cross-checked against [PokemonTCG/pokemon-tcg-data](https://github.com/PokemonTCG/pokemon-tcg-data/tree/39a26a144c8b6ef6c2fb17b2c29d0bb7121e3a11), revision `39a26a144c8b6ef6c2fb17b2c29d0bb7121e3a11`.
 
-The two card datasets are implementation references, not rules authorities or legality lists. Stored identity fingerprints bind catalogue ID, name, HP, stage, types, attack names, Ability names and retreat. Card effects still have to compile completely. There are 569 matched Tera/non-Tera characteristics and 245 matched free-attack printings; an omitted attack cost is not generally treated as free. Normal evolution uses the printed predecessor name. Rare Candy additionally follows exact Stage 1 predecessor records, including distinct regional/owner names and alternate Fossil sources.
+The two card datasets are implementation references, not rules authorities or legality lists. Stored identity fingerprints bind catalogue ID, name, HP, stage, types, attack names, Ability names and retreat. Card effects still have to compile completely. There are 757 matched Tera/non-Tera characteristics and 248 matched free-attack printings; an omitted attack cost is not generally treated as free. Normal evolution uses the printed predecessor name. Rare Candy additionally follows exact Stage 1 predecessor records, including distinct regional/owner names and alternate Fossil sources.
 
 ## Implemented and tested interactions
 
@@ -39,11 +39,11 @@ The reference audit reads **21,291 English physical-TCG records**, excluding Pok
 
 | Coverage | V4 | V5 |
 | --- | ---: | ---: |
-| Complete supported reference records | 4,459 | 5,885 |
-| Percentage of reference records | 20.94% | 27.64% |
-| Supported records with H/I/J regulation marks | 735 | 1,161 |
-| Newly supported records | — | 1,426 |
-| Previously supported records rejected | — | 0 |
+| Complete supported reference records | 4,459 | 5,880 |
+| Percentage of reference records | 20.94% | 27.62% |
+| Supported records with H/I/J regulation marks | 735 | 1,156 |
+| Newly supported records | — | 1,423 |
+| Previously accepted records blocked for missing verified characteristics | — | 2 |
 
 Audit any local English catalogue export (a JSON array of rows, or `{ "rows": [...] }`) with:
 
@@ -51,7 +51,9 @@ Audit any local English catalogue export (a JSON array of rows, or `{ "rows": [.
 node scripts/audit-arena-catalogue.mjs catalogue-rows.json coverage-report.json
 ```
 
-Rows need `id`, `game`, `language`, `name`, `raw_data`; include `local_id`, `set_id` and `set_name` where available. The report lists supported totals, added IDs, regressions and all rejection reasons. It exits unsuccessfully if a previously accepted record regresses. Missing or duplicate rows are errors, rather than silently reduced denominators. The full source snapshot must be supplied separately; the project does not bundle all third-party card data.
+Rows need `id`, `game`, `language`, `name`, `raw_data`; include `local_id`, `set_id` and `set_name` where available. The report lists supported totals, added IDs, regressions and all rejection reasons. It exits unsuccessfully if a previously accepted record regresses. Missing or duplicate rows are errors, rather than silently reduced denominators. The reference snapshot intentionally flags two prior V4 acceptances (`en:mep-034` Mega Meganium ex and `en:mep-035` Mega Emboar ex): their modern promo printing characteristics are absent from the independent source, so V5 blocks them pending verification. This prevents treating missing Tera metadata as no protection, including for new Mega-era reprints. Existing V4 matches continue unchanged. These two flagged exclusions make the reference audit exit nonzero for review; there are 1,423 additions and a net gain of 1,421 supported records.
+
+The full source snapshot must be supplied separately; the project does not bundle all third-party card data.
 
 Regenerate printing characteristics and evolution lines from the same local row export and an independent English printing checkout:
 
@@ -63,4 +65,4 @@ Review the resulting diff and rerun the coverage audit and real-card tests. Chan
 
 ## Remaining work before effects completeness
 
-The reference still rejects 15,406 records. Large remaining groups include arbitrary/legacy Abilities, compound legacy coin wording, LV.X/LEGEND and unsupported evolution families, missing provider stats, further Tools/Stadiums/Special Energy, attack copying, Ability suppression, historical errata, label-specific filters, and additional KO/on-damage/on-attachment/end-of-turn triggers. V5 does not pretend these have been implemented. All new effects must have full-text profiles, exact timing/target/expiry rules, privacy checks, serialized continuation tests and real-card interaction evidence before entering automated play.
+The reference still rejects 15,411 records. Large remaining groups include arbitrary/legacy Abilities, compound legacy coin wording, LV.X/LEGEND and unsupported evolution families, missing provider stats, further Tools/Stadiums/Special Energy, attack copying, Ability suppression, historical errata, label-specific filters, and additional KO/on-damage/on-attachment/end-of-turn triggers. V5 does not pretend these have been implemented. All new effects must have full-text profiles, exact timing/target/expiry rules, privacy checks, serialized continuation tests and real-card interaction evidence before entering automated play.
