@@ -206,3 +206,10 @@ test('newer Tera reprints retain protection and unknown modern printings fail cl
   const source=rows.find(r=>r.id==='en:sv06-130');assert.equal(compile({...source,id:'en:me99-130'}).supported,false);
   const unknown={...row({suffix:'ex',regulationMark:'J'}),name:'Synthetic ex'};assert.equal(compile(unknown,LEGACY_EFFECTS_ARENA_VERSION).supported,true);assert.equal(compile(unknown).supported,false);assert.equal(compile({...unknown,raw_data:{...unknown.raw_data,tera:false}}).supported,true);
 });
+test('triggered Dark Asset shares its once-per-turn limit across Crobat V copies',()=>{
+  let s=readyFixture();const one=put(s,0,'swsh3-104'),two=put(s,0,'swsh3-104');s=act(s,0,{type:'bench',card:one.id});assert.equal(s.pending.kind,'trigger');s=pick(s,['use']);assert.equal(s.players[0].hand.length,6);assert.equal(s.pending,null);
+  s=JSON.parse(JSON.stringify(s));s=act(s,0,{type:'bench',card:two.id});assert.equal(s.pending,null);assert.equal(s.players[0].hand.length,5);assert.equal(s.players[0].sharedAbilities['ability:Dark Asset'],s.turnNumber);
+});
+test('skipping triggered Dark Asset leaves a later Crobat V eligible that turn',()=>{
+  let s=readyFixture();const one=put(s,0,'swsh3-104'),two=put(s,0,'swsh3-104');s=act(s,0,{type:'bench',card:one.id});s=pick(s,['skip']);assert.equal(s.players[0].sharedAbilities['ability:Dark Asset'],undefined);s=act(s,0,{type:'bench',card:two.id});assert.equal(s.pending.kind,'trigger');s=pick(s,['use']);assert.equal(s.players[0].hand.length,6);assertArena(s);
+});
