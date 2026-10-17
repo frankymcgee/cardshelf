@@ -370,6 +370,51 @@ await test('account security boundaries across production HTTP routes', async t 
       assert.ok(!audit.includes(grant.code)); assert.ok(!audit.includes(expiredGrant.code));
     });
 
+    await t.test('older MFA sessions can keep importing, editing binders and saving Arena drafts', async () => {
+      const arenaSettings = await sql`SELECT * FROM arena_settings`;
+      try {
+        await sql`INSERT INTO arena_settings(enabled) VALUES(true) ON CONFLICT(singleton) DO UPDATE SET enabled=true`;
+        for (const role of ['admin', 'user']) {
+          const user = await account('routine-' + role, { role }), enrolled = await enrollPasskey(user), cookie = enrolled.session;
+          const sessionHash = digest(enrolled.cookies.cardshelf_session);
+          const [aged] = await sql`UPDATE sessions SET strong_authenticated_at=now()-interval '1 day'
+            WHERE token_hash=${sessionHash} RETURNING strong_authenticated_at`;
+          assert.equal(ok(await request('/api/security/status', { cookie })).data.recent_strong_auth, false);
+          await sql`INSERT INTO account_tier_overrides(user_id,tier,reason) VALUES(${user.id},'complimentary','Account security regression fixture')`;
+          const draft = { title: 'MFA session binder', columns: 3, rows: 3, page_count: 1 };
+          const binder = ok(await post('/api/binders', cookie, draft));
+          const changed = ok(await request('/api/binders/' + binder.data.id, { cookie, method: 'PATCH',
+            body: { ...draft, title: 'Updated without MFA renewal', revision: binder.data.revision } }));
+          assert.equal(changed.data.title, 'Updated without MFA renewal');
+          const deck = ok(await post('/api/arena/decks', cookie, { title: 'MFA session draft', cards: [], revision: 0, request_id: randomUUID() }));
+          assert.equal(deck.data.title, 'MFA session draft');
+          if (role === 'admin') {
+            // Repeated queue writes must retain the original MFA timestamp.
+            // These synthetic jobs are removed without running a provider worker.
+            try {
+              for (let i = 0; i < 3; i++) {
+                const queued = ok(await post('/api/admin/imports', cookie, { language: 'en', set_id: `mfa-${run}-${i}` }));
+                assert.equal(queued.data.status, 'queued');
+              }
+            } finally { await sql`DELETE FROM jobs WHERE user_id=${user.id}`; }
+          } else {
+            assert.equal((await post('/api/admin/imports', cookie, { language: 'en', set_id: 'base1' })).status, 403);
+          }
+          const passwordChange = await post('/api/password', cookie, { current_password: password, password: nextPassword });
+          assert.equal(passwordChange.status, 403);
+          assert.equal(passwordChange.data.data.code, 'STRONG_AUTH_REQUIRED');
+          denied(await post('/api/security/recovery/regenerate', cookie, { password }));
+          const [after] = await sql`SELECT strong_authenticated_at FROM sessions WHERE token_hash=${sessionHash}`;
+          assert.equal(after.strong_authenticated_at.getTime(), aged.strong_authenticated_at.getTime());
+          const nextLogin = ok(await login(user));
+          assert.equal(nextLogin.data.pending.scope, 'mfa'); assert.ok(!nextLogin.session);
+        }
+      } finally {
+        await sql`DELETE FROM arena_settings`;
+        if (arenaSettings.length) await sql`INSERT INTO arena_settings ${sql(arenaSettings)}`;
+      }
+    });
+
     await t.test('expired management proofs and stale MFA cannot authorize sensitive changes; reauthentication refreshes them', async () => {
       const user = await account('fresh-proof'), enrolled = await enrollPasskey(user), cookie = enrolled.session;
       const proof = await passkeyProof(user, enrolled, cookie);

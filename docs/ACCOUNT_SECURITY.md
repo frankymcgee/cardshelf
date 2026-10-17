@@ -28,10 +28,16 @@ Deployment and operator recovery instructions are in
   private data and administrator actions remain inaccessible until a new factor
   is verified. The new enrollment retires all old factors and recovery codes.
 - Changing or removing factors requires the password plus proof of an existing
-  factor. Add a replacement before removing the last factor. Sensitive
-  administrator mutations and password changes by MFA users require recent
-  strong authentication. Open Account security to verify again, then explicitly
-  retry the intended action.
+  factor. Add a replacement before removing the last factor. Password changes by
+  MFA users require recent strong authentication. Open Account security to verify
+  again, then explicitly retry the password change. Factor enrollment, removal
+  and recovery-code changes verify the password and an existing factor as part
+  of that change.
+- MFA is required at sign-in for enrolled accounts. After sign-in, ordinary use,
+  including catalogue imports, collection and binder edits, Arena actions and
+  administration, continues under the existing session without periodic MFA
+  renewal. Session expiry, revocation, account recovery, permissions and the
+  administrator-enforcement policy still apply.
 
 ## Server guarantees
 
