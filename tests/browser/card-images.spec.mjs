@@ -27,6 +27,8 @@ async function fixture(page) {
     else if (path === '/api/account/membership') data = { access: { tier: 'complimentary', features: [], allowed: true } };
     else if (path === '/api/catalogue') data = { items: cards, total: cards.length, page: 1, limit: 30 };
     else if (path === '/api/catalogue/facets') data = { sets: [], rarities: [] };
+    else if (path === '/api/public/catalogue') data = { items: cards, total: cards.length, page: 1, limit: 30 };
+    else if (path === '/api/public/catalogue/sets') data = [];
     else if (path === '/api/binders/' + binderId) data = { id: binderId, title: 'Image fallbacks', binder_type: 'collection', game: 'pokemon',
       color: '#282f49', columns: 3, rows: 3, page_count: 1, revision: 1, appearance: { effects_mode: 'subtle' },
       slots: cards.map((card, position) => ({ ...card, ...printing, card_id: card.id, printing_id: printing.id, position, owned: false })) };
@@ -85,5 +87,61 @@ test('previously imported binder slots recover without a write or re-import', as
   await loaded(pocket(1).locator('img'), 'Limitless TCG');
   await expect(pocket(2).locator('.artwork-fallback')).toBeVisible();
   await expect(pocket(3).locator('.artwork-fallback')).toBeVisible();
+  expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
+});
+
+for (const view of [
+  { name: 'private', path: '/cards', filters: '**/api/catalogue/facets', tile: '.card-tile', payload: { sets: [{ id: 'en:mee', name: 'Mega Evolution Energy', language: 'en', game: 'pokemon' }], rarities: [] } },
+  { name: 'public', path: '/explore', filters: '**/api/public/catalogue/sets?*', tile: '.public-card-tile', payload: [{ id: 'en:mee', name: 'Mega Evolution Energy' }] }
+]) {
+  test(`${view.name} cards and artwork appear while set filters are still pending`, async ({ page }) => {
+    const state = await fixture(page);
+    let release;
+    const pending = new Promise(resolve => { release = resolve; });
+    await page.route(view.filters, async route => {
+      await pending;
+      await route.fulfill({ json: view.payload });
+    });
+    try {
+      await page.goto(view.path);
+      await loaded(page.locator(view.tile).first().locator('img'), 'Pokémon');
+      if (view.name === 'public') await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeEnabled();
+      release();
+      await expect(page.getByRole('combobox', { name: 'Set', exact: true }).locator('option[value="en:mee"]')).toHaveCount(1);
+      expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
+    } finally { release(); }
+  });
+
+  test(`${view.name} card browsing survives a failed set-filter request`, async ({ page }) => {
+    const state = await fixture(page);
+    await page.route(view.filters, route => route.fulfill({ status: 503, json: { message: 'Filter service unavailable' } }));
+    await page.goto(view.path);
+    await loaded(page.locator(view.tile).first().locator('img'), 'Pokémon');
+    if (view.name === 'public') {
+      await expect(page.getByRole('alert')).toContainText('You can still browse and search cards.');
+      await page.route(view.filters, route => route.fulfill({ json: view.payload }));
+      await page.getByRole('button', { name: 'Retry set filters', exact: true }).click();
+      await expect(page.getByRole('combobox', { name: 'Set', exact: true }).locator('option[value="en:mee"]')).toHaveCount(1);
+      await expect(page.getByRole('alert')).toHaveCount(0);
+    }
+    expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
+  });
+}
+
+test('public searches reuse the loaded set choices', async ({ page }) => {
+  const state = await fixture(page);
+  let setRequests = 0;
+  await page.route('**/api/public/catalogue/sets?*', route => {
+    setRequests++;
+    return route.fulfill({ json: [{ id: 'en:mee', name: 'Mega Evolution Energy' }] });
+  });
+  await page.goto('/explore');
+  await expect(page.getByRole('combobox', { name: 'Set', exact: true }).locator('option[value="en:mee"]')).toHaveCount(1);
+  const response = page.waitForResponse(r => new URL(r.url()).pathname === '/api/public/catalogue' && new URL(r.url()).searchParams.get('q') === 'Energy');
+  await page.getByRole('searchbox', { name: 'Find a card', exact: true }).fill('Energy');
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await response;
+  await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeEnabled();
+  expect(setRequests).toBe(1);
   expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
 });

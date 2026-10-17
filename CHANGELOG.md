@@ -1,3 +1,9 @@
+## 0.55.1 — 2026-10-17
+
+- Start private catalogue cards and filter lists independently. Card records and artwork can appear while filters are still loading.
+- Display public catalogue results without waiting for set choices; retain browsing after a filter failure, with a separate retry. Reuse the set list during searches and pagination.
+- Add desktop and phone regressions for delayed/failed filters and unchanged artwork fallbacks. Pokémon artwork still loads directly from its source; this release does not add a server image cache.
+
 ## 0.55.0 — 2026-10-17
 
 - Retire Postal API sending, webhooks, signing keys, administration controls, DNS probes and bundled mail-server provisioning. Use external SMTP with the existing WPMU DEV Basic/Pro presets.

@@ -55,3 +55,34 @@ cover source matching, bounded retries, image failures, source changes and the
 production image policy. Browser tests use controlled responses, so GitHub builds
 do not depend on live image-host availability. The existing Docker images and
 upgrade script deliver the change without new deployment settings.
+
+## Slow artwork investigation — 2026-10-17
+
+The public production catalogue returned 781 English Pokémon records during this
+inspection. The first page's 30 image elements loaded successfully from TCGdex.
+Six sampled thumbnails and one full-size image returned HTTP 200; thumbnails
+were approximately 16–22 KB and advertised a one-year HTTP cache lifetime.
+Fresh sampled downloads took approximately 5.7–6.7 seconds from the inspection
+environment. Catalogue and health responses also took several seconds, so these
+observations do not isolate server load, network latency or a provider outage.
+They are point-in-time observations, not a guarantee for every card or device.
+
+Pokémon imports store card metadata and source image URLs, not local image files.
+The artwork is fetched by each browser when viewed. The application does not
+download the whole Pokémon image catalogue at startup, and the retired-mail
+cleanup does not delete card records or catalogue artwork. Other supported games
+already have separately imported, database-backed artwork. Browser caches can
+be cold or evicted independently of a CardShelf upgrade.
+
+Release 0.55.1 removes an extra loading dependency: private cards start loading
+alongside facets, and public results render independently of set filters. Public
+searches and pagination reuse the loaded set list. Filter failures no longer
+hide successful card results. This reduces avoidable waiting; it does not remove
+external artwork latency or add a persistent Pokémon artwork cache.
+
+For further diagnosis, compare the catalogue JSON request with the first image
+requests in the affected browser's Network panel, and correlate slow API reads
+with app/database logs and host CPU, memory and disk pressure. Re-importing sets
+is not required to repair an image-only loading delay. A future persistent image
+cache would need bounded downloads, validated exact source identities, safe
+storage and provider-terms review; it is outside this loading fix.
