@@ -174,8 +174,9 @@ await test('SMTP settings, personal preferences and queue hooks',async t=>{
       assert.equal((await sql`SELECT id FROM email_outbox WHERE user_id=${outsider.id} AND kind IN ('marketplace_enquiry','marketplace_reply')`).length,0);
     });
     await t.test('retired webhook has no route or cross-origin exception',async()=>{
-      assert.equal((await request('/api/webhooks/postal',{method:'POST',body:{},headers:{Origin:origin,'X-Requested-With':'cardshelf'}})).status,404);
-      assert.equal((await request('/api/webhooks/postal',{method:'POST',body:{},headers:{Origin:'https://other.example.test'}})).status,403);
+      assert.equal((await request('/api/webhooks/postal',{method:'POST',body:{},headers:{Origin:origin,'X-Requested-With':'cardshelf'}})).status,401);
+      assert.equal((await request('/api/webhooks/postal',{user:admin,method:'POST',body:{},headers:{Origin:origin,'X-Requested-With':'cardshelf'}})).status,404);
+      assert.equal((await request('/api/webhooks/postal',{user:admin,method:'POST',body:{},headers:{Origin:'https://other.example.test'}})).status,403);
     });
     await t.test('email pages are private, non-indexable and do not contain delivery credentials',async()=>{
       for(const [path,user] of [['/emails',sender],['/admin/emails',admin]]){const response=await request(path,{user});assert.equal(response.status,200);assert.match(response.headers.get('x-robots-tag'),/noindex/);assertSecretFree(response.data);}

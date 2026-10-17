@@ -7,7 +7,9 @@ import { encryptSmtpSecret, decryptSmtpSecret } from '../../lib/smtp-settings.mj
 
 const url=process.env.DATABASE_URL;
 if(process.env.ALLOW_TEST_DATABASE!=='yes'||!new URL(url||'http://invalid').pathname.endsWith('_test'))throw Error('Use a disposable _test database.');
-const sql=postgres(url,{max:1});
+// This fixture changes result columns while reusing the same connection.
+// Production upgrades stop app/worker before applying these schema changes.
+const sql=postgres(url,{max:1,prepare:false});
 const migration=name=>readFileSync(new URL('../../migrations/'+name,import.meta.url),'utf8');
 try {
   for(const preset of ['postal','wpmu','wpmu_pro_tls','wpmu_pro_starttls','custom']) {
