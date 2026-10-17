@@ -1,10 +1,11 @@
 #!/bin/sh
-# One entry point for ordinary installs and the optional same-host Postal overlay.
+# One entry point for installs and the one-time retirement of the former overlay.
 set -eu
 cd "$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 if [ -f deploy/postal/.enabled ]; then
-  [ -f deploy/postal/.env ] || { echo 'Postal is enabled but its private .env is missing. Restore it before proceeding.' >&2; exit 1; }
-  exec docker compose --env-file .env --env-file deploy/postal/.env -f compose.yaml -f compose.https.yaml -f deploy/postal/compose.postal.yaml "$@"
+  # Retain the old installation's HTTPS choice without loading any mail services
+  # or requiring its removed Compose file/private credentials.
+  exec docker compose --env-file .env -f compose.yaml -f compose.https.yaml "$@"
 fi
-# Keep existing COMPOSE_FILE / default-file behavior for installations without Postal.
+# Keep existing COMPOSE_FILE / default-file behavior for ordinary installations.
 exec docker compose "$@"

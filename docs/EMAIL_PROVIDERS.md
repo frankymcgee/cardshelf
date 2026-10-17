@@ -1,168 +1,86 @@
-# Email providers — CardShelf 0.52.4
+# Email delivery — CardShelf 0.55.0
 
-CardShelf can send password recovery, security notices and opted-in activity
-notifications through **Postal API** or **authenticated SMTP**. Select the
-provider under **More → Emails → Administration**. This applies to both durable
-mail queues; it does not create a mailbox or download incoming email.
+CardShelf sends recovery links, email verification, account security notices and
+opted-in activity notifications through authenticated external SMTP. Configure
+**More → Emails → Administration**. SMTP needs no locally hosted mail server.
 
-## Provider choice
+| Service | Outgoing host | Encryption | Login |
+| --- | --- | --- | --- |
+| WPMU DEV Pro Email | `mail.mailconfig.net` | TLS on 465 or required STARTTLS on 587 | Full mailbox address and mailbox password |
+| WPMU DEV Basic Email | `mailu.wpmudev.host` | Required STARTTLS on 587 | Full mailbox address and mailbox password |
+| Custom SMTP | Provider's public hostname | TLS on 465 or required STARTTLS on 587 | SMTP username and password/app password |
 
-| Service | Outgoing connection | Credentials | Delivery evidence |
-|---|---|---|---|
-| Postal | Deployment-pinned HTTPS API | Postal server API credential | API acceptance; correlated signed Postal delivery/bounce events |
-| WPMU DEV Basic Email | `mailu.wpmudev.host`, port **587**, required **STARTTLS** | Full mailbox address and its password | SMTP acceptance; inspect the inbox, message headers and provider bounce reports |
-| WPMU DEV Pro Email | `mail.mailconfig.net`, **465 / TLS** or **587 / STARTTLS** | Full mailbox address and its password | SMTP acceptance; receiving-inbox acceptance remains separate |
-| Custom SMTP | Public provider hostname, port **587 / STARTTLS** or **465 / TLS** | SMTP username and password or provider app password | SMTP acceptance; inspect the inbox and provider bounce reports |
+## WPMU DEV setup
 
-External SMTP needs no Postal origin, API credential, signing public key,
-containers, inbound SMTP listener or outbound port 25. Keep normal application
-HTTPS and database/worker services. Allow the selected outbound submission port
-through the host firewall. SMTP providers without password/app-password login,
-or requiring OAuth-only authentication or an API-only transport, need a separate
-adapter; their support is not implied by this SMTP option.
+1. Provision the sending mailbox in the WPMU DEV Hub and publish its domain
+   authentication records. Keep the application’s web DNS records unchanged.
+2. Choose the matching Basic or Pro preset. Use an authorized `cardshelf.cloud`
+   sender address and the full mailbox address as the SMTP username. Enter the
+   mailbox password, then save with email paused.
+3. Use **Check SMTP connection** with your administrator password. It checks the
+   saved hostname, TLS and login without sending a message.
+4. Enable email and save, then send a test to your administrator account. Check
+   the receiving inbox/spam folder and message headers for sender signing.
+5. Request and redeem a fresh recovery link. Check email verification and any
+   optional notifications you enable under your personal Emails preferences.
 
-## WPMU DEV Pro Email
+The Pro preset defaults new connections to TLS on port 465. Selecting it for an
+existing `mail.mailconfig.net` connection retains its valid TLS/port pair. Changing
+host, port, encryption or username requires password re-entry. Existing working
+WPMU connections survive the 0.55.0 migration without re-entry or re-verification.
 
-Pro is a separate paid mailbox service, not the Basic hosting mailbox. Its
-[official guide](https://wpmudev.com/docs/hub-2-0/pro-email/) documents an initial
-daily allowance of approximately 25 messages, increasing to 500 after about two
-weeks. Check the current Hub allowance; CardShelf's per-minute pace does not
-enforce that rolling daily quota.
+Choose a sending pace within the account's allowance, including capacity used by
+other applications. Basic is limited to 10 messages per minute; CardShelf accepts
+1–60 for Pro/custom SMTP. The per-minute pace does not enforce account daily
+quotas. Check the Hub for the mailbox's current allowance. See WPMU DEV’s
+[Pro Email guide](https://wpmudev.com/docs/hub-2-0/pro-email/) and
+[Basic Email guide](https://wpmudev.com/docs/hosting/emails/).
 
-Select **WPMU DEV Pro Email**, use the full mailbox username and saved mailbox
-password, and verify the connection before sending. A new preset uses port 465
-with TLS. Selecting Pro for an existing `mail.mailconfig.net` connection retains
-its valid TLS/port pair; it does not silently change a saved 587 connection.
-Changing the hostname, port, encryption or username requires password re-entry
-because the encrypted credential is bound to that identity.
+## Credentials and delivery
 
-## WPMU DEV Basic Email
+Passwords are encrypted using the existing `CARDSHELF_INTEGRATION_KEY`, bound to
+the SMTP hostname, port, TLS mode and account. Blank retains the saved password;
+explicit removal pauses sending. Credentials never appear in API responses or
+audit records. Changes require administrator password confirmation and a current
+settings revision. Keep the existing encryption key and private `.env` secure.
 
-WPMU DEV's [current Basic Email guide](https://wpmudev.com/docs/hosting/emails/)
-documents its SMTP host/port, full-address login and a hard limit of **10 messages
-per minute per source IP**. The free mailbox is tied to a site they host and its
-primary top-level domain; it is not a free standalone mailbox for any domain.
-Its POP inbox has a 100 MB limit. Confirm your account can provision the desired
-`cardshelf.cloud` mailbox in the Hub before selecting this service.
+Connections validate public DNS destinations, pin the selected address and verify
+the certificate against the original hostname. TLS 1.2 or newer is required.
+Recovery, verification and notifications share one durable pacing reservation so
+an activity backlog cannot monopolize account-access mail.
 
-1. Create the sending mailbox in the WPMU DEV Hub and retain its password
-   securely. Publish the exact mail/DNS records shown for that domain. Do not
-   replace application A/AAAA records merely to change the mail transport.
-2. In CardShelf's Emails administration, choose **External SMTP**, then
-   **WPMU DEV Basic Email**. The preset fills the host, port and TLS mode.
-3. Set the username to the full created mailbox address and enter its password.
-   Use a sender address this mailbox is authorized to send from and a monitored
-   reply address. The application's sender/reply addresses remain restricted to
-   `cardshelf.cloud`.
-4. Save with sending paused, then use **Check SMTP connection** with the current
-   administrator password. The saved configuration is checked, not unsaved
-   values. This performs DNS, verified TLS and login only; it sends no message.
-5. Enable email, save, and run a connection check on that saved revision. Queue a
-   test to your own administrator account. Check its receiving inbox and headers,
-   then request and redeem a fresh password recovery email.
+Explicit failures can retry within the bounded attempt limit. A lost submission
+acknowledgement or crash after dispatch starts becomes **Delivery uncertain** and
+is never automatically resent or eligible for an ordinary notification retry.
+Check provider records before requesting a fresh recovery message. A potentially
+accepted recovery link retains its normal expiry. No token plaintext, message
+body or provider error text is persisted in the queue.
 
-POP3 port **995** is for receiving mail in a client, not for CardShelf's outgoing
-transport. Monitor that mailbox and provider reports for replies/bounces; add
-manual recipient suppressions in CardShelf when appropriate. Basic SMTP does not
-invent signed delivery or bounce events. WPMU DEV's default WordPress
-transactional-email quotas are separate from this mailbox SMTP service; see its
-[email-service distinctions](https://wpmudev.com/docs/getting-started/understanding-your-email-solutions/).
+SMTP acceptance does not establish inbox delivery. Monitor the provider's bounce
+reports and receiving mailbox, and manage recipient suppressions in CardShelf.
+Historical delivery/suppression records remain available; they do not establish
+success for the current SMTP connection. DNS checks inspect the sender's SPF,
+DMARC and configured public DKIM record only. They do not prove signing or
+alignment of outgoing mail.
 
-## Sending pace and queue safety
+Readiness uses the current connection's recent TLS/login verification and a
+separate receiving-inbox acceptance check. Saving changes invalidates the old
+connection check. Restoring a backup also clears verification evidence and expires
+pending mail/reset credentials before restarting.
 
-Set **Maximum emails per minute** to your provider's permitted rate, allowing
-capacity for other applications sharing the account or source IP. WPMU's preset
-rejects values above 10; custom SMTP accepts 1–60. Both CardShelf queues share an
-atomic PostgreSQL reservation and space submissions evenly, with a small margin.
-When both queues have eligible work, they alternate reservations so an activity
-backlog cannot monopolize every slot and delay password recovery. Either queue
-can use the available capacity when the other has no eligible work.
-The recovery worker discards requests for unknown accounts in bounded batches
-before reserving a sending slot and selects known accounts independently of that
-backlog. Public recovery responses stay generic; no SMTP request or reset token
-is created for an unknown account.
-This limits CardShelf's attempts across processes; it does not reserve capacity
-with the provider or include other applications' messages. A blocked reservation
-does not claim a job, consume a delivery attempt or generate a recovery token.
+Legacy `.env` SMTP is used only when no email settings have ever been saved. A
+saved paused or incomplete configuration never revives the fallback. New
+installations should use the administrator interface.
 
-An explicit authentication, TLS or SMTP rejection can retry up to three times.
-A timeout, dropped DATA acknowledgment, malformed Postal success response or
-crash after dispatch begins may mean the service already accepted the message.
-Such jobs become **Delivery uncertain** and are never automatically resubmitted
-or eligible for the ordinary notification retry action. Check provider records;
-request a fresh recovery link when needed. A potentially accepted recovery link
-remains valid until its normal expiry or password change. Plaintext reset tokens,
-message bodies, credentials and provider error text are never stored in queue
-history or application audit records.
+## Retired local mail stack
 
-Provider switching affects future queued submissions. Accepted and uncertain
-jobs are not resent. Recorded deliveries retain their actual provider. The
-saved Postal signing public key still verifies delayed historical Postal
-events after selecting SMTP; those events cannot update SMTP rows. History from
-Postal does not establish delivery through the new SMTP connection.
+Postal is no longer a supported provider. Migration 035 deletes its saved API
+credential, signing public key and webhook receipts. Settings still selecting it
+are converted to paused SMTP; the operator must configure a connection explicitly.
+Active SMTP settings, encrypted passwords, verification revisions, historical mail
+records and suppressions are retained. Accepted or uncertain mail is not requeued.
 
-## Credentials, checks and upgrade
-
-Version 0.52.2 adds migration 032 for the Pro preset, without changing existing
-mail settings or queue state. Its connection errors identify fixed categories
-such as `SMTP_AUTH_FAILED`, `SMTP_TLS_FAILED`, `SMTP_DNS_FAILED` and
-`SMTP_CONNECT_FAILED`. No provider response or credential is exposed. A
-connection check sends no email and has no ambiguous delivery result. New queue
-failures retain safe categories; historical generic failures are not rewritten.
-Unknown submission acknowledgments still require provider/history review before
-any fresh send, and are never automatically retried.
-
-Migration **031_email_providers.sql** retains existing Postal credentials,
-settings and deliveries. Previously sending jobs and unaccepted retry jobs with attempts are held as
-uncertain, preventing an upgrade from blindly resending them. Legacy
-server `.env` SMTP remains a fallback only until email settings are first saved;
-an explicit paused/saved provider never revives that fallback.
-
-Each provider has a separate authenticated encrypted credential. SMTP passwords
-are bound to hostname, port, TLS mode and username. Blank means retain; a changed
-server/account requires password re-entry or explicit removal. Changing provider
-preserves the inactive credential. Removing the active credential pauses its
-sending; removing the inactive credential does not disable the active provider.
-Only presence flags are returned to the UI. Saving requires administrator
-reauthentication, a current revision and the existing same-origin protections.
-
-SMTP names must resolve exclusively to public IP addresses. Connections pin the
-validated address while checking the certificate against the original hostname.
-Private, loopback, link-local, metadata and reserved destinations are rejected.
-TLS 1.2 or newer and certificate verification are required; there is no plaintext
-or insecure-certificate switch. DNS, connection, greeting and socket operations
-are bounded, with a 30-second submission deadline. Mail logging, URL/file content
-loading and connection pooling are disabled. See the [Nodemailer transport
-documentation](https://nodemailer.com/smtp) for the underlying verify/TLS behavior.
-Submission TLS does not guarantee encryption between the provider and recipient.
-
-The readiness page adapts to the selected transport. SMTP uses recent connection
-verification and manual receiving-inbox acceptance; it does not require Postal
-webhooks or treat SMTP acceptance as delivered. Checks are read only and make no
-provider requests. A save invalidates prior SMTP verification; a failed check
-clears it and a concurrent edit cannot record stale success. DNS diagnostics
-inspect the selected sender and only query Postal server records for Postal.
-
-Retain the **existing** `CARDSHELF_INTEGRATION_KEY` and the private application
-configuration with off-server backups. Database backups retain encrypted
-settings, provider history and suppressions. Restore runs current migrations and
-expires pending mail/reset credentials and clears old SMTP verification evidence
-before restarting. Test a current backup
-in an isolated installation before relying on restoration. Switching transport
-does not retire an existing Postal deployment or delete its databases: preserve
-its backups and manage its Compose/proxy configuration separately if retiring it.
-See [optional Postal operations](POSTAL_EMAIL.md) for that stack.
-
-## Acceptance before public registration
-
-Automated synthetic tests cover encryption/binding, secret-free APIs, destination
-blocking, real STARTTLS and implicit TLS, rejected certificates/authentication,
-lost acknowledgments, provider switching, pacing, recovery redemption and
-desktop/phone settings. CI also exercises migration and native-image upgrades.
-These tests do not contact your WPMU account or certify inbox placement.
-
-Complete receiving-inbox and reset-redemption acceptance on the installed
-version. Also complete the existing Live payment, physical-device push,
-production-data restoration and two-seat Arena/tournament acceptance before
-claiming a fully validated public launch. Feature gaps remain in
-[PARITY_CHECKLIST.md](PARITY_CHECKLIST.md).
+For removal of previously installed containers, private configuration and mail
+storage, follow [mail resource retirement](MAIL_RETIREMENT.md). Old migrations
+remain immutable so both existing databases and fresh installations can apply the
+full migration sequence.

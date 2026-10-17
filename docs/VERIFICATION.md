@@ -1,3 +1,12 @@
+# SMTP-only mail update — 0.55.0
+
+Postal runtime/API/webhook and deployment provisioning have been removed.
+Migration 035 preserves active WPMU/SMTP settings, encrypted passwords,
+verification evidence, historical deliveries and recipient suppressions. Settings
+still selecting the retired transport are paused. Refer to [current email setup](EMAIL_PROVIDERS.md)
+and [old-resource retirement](MAIL_RETIREMENT.md); older provider observations below
+are historical and do not describe the current implementation.
+
 # Production inspection follow-up — CardShelf 0.52.3
 
 Inspected 9 October 2026 (Australia/Perth). Baseline: merged main `7fa84d1`

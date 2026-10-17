@@ -12,12 +12,12 @@ test('SMTP diagnostics ignore even a saved Postal origin and inspect the selecte
   assert.equal(result.checks.length,3);assert.ok(result.checks.every(c=>c.status==='pass'));
 });
 test('SPF recognizes a single constrained record with expected include without promising authorization',()=>{
- const r=inspectSpf(txt('v=spf1 ip4:203.0.113.4 include:spf.postal.cardshelf.cloud -all'),{expectedInclude:'spf.postal.cardshelf.cloud'});assert.equal(r.status,'pass');assert.match(r.detail,/not evaluated/);
+ const r=inspectSpf(txt('v=spf1 ip4:203.0.113.4 include:spf.mail.cardshelf.cloud -all'),{expectedInclude:'spf.mail.cardshelf.cloud'});assert.equal(r.status,'pass');assert.match(r.detail,/not evaluated/);
 });
 test('SPF joins DNS TXT chunks but rejects duplicate policies and invalid addresses',()=>{
  assert.equal(inspectSpf([['v=spf1 ','ip4:203.0.113.4 -all']]).status,'pass');
  for(const value of [[['v=spf1 -all'],['v=spf1 ~all']],txt('v=spf1 ip4:999.1.1.1 -all'),txt('v=spf1 ip6:203.0.113.1 -all'),txt('v=spf1 ip4:203.0.113.1/99 -all'),txt('v=spf1 +all')])assert.equal(inspectSpf(value).status,'fail');
- assert.equal(inspectSpf(txt('v=spf1 include:other.example -all'),{expectedInclude:'spf.postal.cardshelf.cloud'}).status,'warn');
+ assert.equal(inspectSpf(txt('v=spf1 include:other.example -all'),{expectedInclude:'spf.mail.cardshelf.cloud'}).status,'warn');
  assert.equal(inspectSpf(txt('v=spf1 exists:%{i}.example -all')).status,'unknown');
  assert.equal(inspectSpf(txt('v=spf1 '+Array.from({length:11},(_,i)=>'include:s'+i+'.example').join(' ')+' -all')).status,'fail');
 });
@@ -34,13 +34,13 @@ test('DMARC validates duplicate/malformed tags and distinguishes monitoring from
  for(const value of ['v=DMARC1; p=reject; p=none','v=DMARC1; p=bogus','v=DMARC1; p=reject; adkim=bad'])assert.equal(inspectDmarc(txt(value)).status,'fail');
  assert.equal(inspectDmarc([['v=DMARC1; p=reject'],['v=DMARC1; p=none']]).status,'fail');
 });
-test('diagnostics query only fixed domain and trusted origin derived DNS names',async()=>{
+test('diagnostics query only only the sender domain and validated DKIM selector',async()=>{
  const queried=[];const resolver={
-  resolveTxt:async name=>{queried.push(name);return name.startsWith('_dmarc')?txt('v=DMARC1; p=reject'):name.includes('_domainkey')?txt(dkim):txt('v=spf1 include:spf.postal.cardshelf.cloud -all');},
+  resolveTxt:async name=>{queried.push(name);return name.startsWith('_dmarc')?txt('v=DMARC1; p=reject'):name.includes('_domainkey')?txt(dkim):txt('v=spf1 include:spf.mail.cardshelf.cloud -all');},
   resolve4:async name=>{queried.push(name);return ['203.0.113.4'];},resolve6:async name=>{queried.push(name);return [];},resolveCname:async name=>{queried.push(name);return ['rp.postal.cardshelf.cloud.'];}
  };
  const r=await emailDnsDiagnostics({origin:'https://postal.cardshelf.cloud',dkim_selector:'postal-demo',dkim_public_key:dkim},{resolver,now:0});
- assert.equal(r.domain,'cardshelf.cloud');assert.equal(r.notice,EMAIL_DNS_NOTICE);assert.equal(r.checked_at,'1970-01-01T00:00:00.000Z');assert.equal(r.checks.length,6);
+ assert.equal(r.domain,'cardshelf.cloud');assert.equal(r.notice,EMAIL_DNS_NOTICE);assert.equal(r.checked_at,'1970-01-01T00:00:00.000Z');assert.equal(r.checks.length,3);
  assert.ok(queried.every(x=>x==='cardshelf.cloud'||x.endsWith('.cardshelf.cloud')));assert.equal(r.checks.find(x=>x.id==='dkim').status,'pass');
  assert.ok(!JSON.stringify(r).includes(key));assert.match(r.notice,/do not prove/);
 });

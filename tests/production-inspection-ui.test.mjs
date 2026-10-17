@@ -13,7 +13,7 @@ test('the privacy page owns exactly one complete sponsor and advertising notice'
 test('binder and email navigation copy reflects shipped plan and provider names', () => {
   assert.match(read('app/pages/binders/index.vue'), /Collector Plus can manage all supported games/);
   assert.doesNotMatch(read('app/pages/binders/index.vue'), /Collector Pro/);
-  assert.match(ADMIN_LINKS.find(link => link.to === '/admin/emails').description, /Postal or external SMTP/);
+  assert.match(ADMIN_LINKS.find(link => link.to === '/admin/emails').description, /external SMTP/);
 });
 test('collection pages retain persistent retry errors and ignore stale or unmounted reads', () => {
   for (const file of ['app/pages/app.vue', 'app/pages/binders/index.vue']) {

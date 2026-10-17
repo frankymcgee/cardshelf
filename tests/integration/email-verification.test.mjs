@@ -9,7 +9,6 @@ import { closeDatabase } from '../../lib/db.mjs';
 import { requestEmailVerification, completeEmailVerification, queueEmailVerification, processVerificationMail } from '../../lib/email-verification.mjs';
 import { VERIFICATION_MESSAGE } from '../../lib/email-verification-logic.mjs';
 import { login, sessionUser } from '../../lib/auth.mjs';
-import { applyPostalDeliveryEvent } from '../../lib/email-outbox.mjs';
 import { reserveEmailDispatch } from '../../lib/email-dispatch.mjs';
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -180,14 +179,11 @@ await test('email verification is bound, transactional, account-blind, and safel
         await sql`DELETE FROM email_verification_mail WHERE user_id=${user.id}`;
       }
     });
-    await t.test('Postal events update verification history and cannot label acceptance as delivery', async () => {
+    await t.test('SMTP verification acceptance never claims inbox delivery', async () => {
       const user=await account();await queueEmailVerification(sql,user.id,user.email);
-      await deliver(async(address,message,options)=>({provider:'postal',provider_id:'synthetic-verification-'+suffix,message_id:options.messageId}));
+      await deliver(async(address,message,options)=>({provider:'smtp',provider_id:null,message_id:options.messageId}));
       const [job]=await sql`SELECT * FROM email_verification_mail WHERE user_id=${user.id}`;
-      assert.equal(job.status,'accepted');assert.equal(job.delivered_at,null);
-      await sql.begin(tx=>applyPostalDeliveryEvent({providerId:job.provider_id,messageId:job.message_id,recipient:user.email,event:'delivered',at:new Date(),sentWithSsl:true},tx));
-      const [delivered]=await sql`SELECT status,delivered_at FROM email_verification_mail WHERE id=${job.id}`;
-      assert.equal(delivered.status,'delivered');assert.ok(delivered.delivered_at);
+      assert.equal(job.status,'accepted');assert.equal(job.provider,'smtp');assert.equal(job.delivered_at,null);
     });
   } finally {
     await sql`DELETE FROM email_settings`;if(settings.length)await sql`INSERT INTO email_settings ${sql(settings)}`;

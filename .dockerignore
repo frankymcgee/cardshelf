@@ -12,9 +12,6 @@ backups
 test-results
 playwright-report
 .cardshelf-upgrade.lock
+.cardshelf-mail-retirement.lock
 
-deploy/postal/config
-deploy/postal/.env
-deploy/postal/.enabled
-deploy/postal/.bootstrap.*
-deploy/postal/.smtp-sync.lock
+deploy/postal/

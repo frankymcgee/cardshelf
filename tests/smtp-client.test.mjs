@@ -19,7 +19,7 @@ test('SMTP secrets are encrypted and bound to the exact server, port, TLS mode a
 });
 test('SMTP is independent of the Postal origin and inactive API secret',async()=>{
   const row={...smtp,provider:'smtp',enabled:true,revision:4,smtp_secret:encryptSmtpSecret(secret,smtp,env),api_secret:'invalid-inactive-Postal-secret',smtp_verified_revision:4,smtp_verified_at:'2026-10-09T00:00:00Z'};
-  const c=emailConfigurationFromRow(row,env);assert.equal(c.configured,true);assert.equal(c.origin,'');assert.equal(c.secret,'');assert.equal(c.smtp_password,secret);assert.ok(c.smtp_verified_at);
+  const c=emailConfigurationFromRow(row,env);assert.equal(c.configured,true);assert.equal(c.origin,undefined);assert.equal(c.secret,undefined);assert.equal(c.smtp_password,secret);assert.ok(c.smtp_verified_at);
   const original=process.env.CARDSHELF_INTEGRATION_KEY;process.env.CARDSHELF_INTEGRATION_KEY=env.CARDSHELF_INTEGRATION_KEY;
   try {const visible=await emailSettings(async()=>[row]);assert.equal(visible.smtp_password_set,true);assert.ok(!JSON.stringify(visible).includes(secret));assert.equal(visible.smtp_password,undefined);assert.equal(visible.secret,undefined);assert.equal(visible.smtp_secret,undefined);assert.equal(visible.api_secret,undefined);}
   finally {if(original===undefined)delete process.env.CARDSHELF_INTEGRATION_KEY;else process.env.CARDSHELF_INTEGRATION_KEY=original;}

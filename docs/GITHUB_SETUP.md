@@ -100,7 +100,7 @@ sudo sh scripts/upgrade.sh
 
 The helper pulls while the site is online, validates image metadata and server
 configuration, makes a database backup, stops only app/worker, migrates, and waits
-for their replacement containers to become healthy. PostgreSQL, Caddy and Postal
+for their replacement containers to become healthy. PostgreSQL and Caddy
 stay running. No `docker compose down`, build or routine `git pull` is needed.
 The download and backup still take time; downtime covers migration and restart.
 

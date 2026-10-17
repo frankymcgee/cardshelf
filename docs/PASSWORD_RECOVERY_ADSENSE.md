@@ -1,9 +1,8 @@
 # CardShelf 0.14.0 — Password recovery and Free-only Google AdSense
 
-> Current email administration: v0.20 adds **More → Emails** and Postal. Follow
-> [Postal email setup](POSTAL_EMAIL.md) for the current connection, delivery and
-> DNS controls. The SMTP instructions below describe the retained legacy fallback,
-> which is used only before Postal settings have been saved.
+> Current email administration uses external SMTP under **More → Emails**.
+> Follow [email setup](EMAIL_PROVIDERS.md). Environment SMTP below is retained
+> only for installations that have never saved email settings.
 
 Target source base: `c6c758d09a82747905a7a7f2441091b8cc74b8ff` (v0.13.0).
 
@@ -38,9 +37,11 @@ There is no unauthenticated administrator backdoor. A sole administrator who has
 
 ### Configure recovery email on the server
 
-Manage Postal in **More → Administration → Emails** (`/admin/emails`). Saving Postal settings selects Postal for recovery and account notifications. Disabling it, removing its API key, or an invalid configuration pauses delivery; the application does not fall back to SMTP after Postal settings have been saved. Signed Postal webhooks report subsequent delivery and bounce events.
+Manage SMTP in **More → Administration → Emails** (`/admin/emails`). A paused or
+invalid saved configuration never falls back to environment SMTP. Monitor the
+receiving inbox and mail provider reports to confirm delivery.
 
-Existing installations that have never saved Postal settings can continue using **Nodemailer 10.0.10**, pinned as a runtime dependency, with authenticated SMTP or a trusted TLS-protected relay. The following environment settings describe that legacy fallback. Microsoft Graph, OAuth mail-account onboarding and email verification are not included. Mail-service charges and limits remain separate.
+Existing installations that have never saved email settings can continue using **Nodemailer 10.0.10**, pinned as a runtime dependency, with authenticated SMTP or a trusted TLS-protected relay. The following environment settings describe that legacy fallback. Microsoft Graph, OAuth mail-account onboarding and email verification are not included. Mail-service charges and limits remain separate.
 
 Edit the existing server `.env`; do **not** replace it or regenerate its database, bootstrap or integration secrets. Add:
 
@@ -62,7 +63,7 @@ For implicit TLS, use your provider's documented port (commonly 465) with `SMTP_
 
 Compose explicitly passes these variables into the **app** service. The recovery queue is drained by the running web application every five seconds, separately from large card-catalogue imports. Set `EMAIL_WORKER_ENABLED=false` to pause both recovery and account-notification dispatch during maintenance; omission or `true` enables the workers. Restart/recreate the app to adopt changed environment variables. After the update is merged, the normal upgrade command recreates it; for a later SMTP-only configuration change, use the same Compose files/options used by your installation when recreating the app.
 
-Open `/admin/passwords`. The mail status reports whether the selected transport is configured, **not whether delivery has succeeded**. Use **Send test email** with your administrator password; the recipient is your own registered admin address, not an arbitrary address. An `accepted` state means the provider accepted the message; historical `sent` records have the same limited meaning. `delivered` requires a verified Postal event and does not prove inbox placement or that the recipient read it. Check the real inbox/spam folder before relying on recovery.
+Open `/admin/passwords`. The mail status reports whether the selected transport is configured, **not whether delivery has succeeded**. Use **Send test email** with your administrator password; the recipient is your own registered admin address, not an arbitrary address. An `accepted` state means the provider accepted the message; historical `sent` records have the same limited meaning. Historical `delivered` records do not verify the current SMTP connection or inbox placement. Check the real inbox/spam folder before relying on recovery.
 
 While email is disabled or misconfigured, public requests still receive the generic response. They expire rather than silently granting access. Administrators can use manual secure links instead. The app performs at most three automatic mail attempts with delayed retries and records generic error codes, never credentials, provider responses or message bodies. Unsent recovery jobs expire after 30 minutes; completed and expired delivery history is retained for up to 30 days. Reset tokens are generated immediately before sending, remain valid for 30 minutes, are stored only as hashes and are bound to the account's current password snapshot. Suppressed recipients are blocked before a recovery token is issued.
 

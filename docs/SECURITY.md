@@ -12,7 +12,7 @@ then perform further review before exposing this as a broadly public service.
 - Salted scrypt password hashes and opaque random session tokens stored hashed.
 - HttpOnly/SameSite cookies, with Secure derived from configured HTTPS origin.
 - Exact-origin and custom-header checks for browser mutations, including login/setup.
-  Only the exact Stripe and Postal webhook endpoints bypass these checks; their
+  Only the exact Stripe webhook endpoints bypass these checks; their
   provider signatures are verified separately.
 - Database-backed login/setup/password attempt counters with 15-minute windows.
 - Per-user ownership/binder scoping in server-side SQL; client user IDs ignored.
@@ -55,31 +55,24 @@ explicitly deletes restored sessions.
 
 ## Email security and operation
 
-Postal submission uses a fixed, operator-configured HTTPS origin, certificate
-validation and an encrypted server-side API credential. Credentials are never
-returned to the browser. Keep `CARDSHELF_INTEGRATION_KEY` with the secured deployment
-backup: losing or changing it prevents decryption of saved integration credentials.
-The legacy SMTP transport still requires certificate validation and TLS 1.2 or newer.
+Authenticated SMTP uses encrypted server-side passwords bound to the saved
+hostname, port, TLS mode and username. Credentials are never returned to the
+browser. Keep `CARDSHELF_INTEGRATION_KEY` with secured deployment backups: losing
+or changing it prevents decryption. SMTP requires certificate validation and TLS
+1.2 or newer. Connections pin validated public DNS addresses and reject private,
+loopback and reserved destinations.
 
-Use **More → Emails** to configure and inspect mail. Postal acceptance means that
-Postal queued a message; a delivery webhook means that the receiving server accepted
-it. Neither status proves inbox placement or that a person read the email. Mail
-delivery can fail after acceptance, and timeouts can produce duplicate attempts.
-Do not enable click/open tracking for reset messages. Treat Postal's database,
-console and backups as sensitive because the mail server processes email bodies,
-recipient addresses and live reset links even when CardShelf does not persist them.
+Use **More → Emails** to configure and inspect mail. Provider acceptance does not
+prove inbox placement or reading. A lost submission acknowledgement is held as
+Delivery uncertain instead of being automatically retried. Inspect the receiving
+inbox and provider reports before requesting a fresh recovery message.
 
-Publish the actual sending-domain SPF, DKIM and DMARC records, verify alignment
-using received message headers, and monitor aggregate reports before tightening
-DMARC policy. DNS checks in CardShelf are diagnostics, not proof that Postal signs
-correctly or that all authorized senders have been identified. SMTP transport to
-recipient servers is distinct from HTTPS submission into Postal; inspect delivery
-TLS evidence separately. DMARC authenticates domain use and does not encrypt mail.
-
-The operator remains responsible for DNS, certificate renewal, reverse DNS,
-outbound network access, server updates, mail reputation, backups and access review.
-These controls do not establish compliance with an unspecified framework. See
-[Postal setup](POSTAL_EMAIL.md) for the deployment and acceptance procedure.
+Publish the sending-domain SPF, DKIM and DMARC records supplied by the mail
+provider, verify alignment using received message headers, and monitor reports.
+CardShelf's DNS checks are diagnostics; they do not prove message signing or
+inbox delivery. Keep replies and provider bounce handling monitored, and use
+manual recipient suppressions where necessary. See [email setup](EMAIL_PROVIDERS.md)
+and [old mail-resource retirement](MAIL_RETIREMENT.md).
 
 Account disable/delete, forced session administration, arbitrary role changes and
 fine-grained sharing policies are not yet available in the UI. Do not use this
