@@ -213,3 +213,14 @@ test('triggered Dark Asset shares its once-per-turn limit across Crobat V copies
 test('skipping triggered Dark Asset leaves a later Crobat V eligible that turn',()=>{
   let s=readyFixture();const one=put(s,0,'swsh3-104'),two=put(s,0,'swsh3-104');s=act(s,0,{type:'bench',card:one.id});s=pick(s,['skip']);assert.equal(s.players[0].sharedAbilities['ability:Dark Asset'],undefined);s=act(s,0,{type:'bench',card:two.id});assert.equal(s.pending.kind,'trigger');s=pick(s,['use']);assert.equal(s.players[0].hand.length,6);assertArena(s);
 });
+test('attack Energy discards count provided Energy and reject unnecessary extra cards',()=>{
+  let s=readyFixture();power(s,0,2);const u=s.players[0].active,double=u.energy[0],single=u.energy[1];double.card=card('swsh10-216');u.card.attacks=[attackProgram({name:'Discard two',cost:[],damage:10,effect:'Discard 2 Energy from this Pokémon.'})];
+  s=act(s,0,{type:'attack',index:0});assert.equal(s.pending.kind,'attack_discard');const q=view(s,0).prompt;assert.equal(q.energy_required,2);assert.equal(q.min,1);assert.equal(q.max,2);reject(s,0,{type:'choose',choices:[single.id]});reject(s,0,{type:'choose',choices:[double.id,single.id]});
+  const a=cpuAction(view(s,0),{rng:rngFor(2)});assert.deepEqual(a.choices,[double.id]);s=pick(JSON.parse(JSON.stringify(s)),[double.id]);assert.equal(s.players[0].active.energy.length,1);assert.equal(s.players[0].active.energy[0].id,single.id);assert.equal(s.turn,1);
+});
+test('explicit Energy card discards count physical cards even when one provides multiple Energy',()=>{
+  let s=readyFixture();power(s,0,2);s.players[0].active.energy[0].card=card('swsh10-216');s.players[0].active.card.attacks=[attackProgram({name:'Discard cards',cost:[],damage:10,effect:'Discard 2 Energy cards from this Pokémon.'})];s=act(s,0,{type:'attack',index:0});const q=view(s,0).prompt;assert.equal(q.energy_required,undefined);assert.equal(q.min,2);reject(s,0,{type:'choose',choices:[q.options[0].id]});s=pick(s,q.options.map(o=>o.id));assert.equal(s.players[0].active.energy.length,0);
+});
+test('Energy discard shortages do as much as possible, while discard-all removes every card',()=>{
+  for(const effect of ['Discard 3 Energy from this Pokémon.','Discard all Energy from this Pokémon.']){let s=readyFixture();power(s,0,effect.includes('all')?2:1);s.players[0].active.energy[0].card=card('swsh10-216');s.players[0].active.card.attacks=[attackProgram({name:'Energy payment',cost:[],damage:10,effect})];s=act(s,0,{type:'attack',index:0});const q=view(s,0).prompt;if(effect.includes('all')){assert.equal(q.min,2);assert.equal(q.energy_required,undefined);}else{assert.equal(q.energy_required,2);assert.equal(q.max,1);}s=pick(s,q.options.map(o=>o.id));assert.equal(s.players[0].active.energy.length,0);assertArena(s);}
+});

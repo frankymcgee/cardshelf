@@ -6,7 +6,7 @@ V1, V2, V3 and V4 snapshots, waiting lobbies and version-pinned tournaments reta
 
 ## Rules references
 
-- [Official Advanced Player’s Rulebook v3.4](https://asia.pokemon-card.com/sg/wp-content/uploads/sites/6/2025/10/EN_advanced_manual-2025.pdf): attack/damage order pp4–6; evolution and Trainer play pp9–11; Knock Outs and Checkup pp12–14; searches p16; movement, attachment and Rare Candy pp28–31; temporary effects and shared Ability limits pp51–58. The September 2026 basic rulebook audited in [ARENA_RULES.md](ARENA_RULES.md) still supplies the broader framework.
+- [Official Advanced Player’s Rulebook v3.4](https://asia.pokemon-card.com/sg/wp-content/uploads/sites/6/2025/10/EN_advanced_manual-2025.pdf): attack/damage order pp4–6; evolution and Trainer play pp9–11; Knock Outs and Checkup pp12–14; searches p16; Energy discard values p24; movement, attachment and Rare Candy pp28–31; temporary effects and shared Ability limits pp51–58. The September 2026 basic rulebook audited in [ARENA_RULES.md](ARENA_RULES.md) still supplies the broader framework.
 - [Official Attack Resolution Chart](https://asia.pokemon-card.com/sg/wp-content/uploads/sites/6/2022/08/attack_flow_chart_EN.pdf).
 - [Official Charizard ex strategy](https://www.pokemon.com/uk/strategy/pokemon-tcg-charizard-ex-deck-strategy-tera-type-tactics) and [official Dragapult ex strategy](https://www.pokemon.com/uk/features/pokemon-tcg-dragapult-ex-deck-strategy).
 - Complete English source profiles: [TCGdex cards-database](https://github.com/tcgdex/cards-database/tree/af57972e8f784c2507ab9e573c99bf02ae2e5e42), revision `af57972e8f784c2507ab9e573c99bf02ae2e5e42`.
@@ -18,7 +18,7 @@ The two card datasets are implementation references, not rules authorities or le
 
 | Area | V5 behavior | Acceptance evidence |
 | --- | --- | --- |
-| Attack timing | Damage/formulas first; remaining effects in printed order. Energy discard follows damage. Explicit before-damage Tool removal precedes calculation. All attack clauses finish before Knock Outs. | Switching-before-draw, Energy-dependent damage/discard, Tool removal, simultaneous KO tests |
+| Attack timing | Damage/formulas first; remaining effects in printed order. Energy discard follows damage. Attached multi-Energy cards pay their provided Energy value; explicit card-count discards still count physical cards. Explicit before-damage Tool removal precedes calculation. All attack clauses finish before Knock Outs. | Switching-before-draw, Energy-dependent damage/discard, multi-Energy payment/card-count/shortage tests, Tool removal, simultaneous KO tests |
 | Damage calculation | Stop calculation at zero; attacker modifiers before Weakness; defender reduction/prevention after Resistance. Ignore-effects clauses bypass only the printed Active scope. | Double Turbo Energy, Shred, reduction, Tera Bench tests |
 | Temporary effects | Attack/retreat restrictions, damage reduction/protection and player Trainer locks expire at the specified turn. Switching/evolution clear effects on the Pokémon. Player effects remain independent of the Pokémon. | Budew Item lock, next-own-turn attack lock, switching/expiry tests |
 | Triggers | Optional abilities from hand-to-Bench and hand evolution prompt their controller; deck placement/setup do not fire hand triggers. Rare Candy counts as evolution from hand. | Infernal Reign normal evolution, Rare Candy and deck-evolution tests |

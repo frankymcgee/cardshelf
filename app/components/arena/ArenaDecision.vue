@@ -3,15 +3,16 @@ import CardImage from '../CardImage.vue'
 const props = defineProps<{ prompt: any; locked?: boolean }>()
 const emit = defineEmits<{ choose: [ids: string[]] }>()
 const selected = ref<string[]>([])
-const signature = computed(() => JSON.stringify([props.prompt?.kind, props.prompt?.title, props.prompt?.options.map((x: any) => x.id), props.prompt?.min, props.prompt?.max, props.prompt?.retreat_cost, props.prompt?.allowed_counts]))
+const signature = computed(() => JSON.stringify([props.prompt?.kind, props.prompt?.title, props.prompt?.options.map((x: any) => x.id), props.prompt?.min, props.prompt?.max, props.prompt?.retreat_cost, props.prompt?.energy_required, props.prompt?.allowed_counts]))
 watch(signature, () => { selected.value = [] }, { immediate: true })
 function toggle(id: string) { if (props.locked || !props.prompt.options.some((option: any) => option.id === id)) return; if (selected.value.includes(id)) selected.value = selected.value.filter(x => x !== id); else if (props.prompt.max === 1) selected.value = [id]; else if (selected.value.length < props.prompt.max) selected.value = [...selected.value, id] }
 const selectedEnergy = computed(() => selected.value.reduce((n, id) => n + (props.prompt.options.find((o: any) => o.id === id)?.energy_value || 1), 0))
+const requiredEnergy = computed(() => props.prompt.energy_required ?? props.prompt.retreat_cost)
 const valid = computed(() => selected.value.length >= props.prompt.min && selected.value.length <= props.prompt.max
   && (!props.prompt.distinct_types || new Set(selected.value.map(id => props.prompt.options.find((o: any) => o.id === id)?.card?.card?.type)).size === selected.value.length)
   && (!props.prompt.allowed_counts || props.prompt.allowed_counts.includes(selected.value.length))
-  && (props.prompt.retreat_cost === undefined || selectedEnergy.value >= props.prompt.retreat_cost
-    && selected.value.every(id => selectedEnergy.value - (props.prompt.options.find((o: any) => o.id === id)?.energy_value || 1) < props.prompt.retreat_cost)))
+  && (requiredEnergy.value === undefined || selectedEnergy.value >= requiredEnergy.value
+    && selected.value.every(id => selectedEnergy.value - (props.prompt.options.find((o: any) => o.id === id)?.energy_value || 1) < requiredEnergy.value)))
 </script>
 <template>
   <section v-if="prompt" class="arena-decision" aria-label="Required game decision" aria-live="polite">
@@ -20,7 +21,7 @@ const valid = computed(() => selected.value.length >= props.prompt.min && select
     <p v-if="prompt.ordered">Select cards in order. The first selected card will be closest to the top of the deck.</p>
     <p v-if="prompt.distinct_types">Choose different Energy types.</p>
     <p v-if="prompt.allowed_counts">Choose {{ prompt.allowed_counts.join(' or ') }} cards; a partial optional cost is not allowed.</p>
-    <p v-if="prompt.retreat_cost !== undefined">{{ selectedEnergy }} / {{ prompt.retreat_cost }} Energy provided. Do not discard an unnecessary card.</p>
+    <p v-if="requiredEnergy !== undefined">{{ selectedEnergy }} / {{ requiredEnergy }} Energy provided. Do not discard an unnecessary card.</p>
     <p v-if="prompt.kind === 'prize'" class="arena-prize-instruction">Choose {{ prompt.max }} face-down Prize {{ prompt.max === 1 ? 'card' : 'cards' }}. Their identities remain hidden until you confirm.</p>
     <details v-if="prompt.looked_at?.length"><summary>Cards you looked at — private to you</summary><div class="arena-choice-grid"><figure v-for="unit in prompt.looked_at" :key="unit.id"><CardImage :card="unit.card" alt=""/><figcaption>{{ unit.card.name }}</figcaption></figure></div></details>
     <div class="arena-choice-grid">
