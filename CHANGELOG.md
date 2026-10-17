@@ -1,3 +1,9 @@
+## 0.55.2 — 2026-10-18
+
+- Keep MFA verification at sign-in and account security changes. Remove the global five-minute MFA renewal requirement from routine administrator and member actions, including catalogue imports, binder edits and Arena saves.
+- Preserve recent MFA for password changes, existing-factor proof for authenticator/passkey/recovery-code changes, and session expiry, revocation and role/access checks. Clarify the account verification screen.
+- Add production HTTP regressions for aged MFA sessions, repeated imports, binder and Arena writes, protected account changes and unchanged sign-in MFA.
+
 ## 0.55.1 — 2026-10-17
 
 - Start private catalogue cards and filter lists independently. Card records and artwork can appear while filters are still loading.

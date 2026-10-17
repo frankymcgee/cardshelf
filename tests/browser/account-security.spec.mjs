@@ -79,8 +79,10 @@ test('cancelled setup clears secret and browser Back does not reopen an old setu
   await page.goBack(); await expect(page).toHaveURL(/\/security$/);
   await expect(page.getByRole('button', { name: 'Add an authenticator app', exact: true })).toBeVisible(); await expect(page.getByLabel('Manual authenticator setup key')).toHaveCount(0); expect(h.errors).toEqual([]);
 });
-test('sensitive-action reauthentication is explicit and keeps the return path', async ({ page }) => {
-  const h = await fixtures(page, { signedIn: true }); await page.goto('/security?next=/account'); await page.getByRole('button', { name: 'Verify for sensitive actions' }).click();
+test('account-change reauthentication is explicit and keeps the return path', async ({ page }) => {
+  const h = await fixtures(page, { signedIn: true }); await page.goto('/security?next=/account');
+  await expect(page.getByText('Verify before changing your password', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Verify for account changes' }).click();
   await page.getByLabel('Current password', { exact: true }).fill('current password'); await page.getByLabel('Current authenticator code', { exact: false }).fill('123456'); await page.getByRole('button', { name: 'Verify identity', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Identity confirmed'); await expect(page.getByText('Identity recently confirmed', { exact: true })).toBeVisible();
   expect(h.calls.filter(call => call.path === '/api/security/reauthenticate')).toHaveLength(1); await page.getByRole('link', { name: 'Continue to your account' }).click(); await expect(page).toHaveURL(/\/account$/); await expect(page.getByText('Email: Not verified · existing account access is preserved')).toBeVisible(); expect(h.errors).toEqual([]);
