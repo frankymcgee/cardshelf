@@ -1,7 +1,7 @@
 name: Validate Arena table UI
 on:
   pull_request:
-    paths: ['app/components/arena/**', 'app/pages/arena/matches/**', 'app/assets/css/**', 'shared/arena.mjs', 'shared/arena-effects.mjs', 'tests/browser/**', 'tests/helpers/arena-table-fixtures.mjs', 'package*.json', '.github/workflows/arena-table-ui.yml']
+    paths: ['app/components/arena/**', 'app/pages/arena/matches/**', 'app/assets/css/**', 'shared/arena.mjs', 'shared/arena-status-effects.mjs', 'shared/arena-effects.mjs', 'tests/browser/**', 'tests/helpers/arena-table-fixtures.mjs', 'package*.json', '.github/workflows/arena-table-ui.yml']
   workflow_dispatch:
   workflow_call:
 # Only PR revisions share a group. Release calls and manual runs stay independent

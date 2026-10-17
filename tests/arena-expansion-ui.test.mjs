@@ -12,6 +12,7 @@ import { parse, compileScript } from '@vue/compiler-sfc';
 import * as contract from '../shared/arena.mjs';
 import { useCardImage } from '../app/composables/useCardImage.mjs';
 import * as artwork from '../shared/arena-art.mjs';
+import * as statusEffects from '../shared/arena-status-effects.mjs';
 const require = createRequire(import.meta.url);
 const source = file => fs.readFileSync(new URL('../' + file, import.meta.url), 'utf8');
 const plain = value => JSON.parse(JSON.stringify(value));
@@ -33,7 +34,7 @@ function component(file) {
   const compiled = compileScript(descriptor, { id: file, inlineTemplate: true });
   const js = ts.transpileModule(compiled.content, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   const output = { exports: {} };
-  const localRequire = name => name.endsWith('.vue') ? { default: component(path.posix.normalize(path.posix.join(path.posix.dirname(file), name))) } : name.endsWith('/arena.mjs') ? contract : name.endsWith('/arena-art.mjs') ? artwork : name.endsWith('/useCardImage.mjs') ? { useCardImage } : require(name);
+  const localRequire = name => name.endsWith('.vue') ? { default: component(path.posix.normalize(path.posix.join(path.posix.dirname(file), name))) } : name.endsWith('/arena.mjs') ? contract : name.endsWith('/arena-art.mjs') ? artwork : name.endsWith('/arena-status-effects.mjs') ? statusEffects : name.endsWith('/useCardImage.mjs') ? { useCardImage } : require(name);
   vm.runInNewContext(js, { ...Vue, exports: output.exports, module: output, require: localRequire, console }, { filename: file });
   cache.set(file, output.exports.default); return output.exports.default;
 }

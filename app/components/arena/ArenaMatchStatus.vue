@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { arenaStatusEffect } from '../../../shared/arena-status-effects.mjs'
 import { arenaTurnStatus, arenaPrizeCounts } from '../../../shared/arena-match-ui.mjs'
 const props = defineProps<{ table: any; status: string; connected: boolean; busy: boolean; uncertain: boolean }>()
 const guidance = computed(() => arenaTurnStatus(props.table, props))
@@ -11,6 +12,7 @@ const turnLabel = computed(() => props.table?.phase === 'setup' ? 'OPENING SETUP
   <section class="arena-match-status" :data-tone="guidance.tone" aria-label="Match status">
     <div class="arena-match-guidance" role="status" aria-live="polite" aria-atomic="true">
       <span class="arena-kicker">{{ turnLabel }}</span><strong>{{ guidance.title }}</strong><p>{{ guidance.detail }}</p>
+      <template v-for="(player, seat) in table?.players || []" :key="seat"><p v-for="(effect, index) in player.effects || []" :key="index">{{ seat === table.seat ? 'You' : 'Opponent' }}: {{ arenaStatusEffect(effect) }} · through turn {{ effect.expires }}</p></template>
       <p v-if="table?.tiebreaker">Tiebreaker game · six Prizes at setup. The first Prize advantage wins; normal loss conditions still apply.</p>
     </div>
     <dl class="arena-prize-score" aria-label="Prizes remaining">

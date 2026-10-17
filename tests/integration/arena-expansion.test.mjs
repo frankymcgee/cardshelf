@@ -2,6 +2,7 @@
 // are synthetic fixtures, never external publisher downloads or production data.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import postgres from 'postgres';
 import { hashPassword, randomToken, digest } from '../../lib/security.mjs';
@@ -147,6 +148,22 @@ await test('Arena expansion: genuine saved practice decks and retained lobby eng
       s=JSON.parse(JSON.stringify(s).replaceAll(ARENA_VERSION,LEGACY_RULES_ARENA_VERSION));s=applyArenaAction(s,0,{type:'trainer',card:c.id});const id=await persistFixture(s),before=await request('matches/'+id,{user:host});
       assert.equal(before.data.version,LEGACY_RULES_ARENA_VERSION);assert.equal(before.data.table.prompt.min,1);assert.equal('vstar_used' in before.data.table.players[0],false);assert.equal('lost_zone' in before.data.table.players[0],false);
       const after=await act(host,id,{type:'choose',choices:[before.data.table.prompt.options[0].id]});assert.equal(after.table.version,LEGACY_RULES_ARENA_VERSION);assert.equal((await stored(id)).state.version,LEGACY_RULES_ARENA_VERSION);await act(host,id,{type:'concede'});
+    });
+    await t.test('v5 private top-deck inspection persists through HTTP reloads and idempotent retries',async()=>{
+      const records=JSON.parse(fs.readFileSync(new URL('../helpers/arena-real-cards-v5.json',import.meta.url))),record=records.find(r=>r.id==='en:sv06-129'),compiled=compileArenaCard(record);assert.equal(compiled.supported,true);
+      const s=readyFixture(),source=s.players[0].active;source.card=compiled.card;const top=s.players[0].deck.slice(0,2),id=await persistFixture(s),started=await act(host,id,{type:'ability',card:source.id,index:0});
+      assert.equal(started.table.prompt.kind,'look_pick');assert.equal(started.table.prompt.looked_at.length,2);const before=await stored(id),reload=await request('matches/'+id,{user:host}),other=await request('matches/'+id,{user:guest});assert.deepEqual(reload.data.table.prompt,started.table.prompt);
+      for(const u of top)assert.equal(JSON.stringify(other.data).includes(u.id),false);assert.equal(other.data.table.prompt,null);
+      const payload={revision:before.revision,request_id:randomUUID(),action:{type:'choose',choices:[top[0].id]}};
+      const denied=await request('matches/'+id+'/actions',{user:guest,method:'POST',body:payload});assert.equal(denied.status,409);assert.deepEqual((await stored(id)).state,before.state);
+      const selected=await request('matches/'+id+'/actions',{user:host,method:'POST',body:payload}),retry=await request('matches/'+id+'/actions',{user:host,method:'POST',body:payload});assert.equal(selected.status,200,JSON.stringify(selected.data));assert.equal(retry.data.replayed,true);assert.deepEqual(retry.data,{...selected.data,replayed:true});
+      const saved=await stored(id);assert.equal(saved.state.players[0].hand.length,1);assert.equal(saved.state.players[0].deck.at(-1).card.id,top[1].card.id);assert.equal(saved.revision,before.revision+1);await act(host,id,{type:'concede'});
+    });
+    await t.test('v5 Rare Candy and optional Infernal Reign resume across separate HTTP writes',async()=>{
+      const records=JSON.parse(fs.readFileSync(new URL('../helpers/arena-real-cards-v5.json',import.meta.url))),real=id=>{const c=compileArenaCard(records.find(r=>r.id==='en:'+id));assert.equal(c.supported,true,c.reason);return c.card;};
+      const s=readyFixture(),basic=s.players[0].active;basic.card=real('sv03-026');const zard=take(s,0,()=>true),candy=take(s,0,()=>true);zard.card=real('sv03-125');candy.card=real('sv01-191');const id=await persistFixture(s);
+      let after=await act(host,id,{type:'trainer',card:candy.id});assert.equal(after.table.prompt.kind,'candy_basic');after=await act(host,id,{type:'choose',choices:[basic.id]});assert.equal(after.table.prompt.kind,'candy_evolution');after=await act(host,id,{type:'choose',choices:[zard.id]});assert.equal(after.table.prompt.kind,'trigger');assert.equal(after.table.players[0].active.card.name,'Charizard ex');
+      const reload=await request('matches/'+id,{user:host});assert.deepEqual(reload.data.table.prompt,after.table.prompt);after=await act(host,id,{type:'choose',choices:['skip']});assert.equal(after.table.prompt,null);assert.equal(after.table.players[0].discard.at(-1).card.name,'Rare Candy');assert.equal((await stored(id)).state.players[0].active.card.tera,true);await act(host,id,{type:'concede'});
     });
     await t.test('practice never changes collections, subscriptions or saved deck card lists',async()=>{
       assert.equal((await sql`SELECT user_id FROM collection_entries WHERE user_id IN ${sql(users)}`).length,0);
