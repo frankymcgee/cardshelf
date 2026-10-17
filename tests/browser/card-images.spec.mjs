@@ -107,7 +107,7 @@ for (const view of [
       await loaded(page.locator(view.tile).first().locator('img'), 'Pokémon');
       if (view.name === 'public') await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeEnabled();
       release();
-      await expect(page.getByLabel('Set', { exact: true }).locator('option[value="en:mee"]')).toHaveCount(1);
+      await expect(page.getByRole('combobox', { name: 'Set', exact: true }).locator('option[value="en:mee"]')).toHaveCount(1);
       expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
     } finally { release(); }
   });
@@ -121,7 +121,7 @@ for (const view of [
       await expect(page.getByRole('alert')).toContainText('You can still browse and search cards.');
       await page.route(view.filters, route => route.fulfill({ json: view.payload }));
       await page.getByRole('button', { name: 'Retry set filters', exact: true }).click();
-      await expect(page.getByLabel('Set', { exact: true }).locator('option[value="en:mee"]')).toHaveCount(1);
+      await expect(page.getByRole('combobox', { name: 'Set', exact: true }).locator('option[value="en:mee"]')).toHaveCount(1);
       await expect(page.getByRole('alert')).toHaveCount(0);
     }
     expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
@@ -136,7 +136,7 @@ test('public searches reuse the loaded set choices', async ({ page }) => {
     return route.fulfill({ json: [{ id: 'en:mee', name: 'Mega Evolution Energy' }] });
   });
   await page.goto('/explore');
-  await expect(page.getByLabel('Set', { exact: true }).locator('option[value="en:mee"]')).toHaveCount(1);
+  await expect(page.getByRole('combobox', { name: 'Set', exact: true }).locator('option[value="en:mee"]')).toHaveCount(1);
   const response = page.waitForResponse(r => new URL(r.url()).pathname === '/api/public/catalogue' && new URL(r.url()).searchParams.get('q') === 'Energy');
   await page.getByRole('searchbox', { name: 'Find a card', exact: true }).fill('Energy');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
