@@ -1,3 +1,9 @@
+## 0.56.1 — 2026-10-18
+
+- Prioritize Arena work by shared move effects across different Pokémon, with separate counts for reprints, Energy/data gaps and remaining whole-card blockers. Retain full-text variants and flag move names with different effects.
+- Add three reviewed, parameterized legacy move templates for coin bonuses, recoil and Bench damage using existing V5 operations. Preserve each move's costs, damage and original text; reject mismatching formulas and unknown additional clauses. The pinned catalogue audit adds 209 fully supported printings, reaching 6,089 of 21,291, without regressing V5 support.
+- Add isolated RyuuPlay/Twinleaf compatibility probes and document the native-state continuation limitation. Keep external engines in development tooling; current match persistence remains authoritative.
+
 ## 0.56.0 — 2026-10-17
 
 - Add the versioned V5 Arena effect engine; preserve V1–V4 matches, waiting lobbies and tournaments on their original compilers and rules.

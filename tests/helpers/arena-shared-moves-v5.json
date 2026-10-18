@@ -1,0 +1,354 @@
+[
+  {
+    "id": "en:bwp-BW89",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "bwp-BW89",
+    "local_id": "BW89",
+    "set_id": "en:bwp",
+    "set_name": "BW Black Star Promos",
+    "name": "Vaporeon",
+    "raw_data": {
+      "name": "Vaporeon",
+      "illustrator": "Illus. & Direc. The Pokémon Company Art Team",
+      "rarity": "Common",
+      "category": "Pokemon",
+      "dexId": [
+        134
+      ],
+      "hp": 110,
+      "types": [
+        "Water"
+      ],
+      "evolveFrom": "Eevee",
+      "stage": "Stage1",
+      "attacks": [
+        {
+          "cost": [
+            "Colorless"
+          ],
+          "name": "Muddy Water",
+          "effect": "Does 20 damage to 1 of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)",
+          "damage": 20
+        },
+        {
+          "cost": [
+            "Water",
+            "Colorless",
+            "Colorless"
+          ],
+          "name": "Spiral Drain",
+          "effect": "Heal 20 damage from this Pokémon.",
+          "damage": 60
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Lightning",
+          "value": "×2"
+        }
+      ],
+      "retreat": 2
+    }
+  },
+  {
+    "id": "en:bw1-31",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "bw1-31",
+    "local_id": "31",
+    "set_id": "en:bw1",
+    "set_name": "Black & White",
+    "name": "Samurott",
+    "raw_data": {
+      "name": "Samurott",
+      "illustrator": "Masakazu Fukuda",
+      "rarity": "Rare",
+      "category": "Pokemon",
+      "dexId": [
+        503
+      ],
+      "hp": 140,
+      "types": [
+        "Water"
+      ],
+      "evolveFrom": "Dewott",
+      "stage": "Stage2",
+      "attacks": [
+        {
+          "cost": [
+            "Colorless",
+            "Colorless"
+          ],
+          "name": "Pike",
+          "effect": "Does 30 damage to 1 of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)",
+          "damage": 30
+        },
+        {
+          "cost": [
+            "Water",
+            "Water",
+            "Colorless"
+          ],
+          "name": "Surf",
+          "damage": 80
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Lightning",
+          "value": "×2"
+        }
+      ],
+      "retreat": 2
+    }
+  },
+  {
+    "id": "en:bw1-16",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "bw1-16",
+    "local_id": "16",
+    "set_id": "en:bw1",
+    "set_name": "Black & White",
+    "name": "Tepig",
+    "raw_data": {
+      "name": "Tepig",
+      "illustrator": "5ban Graphics",
+      "rarity": "Common",
+      "category": "Pokemon",
+      "dexId": [
+        498
+      ],
+      "hp": 70,
+      "types": [
+        "Fire"
+      ],
+      "stage": "Basic",
+      "attacks": [
+        {
+          "cost": [
+            "Fire",
+            "Colorless"
+          ],
+          "name": "Take Down",
+          "effect": "This Pokémon does 10 damage to itself.",
+          "damage": 30
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Water",
+          "value": "×2"
+        }
+      ],
+      "retreat": 2
+    }
+  },
+  {
+    "id": "en:bw1-42",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "bw1-42",
+    "local_id": "42",
+    "set_id": "en:bw1",
+    "set_name": "Black & White",
+    "name": "Zebstrika",
+    "raw_data": {
+      "name": "Zebstrika",
+      "illustrator": "Kouki Saitou",
+      "rarity": "Uncommon",
+      "category": "Pokemon",
+      "dexId": [
+        523
+      ],
+      "hp": 90,
+      "types": [
+        "Lightning"
+      ],
+      "evolveFrom": "Blitzle",
+      "stage": "Stage1",
+      "attacks": [
+        {
+          "cost": [
+            "Colorless",
+            "Colorless"
+          ],
+          "name": "Stomp",
+          "effect": "Flip a coin. If heads, this attack does 20 more damage.",
+          "damage": 20
+        },
+        {
+          "cost": [
+            "Lightning",
+            "Lightning",
+            "Colorless"
+          ],
+          "name": "Wild Charge",
+          "effect": "This Pokémon does 10 damage to itself.",
+          "damage": 70
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Fighting",
+          "value": "×2"
+        }
+      ],
+      "retreat": 1
+    }
+  },
+  {
+    "id": "en:col1-37",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "col1-37",
+    "local_id": "37",
+    "set_id": "en:col1",
+    "set_name": "Call of Legends",
+    "name": "Ursaring",
+    "raw_data": {
+      "name": "Ursaring",
+      "illustrator": "Kouki Saitou",
+      "rarity": "Rare",
+      "category": "Pokemon",
+      "dexId": [
+        217
+      ],
+      "hp": 100,
+      "types": [
+        "Colorless"
+      ],
+      "evolveFrom": "Teddiursa",
+      "stage": "Stage1",
+      "attacks": [
+        {
+          "cost": [
+            "Colorless"
+          ],
+          "name": "Confront",
+          "damage": 20
+        },
+        {
+          "cost": [
+            "Colorless",
+            "Colorless",
+            "Colorless"
+          ],
+          "name": "Cross Chop",
+          "effect": "Flip a coin. If heads, this attack does 50 damage plus 30 more damage.",
+          "damage": "50+"
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Fighting",
+          "value": "x2"
+        }
+      ],
+      "retreat": 3
+    }
+  },
+  {
+    "id": "en:col1-59",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "col1-59",
+    "local_id": "59",
+    "set_id": "en:col1",
+    "set_name": "Call of Legends",
+    "name": "Houndour",
+    "raw_data": {
+      "name": "Houndour",
+      "illustrator": "Kagemaru Himeno",
+      "rarity": "Common",
+      "category": "Pokemon",
+      "dexId": [
+        228
+      ],
+      "hp": 50,
+      "types": [
+        "Darkness"
+      ],
+      "stage": "Basic",
+      "attacks": [
+        {
+          "cost": [
+            "Darkness"
+          ],
+          "name": "Jump On",
+          "effect": "Flip a coin. If heads, this attack does 10 damage plus 10 more damage.",
+          "damage": "10+"
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Fighting",
+          "value": "x2"
+        }
+      ],
+      "resistances": [
+        {
+          "type": "Psychic",
+          "value": "-20"
+        }
+      ],
+      "retreat": 1
+    }
+  },
+  {
+    "id": "en:dp1-101",
+    "game": "pokemon",
+    "language": "en",
+    "provider_id": "dp1-101",
+    "local_id": "101",
+    "set_id": "en:dp1",
+    "set_name": "Diamond & Pearl",
+    "name": "Starly",
+    "raw_data": {
+      "name": "Starly",
+      "illustrator": "Ken Sugimori",
+      "rarity": "Common",
+      "category": "Pokemon",
+      "dexId": [
+        396
+      ],
+      "hp": 50,
+      "types": [
+        "Colorless"
+      ],
+      "stage": "Basic",
+      "attacks": [
+        {
+          "cost": [
+            "Colorless"
+          ],
+          "name": "Gust",
+          "damage": 10
+        },
+        {
+          "cost": [
+            "Colorless",
+            "Colorless"
+          ],
+          "name": "Quick Attack",
+          "effect": "Flip a coin. If heads, this attack does 10 damage plus 20 more damage.",
+          "damage": "10+"
+        }
+      ],
+      "weaknesses": [
+        {
+          "type": "Lightning",
+          "value": "+10"
+        }
+      ],
+      "resistances": [
+        {
+          "type": "Fighting",
+          "value": "-20"
+        }
+      ],
+      "retreat": 1
+    }
+  }
+]
