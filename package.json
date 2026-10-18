@@ -1,6 +1,6 @@
 {
   "name": "cardshelf",
-  "version": "0.56.0",
+  "version": "0.56.1",
   "private": true,
   "type": "module",
   "description": "A standalone, self-hosted card collection and binder planner.",
@@ -11,6 +11,8 @@
     "dev": "nuxt dev --host 0.0.0.0",
     "build": "nuxt build",
     "audit:runtime": "node scripts/audit-runtime.mjs",
+    "audit:arena-moves": "node scripts/audit-arena-moves.mjs",
+    "probe:arena-engine": "node scripts/probe-arena-engine.mjs",
     "start": "node .output/server/index.mjs",
     "postinstall": "node scripts/prepare-dependencies.mjs && nuxt prepare",
     "typecheck": "nuxt typecheck",
@@ -49,8 +51,10 @@
   },
   "devDependencies": {
     "@playwright/test": "1.57.0",
+    "@progress/pako-esm": "1.0.1",
     "@types/node": "24.10.1",
     "@types/qrcode": "1.5.6",
+    "esbuild": "0.28.2",
     "nuxt": "4.5.2",
     "typescript": "5.9.3",
     "vue": "3.5.43",

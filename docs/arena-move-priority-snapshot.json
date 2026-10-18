@@ -1,0 +1,228 @@
+{
+  "reference": {
+    "repository": "TCGdex/cards-database",
+    "revision": "af57972e8f784c2507ab9e573c99bf02ae2e5e42",
+    "export_sha256": "f78c44400d7f01811356ff3d6aab0c86bec8e12bab316050f8f88e6cd5e5a1b5",
+    "records": 21291
+  },
+  "engine": "pokemon-expanded-v5",
+  "before": {
+    "supported": 5880,
+    "attack_occurrences": 28642,
+    "unsupported_attack_occurrences": 13043,
+    "effect_families": 7300,
+    "missing_effect_families": 6722,
+    "same_name_collisions": 1573
+  },
+  "after": {
+    "supported": 6089,
+    "unsupported_attack_occurrences": 12610,
+    "missing_effect_families": 6688,
+    "added_complete_printings": 209,
+    "previous_v5_regressions": []
+  },
+  "previous_top_candidates": [
+    {
+      "id": "8c38a1947b900d5a84828384a2af310dcdee558745a4e44cedde445a7f14c626",
+      "effect": "Flip a coin. If heads, this attack does {n} damage plus {n} more damage.",
+      "distinct_pokemon": 159,
+      "printings": 225,
+      "unsupported_effect_attacks": 225
+    },
+    {
+      "id": "3bb39b2e31e0a08f949b443ba69eb4e9b3c85cac4f6ffb880fbdc57d08ee1c26",
+      "effect": "This Pokemon does {n} damage to itself.",
+      "distinct_pokemon": 104,
+      "printings": 136,
+      "unsupported_effect_attacks": 136
+    },
+    {
+      "id": "4ad5751d46d6715202341388c1707700fd707171c000c428510a072ba26a3dbe",
+      "effect": "Does {n} damage to {n} of your opponent's Benched Pokemon. (Don't apply Weakness and Resistance for Benched Pokemon.)",
+      "distinct_pokemon": 70,
+      "printings": 94,
+      "unsupported_effect_attacks": 94
+    },
+    {
+      "id": "55ca39305d907f8bc3d1f65949686cd5240084a5582e7f6d1925a9af1921c10c",
+      "effect": "Choose {n} of your opponent's Pokemon. This attack does {n} damage to that Pokemon. (Don't apply Weakness and Resistance for Benched Pokemon.)",
+      "distinct_pokemon": 56,
+      "printings": 66,
+      "unsupported_effect_attacks": 66
+    },
+    {
+      "id": "02583b97b2825998ea711e256a3e0ba65d0089aafcc1d570e854f26ad6aeefd4",
+      "effect": "If the Defending Pokemon tries to attack during your opponent's next turn, your opponent flips a coin. If tails, that attack does nothing.",
+      "distinct_pokemon": 51,
+      "printings": 74,
+      "unsupported_effect_attacks": 74
+    },
+    {
+      "id": "aeebc3cb7644f992623236954af05c15e5977155e462fa38a213342819e88c27",
+      "effect": "Your opponent switches the Defending Pokemon with {n} of his or her Benched Pokemon.",
+      "distinct_pokemon": 48,
+      "printings": 56,
+      "unsupported_effect_attacks": 56
+    },
+    {
+      "id": "cf876fffe1feadec93d6c2dad8c3a75f9b64f124159e95f411a523f9bdcbb334",
+      "effect": "This attack does {n} damage to each of your opponent's Pokemon. (Don't apply Weakness and Resistance for Benched Pokemon.)",
+      "distinct_pokemon": 44,
+      "printings": 60,
+      "unsupported_effect_attacks": 60
+    },
+    {
+      "id": "de7479db79e6862a6d3d762fd91a6d63003319391e2f691719c58ce9ec1af2e3",
+      "effect": "Flip a coin. If heads, prevent all effects of attacks, including damage, done to this Pokemon during your opponent's next turn.",
+      "distinct_pokemon": 42,
+      "printings": 50,
+      "unsupported_effect_attacks": 50
+    },
+    {
+      "id": "175dd9415789627b448177006d21dd2297cb1ee32e8990f35e97deef61e48980",
+      "effect": "Flip {n} coins. This attack does {n} more damage for each heads.",
+      "distinct_pokemon": 40,
+      "printings": 54,
+      "unsupported_effect_attacks": 53
+    },
+    {
+      "id": "dad9ca777b1a36b6f73af4f090457225990a55605964a7ea7ea179d5086e4a77",
+      "effect": "During your opponent's next turn, any damage done to this Pokemon by attacks is reduced by {n} (after applying Weakness and Resistance).",
+      "distinct_pokemon": 38,
+      "printings": 44,
+      "unsupported_effect_attacks": 44
+    }
+  ],
+  "next_candidates": [
+    {
+      "id": "55ca39305d907f8bc3d1f65949686cd5240084a5582e7f6d1925a9af1921c10c",
+      "effect": "Choose {n} of your opponent's Pokemon. This attack does {n} damage to that Pokemon. (Don't apply Weakness and Resistance for Benched Pokemon.)",
+      "distinct_pokemon": 56,
+      "printings": 66,
+      "unsupported_effect_attacks": 66
+    },
+    {
+      "id": "02583b97b2825998ea711e256a3e0ba65d0089aafcc1d570e854f26ad6aeefd4",
+      "effect": "If the Defending Pokemon tries to attack during your opponent's next turn, your opponent flips a coin. If tails, that attack does nothing.",
+      "distinct_pokemon": 51,
+      "printings": 74,
+      "unsupported_effect_attacks": 74
+    },
+    {
+      "id": "aeebc3cb7644f992623236954af05c15e5977155e462fa38a213342819e88c27",
+      "effect": "Your opponent switches the Defending Pokemon with {n} of his or her Benched Pokemon.",
+      "distinct_pokemon": 48,
+      "printings": 56,
+      "unsupported_effect_attacks": 56
+    },
+    {
+      "id": "cf876fffe1feadec93d6c2dad8c3a75f9b64f124159e95f411a523f9bdcbb334",
+      "effect": "This attack does {n} damage to each of your opponent's Pokemon. (Don't apply Weakness and Resistance for Benched Pokemon.)",
+      "distinct_pokemon": 44,
+      "printings": 60,
+      "unsupported_effect_attacks": 60
+    },
+    {
+      "id": "de7479db79e6862a6d3d762fd91a6d63003319391e2f691719c58ce9ec1af2e3",
+      "effect": "Flip a coin. If heads, prevent all effects of attacks, including damage, done to this Pokemon during your opponent's next turn.",
+      "distinct_pokemon": 42,
+      "printings": 50,
+      "unsupported_effect_attacks": 50
+    },
+    {
+      "id": "175dd9415789627b448177006d21dd2297cb1ee32e8990f35e97deef61e48980",
+      "effect": "Flip {n} coins. This attack does {n} more damage for each heads.",
+      "distinct_pokemon": 40,
+      "printings": 54,
+      "unsupported_effect_attacks": 53
+    },
+    {
+      "id": "dad9ca777b1a36b6f73af4f090457225990a55605964a7ea7ea179d5086e4a77",
+      "effect": "During your opponent's next turn, any damage done to this Pokemon by attacks is reduced by {n} (after applying Weakness and Resistance).",
+      "distinct_pokemon": 38,
+      "printings": 44,
+      "unsupported_effect_attacks": 44
+    },
+    {
+      "id": "41585650649c5cf4cf5c677c02199852649f342c6d9496b1d720fb935b5c7b68",
+      "effect": "Discard a random card from your opponent's hand.",
+      "distinct_pokemon": 34,
+      "printings": 45,
+      "unsupported_effect_attacks": 45
+    },
+    {
+      "id": "96be50c5fa88b77e13ebfd870ac58eb2c57a7c4f4aa40842f6b4ee3508831d85",
+      "effect": "Flip a coin. If heads, discard an Energy attached to your opponent's Active Pokemon.",
+      "distinct_pokemon": 34,
+      "printings": 38,
+      "unsupported_effect_attacks": 38
+    },
+    {
+      "id": "17ef7d3c3df88ed9f24ef0c446ed9fe20ef081b148e7699f5a3a2ac952b44417",
+      "effect": "Flip a coin until you get tails. This attack does {n} damage times the number of heads.",
+      "distinct_pokemon": 33,
+      "printings": 46,
+      "unsupported_effect_attacks": 46
+    }
+  ],
+  "notice": "Development priorities, not card acceptance. Families retain complete text; cost and base damage remain per-card parameters. A sole attack gap can still have Ability, rule or metadata blockers. Coverage counts include reprints and do not imply format legality.",
+  "probes": [
+    {
+      "candidate": "ryuu",
+      "revision": "9cd20b6a3232b77ac114fb45a3979d51a4332850",
+      "probe_scope": "Actual upstream Store prompt/reducer and native StateSerializer; isolated from battle setup. This is not a full game or security certification.",
+      "live_prompt_continues": true,
+      "native_state_restores_prompt": true,
+      "restored_prompt_continues": false,
+      "restored_prompt_error": "ILLEGAL_ACTION",
+      "modern_scenarios": [
+        {
+          "scenario": "Charizard ex / Dragapult ex target profiles",
+          "note": "No matching modern target files in the inspected upstream sets; not a substitute for the current pool."
+        }
+      ],
+      "cardshelf_control": {
+        "scenario": "Recon Directive after JSON reload",
+        "same_prompt_after_reload": true,
+        "choice_hidden_from_opponent": true,
+        "selected_card_in_hand": true,
+        "remainder_on_deck_bottom": true,
+        "continuation_complete": true
+      }
+    },
+    {
+      "candidate": "twinleaf",
+      "revision": "d89efe580127a05aff8b0456fd2ad587edbbee2d",
+      "probe_scope": "Actual upstream Store prompt/reducer and native StateSerializer; isolated from battle setup. This is not a full game or security certification.",
+      "live_prompt_continues": true,
+      "native_state_restores_prompt": true,
+      "restored_prompt_continues": false,
+      "restored_prompt_error": null,
+      "modern_scenarios": [
+        {
+          "scenario": "Burning Darkness with two opposing Prizes taken, before Weakness",
+          "expected_damage": 240,
+          "actual_damage": 240,
+          "pass": true
+        },
+        {
+          "scenario": "Phantom Dive six counters to a Benched Tera Pokemon",
+          "expected_counters_damage": 60,
+          "actual_counters_damage": 60,
+          "accepts_bench": true,
+          "rejects_active": true,
+          "pass": true,
+          "note": "Actual card reducer, prompt validation and counter effect; complete attack timing and client privacy are outside this isolated probe."
+        }
+      ],
+      "cardshelf_control": {
+        "scenario": "Recon Directive after JSON reload",
+        "same_prompt_after_reload": true,
+        "choice_hidden_from_opponent": true,
+        "selected_card_in_hand": true,
+        "remainder_on_deck_bottom": true,
+        "continuation_complete": true
+      }
+    }
+  ]
+}
