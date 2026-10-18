@@ -48,6 +48,38 @@ To extend coverage, verify the exact provider set identity, number range and
 language against both sources before adding a mapping and regression fixtures.
 Do not infer mappings from names or substitute an older Energy card design.
 
+
+## Device artwork cache — 0.57.1
+
+The production service worker reuses public card artwork after the browser has
+successfully decoded it. It covers the three approved Pokémon artwork sources
+and the content-addressed `/api/public/catalogue/artwork/<sha256>` endpoint used
+by other games. The cache is local to each device/browser; it starts as cards
+are viewed, without pre-downloading a catalogue. No server image proxy, bulk
+download worker or new server storage is introduced.
+
+Fresh hits skip the image network request, including when offline. Metadata,
+ownership, private binder backgrounds, marketplace uploads, authenticated API
+responses and exports are never stored by this cache. Only public artwork can
+remain after logout; this does not enable offline editing or a full offline app.
+
+The cache holds at most 200 images with a 64 MiB accounting budget. Readable
+images are limited to 4 MiB each and expire after 30 days. Cross-origin opaque
+images cannot expose their status or size: they are saved only after an actual
+image load succeeds, limited to six entries, charged an estimated 7 MiB per
+entry for Chromium's quota padding, and expire after seven days. Oldest entries
+are evicted first; expensive opaque entries have their own limit. Browser quota
+rules can cause earlier eviction. Failed loads never create persistent entries.
+TCGdex's CORS-enabled responses use their actual byte size. Storage denial or
+quota exhaustion leaves normal image viewing and fallback sources available.
+
+`tests/artwork-cache.test.mjs` checks eligibility, decoding confirmation, expiry,
+limits, concurrent requests, no-store responses and quota failure. The real
+service-worker browser test disables HTTP caching, checks reuse after reload,
+and loads the decoded artwork offline. Clearing site data removes the cache.
+
+Quota reference: <https://developer.chrome.com/docs/workbox/understanding-storage-quota>.
+
 ## Release validation
 
 `npm test`, `npm run typecheck`, `npm run build` and `npm run test:card-images-ui`

@@ -10,6 +10,7 @@ Collection binders open on cards, with a separate Value & history view. Prices l
 - Swiping left/right turns the spread with a paper-turn animation. Previous/Next controls and arrow keys on the focused book remain available.
 - Vertical movement scrolls normally. A second touch cancels page-turn detection for pinch zoom; mouse dragging remains available for collection pocket rearrangement.
 - A swipe cannot also open a pocket. A subsequent intentional tap still works. Page turns do not change ownership, positions or quantities.
+- Touch uses native touch events independently of cancelled pointer streams. Only confirmed horizontal movement prevents the default action; vertical scroll and pinch zoom stay native. On phones the expanded More tools stay in the page flow within the viewport, even when primary actions wrap.
 - Navigation stays within the available pages, aligns spread boundaries after a view change, and handles an unpaired final page. Reduced-motion settings suppress the animation.
 
 `tests/browser/collection-ui.spec.mjs` exercises the actual production UI in desktop and phone contexts, including native Chromium touch gestures, keyboard disclosures, saved-view continuity, read-only sharing and unsaved drafts. Existing value-history coverage checks exact prices, gaps, refresh errors and recovery through the new disclosure controls. Run:

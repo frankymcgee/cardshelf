@@ -10,11 +10,20 @@ const index = ref(0), root = ref<HTMLElement | null>(null), width = ref(640);
 const selected = computed(() => visible.value[index.value]);
 watch(visible, value => { index.value = Math.max(0, value.length - 1); }, { immediate: true });
 let observer: ResizeObserver | undefined;
+let resizeFrame: number | undefined;
 onMounted(() => {
-  observer = new ResizeObserver(entries => { width.value = Math.max(260, entries[0]?.contentRect.width || 640); });
+  observer = new ResizeObserver(entries => {
+    const measured = entries[0]?.contentRect.width;
+    if (!measured) return; // Collapsed details have no useful layout width yet.
+    const next = Math.max(260, Math.round(measured));
+    if (next === width.value) return;
+    if (resizeFrame !== undefined) cancelAnimationFrame(resizeFrame);
+    // Defer the SVG layout write to avoid Safari's resize-notification loop.
+    resizeFrame = requestAnimationFrame(() => { width.value = next; resizeFrame = undefined; });
+  });
   if (root.value) observer.observe(root.value);
 });
-onBeforeUnmount(() => observer?.disconnect());
+onBeforeUnmount(() => { observer?.disconnect(); if (resizeFrame !== undefined) cancelAnimationFrame(resizeFrame); });
 const money = (value: number | null) => value == null ? 'Unpriced' : new Intl.NumberFormat('en-AU', { style: 'currency', currency: props.currency, currencyDisplay: 'narrowSymbol' }).format(value);
 const dayLabel = (date: string) => new Date(date + 'T00:00:00Z').toLocaleDateString('en-AU', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 const priced = computed(() => visible.value.filter(point => point.value != null && Number.isFinite(point.value)));

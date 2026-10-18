@@ -10,13 +10,13 @@ cards.push({ ...cards[0], id: 'en:me01-001', name: 'Bulbasaur', set_name: 'Mega 
   image_url: 'https://assets.tcgdex.net/en/me/me01/001/high.webp' });
 const binderId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
-async function fixture(page) {
+async function fixture(page, cacheArtwork = false) {
   const requests = [], errors = [], writes = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.route(/^https:\/\/(?:www\.pokemon\.com\/static-assets\/|limitlesstcg\.nyc3\.cdn\.digitaloceanspaces\.com\/tpci\/|assets\.tcgdex\.net\/)/, route => {
+  await (cacheArtwork ? page.context() : page).route(/^https:\/\/(?:www\.pokemon\.com\/static-assets\/|limitlesstcg\.nyc3\.cdn\.digitaloceanspaces\.com\/tpci\/|assets\.tcgdex\.net\/)/, route => {
     const url = route.request().url(); requests.push(url);
     const failed = url.includes('MEE_EN_2.png') || url.includes('MEE_EN_3.png') || url.includes('MEE_003_') || url.endsWith('/low.webp');
-    return route.fulfill(failed ? { status: 404, body: '' } : { contentType: 'image/svg+xml', body: artwork });
+    return route.fulfill(failed ? { status: 404, body: '', headers: {'Access-Control-Allow-Origin': '*'} } : { contentType: 'image/svg+xml', body: artwork, headers: {'Access-Control-Allow-Origin': '*'} });
   });
   await page.route('**/api/**', route => {
     const req = route.request(), path = decodeURIComponent(new URL(req.url()).pathname);
@@ -47,6 +47,41 @@ async function loaded(img, source) {
   await expect.poll(() => img.evaluate(node => node.complete && node.naturalWidth > 0)).toBe(true);
 }
 
+test('decoded artwork survives reload and works offline without another image download', async ({page, context}) => {
+  const state = await fixture(page, true); await page.goto('/cards');
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.register('/sw.js', {scope: '/', updateViaCache: 'none'});
+    await navigator.serviceWorker.ready;
+    if (!navigator.serviceWorker.controller) await new Promise(resolve => navigator.serviceWorker.addEventListener('controllerchange', resolve, {once: true}));
+  });
+  await page.reload();
+  const tiles = page.locator('.card-tile');
+  await loaded(tiles.nth(0).locator('img'), 'Pokémon');
+  await loaded(tiles.nth(1).locator('img'), 'Limitless TCG');
+  await tiles.nth(4).scrollIntoViewIfNeeded(); await loaded(tiles.nth(4).locator('img'), 'TCGdex');
+  const cached = () => page.evaluate(async () => (await (await caches.open('cardshelf-artwork-v1')).keys()).map(request => request.url).sort());
+  await expect.poll(cached).toHaveLength(3);
+  const urls = await cached();
+  expect(urls.some(url => url.includes('MEE_EN_2.png') || url.includes('MEE_EN_3.png') || url.includes('MEE_003_') || url.endsWith('/low.webp'))).toBe(false);
+  const downloads = () => state.requests.filter(url => urls.includes(url)).length;
+  const before = downloads();
+  // Only the worker cache can satisfy the images once HTTP caching is disabled.
+  const cdp = await context.newCDPSession(page); await cdp.send('Network.enable'); await cdp.send('Network.setCacheDisabled', {cacheDisabled: true});
+  await page.reload();
+  await loaded(page.locator('.card-tile').nth(0).locator('img'), 'Pokémon');
+  expect(downloads()).toBe(before);
+  await context.setOffline(true);
+  await page.getByRole('button', {name: 'List view', exact: true}).click();
+  await loaded(page.locator('.table-card-button').nth(0).locator('img'), 'Pokémon');
+  await loaded(page.locator('.table-card-button').nth(1).locator('img'), 'Limitless TCG');
+  await page.locator('.table-card-button').nth(4).scrollIntoViewIfNeeded();
+  await loaded(page.locator('.table-card-button').nth(4).locator('img'), 'TCGdex');
+  expect(downloads()).toBe(before); await context.setOffline(false);
+  expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
+});
+
+test.describe('image source and loading regressions', () => {
+test.use({serviceWorkers: 'block'});
 test('production catalogue recovers missing images, falls through errors and respects language', async ({ page }) => {
   const state = await fixture(page), response = await page.goto('/cards');
   expect(response.headers()['content-security-policy']).toContain('https://www.pokemon.com/static-assets/content-assets/cms2/img/cards/web/');
@@ -144,4 +179,5 @@ test('public searches reuse the loaded set choices', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeEnabled();
   expect(setRequests).toBe(1);
   expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
+});
 });
