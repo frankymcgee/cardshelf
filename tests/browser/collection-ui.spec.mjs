@@ -128,6 +128,14 @@ for (const mode of ['collection', 'tracking', 'quick']) {
     await expect(leaves).toHaveCount(2);
     const left = await leaves.nth(0).boundingBox(), right = await leaves.nth(1).boundingBox();
     expect(Math.abs(left.y - right.y)).toBeLessThan(2); expect(right.x).toBeGreaterThan(left.x + left.width);
+    // A visible pocket must receive taps; Chromium 143 can paint the themed
+    // pages while incorrectly hitting the stage behind them.
+    const pocket = book.locator(mode === 'tracking' ? '.tracking-card:not(.empty)' : mode === 'quick' ? '.quick-card:not(.empty)' : '.pocket.filled').first();
+    await pocket.evaluate(node => node.scrollIntoView({block: 'center', behavior: 'instant'}));
+    expect(await pocket.evaluate(node => {
+      const box = node.getBoundingClientRect();
+      return node.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
+    })).toBe(true);
     await book.getByRole('button', {name: 'Next', exact: true}).click(); await expect(range).toHaveText('Pages 3–4 of 5');
     if (mode !== 'tracking') {
       await page.getByRole('button', {name: 'Value & history', exact: true}).click();

@@ -4,6 +4,7 @@
 - Open collection binders on cards, with value/history in its own view. Collapse printing editors without losing drafts, and preserve all detailed pricing and history controls.
 - Add a shared book navigator with default two-page spreads for tracking, collection, quick collection and shared binders. Support touch swipes, animated page turns, keyboard arrows, Previous/Next controls, a single-page option, odd-page boundaries and reduced motion. Distinguish vertical scrolling and pinch gestures from page turns, and suppress the swipe's accidental pocket click.
 - Add phone/desktop browser coverage for collapsed-section controls, filtering, unsaved ownership drafts, both binder types, real touch swipes, read-only shared books and motion preferences. No collection data or schema migration is required.
+- Keep 3D perspective on the turning leaf only, avoiding Chromium 143 hit-testing failures that let the collector binder surface intercept pocket taps. Check actual pocket hit targets alongside touch navigation.
 
 ## 0.56.1 — 2026-10-18
 
