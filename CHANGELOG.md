@@ -1,3 +1,11 @@
+## 0.57.1 — 2026-10-18
+
+- Handle binder touch swipes independently of pointer events, including cancelled pointer streams on mobile Safari. Claim only horizontal movement; preserve scrolling, pinch zoom, ordinary card taps and mouse rearrangement.
+- Keep expanded binder More tools in the page flow on phones, including narrow portrait screens with wrapped Scan/Appearance actions.
+- Cache successfully decoded public card artwork on each device for repeat viewing. Bound storage by age, bytes and entry count; separately limit opaque provider responses, keep failures out of the cache, and retain source fallbacks when storage is unavailable. Account data, private images and exports remain uncached. No server image-download job or catalogue re-import is required.
+- Add WebKit phone coverage to CI and defer chart resize writes to prevent Safari resize-observer loops when expanding value details.
+- Add portrait menu bounds, interrupted touch-stream, real swipe, cache reuse/offline, expiry, duplicate request, storage-failure and image-validation regressions.
+
 ## 0.57.0 — 2026-10-18
 
 - Simplify collection, catalogue, binder and card-detail layouts. Replace the large welcome banner with compact totals and shortcuts; add binder search, collapsible pricing/history and advanced filters, and concise primary actions with secondary binder tools on demand. Keep estimate qualifications, failures and stale-price warnings visible.

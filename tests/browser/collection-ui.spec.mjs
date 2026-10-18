@@ -202,6 +202,64 @@ test('book page turns respect reduced-motion preferences', async ({page}) => {
   await expect(book.locator('.book-content')).toHaveCSS('animation-name', 'none');
 });
 
+test('portrait binder tools stay visible when all primary actions wrap', async ({page}, info) => {
+  test.skip(info.project.name === 'desktop', 'Portrait phone layout.');
+  const state = await fixtures(page, 'light', 'quick', 5);
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({width, height: 844}); await page.goto('/binders/' + binderId);
+    await expect(page.getByRole('link', {name: 'Scan a card', exact: true})).toBeVisible();
+    await page.locator('.binder-tools > summary').click();
+    const actions = page.locator('.binder-tools-actions');
+    for (const button of await actions.locator('button, a').all()) {
+      await button.scrollIntoViewIfNeeded();
+      const box = await button.boundingBox();
+      expect(box.x).toBeGreaterThanOrEqual(16); expect(box.x + box.width).toBeLessThanOrEqual(width - 16);
+      expect(box.y).toBeGreaterThanOrEqual(65); expect(box.y + box.height).toBeLessThan(770);
+    }
+    await fits(page);
+    await page.getByRole('button', {name: 'Binder settings', exact: true}).click();
+    await expect(page.getByRole('dialog', {name: 'Binder settings', exact: true})).toBeVisible();
+    await page.getByRole('button', {name: 'Close dialog'}).click();
+    await expect(page.locator('.binder-tools')).not.toHaveAttribute('open');
+  }
+  expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
+});
+
+for (const mode of ['collection', 'tracking', 'quick']) test(mode + ' touch stream survives pointer cancellation and preserves vertical scroll and pinch', async ({page}, info) => {
+  test.skip(info.project.name === 'desktop', 'Touch-only event stream used by mobile browsers.');
+  const state = await fixtures(page, 'light', mode, 5); await page.goto('/binders/' + binderId);
+  const book = page.locator('.binder-book'); await expect(book.locator('.book-range')).toHaveText('Pages 1–2 of 5');
+  async function gesture(dx, dy, pinch = false) {
+    await expect(book).not.toHaveClass(/turning/);
+    return book.locator('.book-viewport').evaluate((node, {dx, dy, pinch}) => {
+      const target = node.querySelector('button'), box = target.getBoundingClientRect();
+      const touch = (id, x, y) => ({identifier: id, target, clientX: x, clientY: y});
+      const first = touch(1, box.x + box.width / 2, box.y + box.height / 2);
+      function send(type, touches, changedTouches) {
+        const event = new Event(type, {bubbles: true, cancelable: true});
+        Object.defineProperties(event, {touches: {value: touches}, changedTouches: {value: changedTouches}});
+        target.dispatchEvent(event); return event.defaultPrevented;
+      }
+      send('touchstart', [first], [first]);
+      target.dispatchEvent(new PointerEvent('pointercancel', {bubbles: true, pointerType: 'touch', pointerId: 1}));
+      if (pinch) send('touchstart', [first, touch(2, first.clientX + 10, first.clientY)], [first]);
+      const last = touch(1, first.clientX + dx, first.clientY + dy);
+      const prevented = send('touchmove', pinch ? [last, touch(2, last.clientX + 20, last.clientY)] : [last], [last]);
+      send('touchend', [], [last]); return prevented;
+    }, {dx, dy, pinch});
+  }
+  expect(await gesture(-100, 4)).toBe(true); await expect(book.locator('.book-range')).toHaveText('Pages 3–4 of 5');
+  expect(await gesture(5, -90)).toBe(false); await expect(book.locator('.book-range')).toHaveText('Pages 3–4 of 5');
+  expect(await gesture(-100, 0, true)).toBe(false); await expect(book.locator('.book-range')).toHaveText('Pages 3–4 of 5');
+  expect(await gesture(100, 4)).toBe(true); await expect(book.locator('.book-range')).toHaveText('Pages 1–2 of 5');
+  await expect(page.locator('dialog[open]')).toHaveCount(0);
+  await expect(book).not.toHaveClass(/turning/);
+  await book.locator(mode === 'tracking' ? '.tracking-card:not(.empty)' : mode === 'quick' ? '.quick-card:not(.empty)' : '.pocket.filled').first().tap();
+  await expect(page.locator('dialog[open]')).toHaveCount(1);
+  await page.getByRole('button', {name: 'Close dialog'}).click();
+  expect(state.writes).toEqual([]); expect(state.errors).toEqual([]);
+});
+
 for (const mode of ['tracking', 'collection']) test('shared ' + mode + ' binders use the same read-only book navigation', async ({page}) => {
   const state = await fixtures(page, 'light', mode, 4); await page.goto('/shared/' + 's'.repeat(64));
   const book = page.locator('.binder-book'); await expect(book.locator('.book-range')).toHaveText('Pages 1–2 of 4');

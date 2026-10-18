@@ -99,8 +99,8 @@ jobs:
           cat /tmp/cardshelf-server.log
           exit 1
       - run: npm run test:integration
-      - name: Install scanner browser
-        run: npx playwright install --with-deps chromium
+      - name: Install UI browsers
+        run: npx playwright install --with-deps chromium webkit
       - run: npm run test:security-ui
       - run: npm run test:release-ui
       - run: npm run test:scan-batch-ui

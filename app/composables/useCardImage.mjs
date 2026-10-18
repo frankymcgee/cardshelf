@@ -10,10 +10,19 @@ export function useCardImage(card, low = ref(true)) {
   const current = computed(() => sources.value[index.value])
   const image = computed(() => current.value?.url)
   const imageSource = computed(() => current.value?.source)
+  function artworkResult(type, event) {
+    const node = /** @type {HTMLImageElement | null} */ (event.target)
+    if (node?.getAttribute('src') !== image.value) return
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.controller?.postMessage({ type: 'cardshelf-artwork-' + type, url: node.src })
+    }
+  }
+  function imageLoaded(event) { artworkResult('loaded', event) }
   /** @param {Event} event */
   function imageFailed(event) {
+    artworkResult('failed', event)
     // Ignore a late error from the previous card/image after a prop change.
     if ((/** @type {HTMLImageElement | null} */ (event.target))?.getAttribute('src') === image.value) index.value++
   }
-  return { image, imageSource, imageFailed }
+  return { image, imageSource, imageFailed, imageLoaded }
 }

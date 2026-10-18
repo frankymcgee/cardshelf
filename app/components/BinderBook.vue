@@ -6,7 +6,7 @@ const total = computed(() => Math.max(1, props.pages))
 const current = computed(() => Math.floor(Math.max(0, Math.min(props.modelValue, total.value - 1)) / step.value) * step.value)
 const last = computed(() => Math.min(total.value, current.value + step.value))
 const turning = ref(false), direction = ref('next')
-let start: { id: number; x: number; y: number; time: number } | null = null
+let start: { id: number; x: number; y: number; time: number; horizontal: boolean } | null = null
 let clickUntil = 0, timer: ReturnType<typeof setTimeout> | undefined, frame: number | undefined
 watch([current, () => props.modelValue], () => { if (current.value !== props.modelValue) emit('update:modelValue', current.value) })
 onBeforeUnmount(() => { clearTimeout(timer); if (frame !== undefined) cancelAnimationFrame(frame) })
@@ -20,43 +20,70 @@ function turn(delta: number) {
   clearTimeout(timer); timer = setTimeout(() => { turning.value = false }, 360)
 }
 function pointerDown(event: PointerEvent) {
+  // Safari may cancel pointer events while the touch stream is still active.
+  if (event.pointerType === 'touch') return
   if (!event.isPrimary) { start = null; return }
   clickUntil = 0
   if (event.pointerType === 'mouse' || props.disabled || turning.value || (event.target as HTMLElement).closest('input, select, textarea, a, [data-no-swipe]')) return
-  start = { id: event.pointerId, x: event.clientX, y: event.clientY, time: Date.now() }
+  start = { id: event.pointerId, x: event.clientX, y: event.clientY, time: Date.now(), horizontal: false }
 }
 function pointerUp(event: PointerEvent) {
+  if (event.pointerType === 'touch') return
+  finish(event.pointerId, event.clientX, event.clientY)
+}
+function finish(id: number, x: number, y: number) {
   const origin = start; start = null
-  if (!origin || origin.id !== event.pointerId) return
-  const dx = event.clientX - origin.x, dy = event.clientY - origin.y
-  if (event.pointerType === 'touch' && Math.abs(dx) < 10 && Math.abs(dy) < 10 && Date.now() - origin.time < 400 && !props.disabled && !turning.value) {
+  if (!origin || origin.id !== id) return false
+  const dx = x - origin.x, dy = y - origin.y
+  if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.5) return false
+  // Outward boundary swipes must not also open a pocket.
+  clickUntil = Date.now() + 600
+  frame = requestAnimationFrame(() => { frame = undefined; turn(dx < 0 ? 1 : -1) })
+  return true
+}
+function pointerMove(event: PointerEvent) {
+  if (event.pointerType === 'touch') return
+  if (!start || start.id !== event.pointerId) return
+  const dx = event.clientX - start.x, dy = event.clientY - start.y
+  if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.5) return
+  const root = event.currentTarget as HTMLElement
+  if (!root.hasPointerCapture(event.pointerId)) root.setPointerCapture(event.pointerId)
+}
+function pointerCancel(event: PointerEvent) { if (event.pointerType !== 'touch') start = null }
+function touchStart(event: TouchEvent) {
+  start = null; clickUntil = 0
+  if (event.touches.length !== 1 || props.disabled || turning.value || (event.target as Element).closest('input, select, textarea, a, [data-no-swipe]')) return
+  const touch = event.touches[0]!
+  start = { id: touch.identifier, x: touch.clientX, y: touch.clientY, time: Date.now(), horizontal: false }
+}
+function touchMove(event: TouchEvent) {
+  if (!start) return
+  if (event.touches.length !== 1) { start = null; return }
+  const touch = event.touches[0]!
+  if (touch.identifier !== start.id) { start = null; return }
+  const dx = Math.abs(touch.clientX - start.x), dy = Math.abs(touch.clientY - start.y)
+  if (!start.horizontal) {
+    if (dy > 10 && dy > dx) { start = null; return }
+    start.horizontal = dx > 12 && dx > dy * 1.5
+  }
+  // Claim only horizontal movement; keep scrolling and pinch zoom native.
+  if (start.horizontal && event.cancelable) event.preventDefault()
+}
+function touchEnd(event: TouchEvent) {
+  if (!start || event.touches.length) { start = null; return }
+  const touch = Array.from(event.changedTouches).find(touch => touch.identifier === start?.id)
+  if (!touch) { start = null; return }
+  if (Math.abs(touch.clientX - start.x) < 10 && Math.abs(touch.clientY - start.y) < 10 && Date.now() - start.time < 400 && !props.disabled && !turning.value) {
     const button = (event.target as Element).closest<HTMLButtonElement>('button[data-book-tap]')
     if (button && !button.disabled && (event.currentTarget as HTMLElement).contains(button)) {
-      // Resolve the pocket tap exactly once. Some touch browsers omit the
-      // compatibility click after a swipe; others deliver it late.
-      clickUntil = Date.now() + 600
+      start = null; clickUntil = Date.now() + 600
+      // Deliver one tap even when the browser omits its post-swipe click.
+      if (event.cancelable) event.preventDefault()
       frame = requestAnimationFrame(() => { frame = undefined; if (button.isConnected) button.click() })
       return
     }
   }
-  if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.5) return
-  // Swiping over a pocket must never also trigger its tap-to-edit action,
-  // including an outward swipe at the first or last spread.
-  clickUntil = Date.now() + 600
-  const root = event.currentTarget as HTMLElement
-  if (root.hasPointerCapture(event.pointerId)) root.releasePointerCapture(event.pointerId)
-  // Let touchend finish against the original pocket before replacing its DOM.
-  // Replacing it inside pointerup can swallow the next tap in touch browsers.
-  frame = requestAnimationFrame(() => { frame = undefined; turn(dx < 0 ? 1 : -1) })
-}
-function pointerMove(event: PointerEvent) {
-  if (!start || start.id !== event.pointerId) return
-  const dx = event.clientX - start.x, dy = event.clientY - start.y
-  if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.5) return
-  // Keep a confirmed swipe on the stable book, rather than the pocket which
-  // will leave the DOM on a page turn. Ordinary taps retain their card target.
-  const root = event.currentTarget as HTMLElement
-  if (!root.hasPointerCapture(event.pointerId)) root.setPointerCapture(event.pointerId)
+  if (finish(touch.identifier, touch.clientX, touch.clientY) && event.cancelable) event.preventDefault()
 }
 function preventSwipeClick(event: MouseEvent) {
   if (event.detail !== 0 && Date.now() < clickUntil) { event.preventDefault(); event.stopImmediatePropagation() }
@@ -72,7 +99,8 @@ function toggleSpread() {
     <div class="book-options"><span class="small muted">{{ spread ? 'Two-page spread' : 'Single page' }}</span><button class="text-button" :disabled="disabled || turning" @click="toggleSpread">{{ spread ? 'Single page' : 'Two pages' }}</button></div>
     <div class="book-viewport" tabindex="0" aria-label="Binder page spread. Swipe left or right, or use arrow keys to turn pages."
       @keydown.left.self.prevent="turn(-1)" @keydown.right.self.prevent="turn(1)"
-      @pointerdown.capture="pointerDown" @pointermove.capture="pointerMove" @pointerup.capture="pointerUp" @pointercancel="start = null"
+      @pointerdown.capture="pointerDown" @pointermove.capture="pointerMove" @pointerup.capture="pointerUp" @pointercancel="pointerCancel"
+      @touchstart.capture.passive="touchStart" @touchmove.capture="touchMove" @touchend.capture="touchEnd" @touchcancel="start = null"
       @click.capture="preventSwipeClick" @dragstart="start = null">
       <div class="book-content" :class="{ 'settle-next': turning && direction === 'next', 'settle-previous': turning && direction === 'previous' }"><slot /></div>
       <div v-if="turning" class="book-turn-leaf" :class="direction" aria-hidden="true" />

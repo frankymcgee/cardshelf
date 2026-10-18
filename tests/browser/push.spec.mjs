@@ -107,7 +107,10 @@ test('revoked browser permission removes a previously registered device',async({
 test('real production service worker installs, updates and provides the offline navigation shell',async({page,context})=>{
   await fixtures(page,{realWorker:true});await page.goto('/notifications');
   await expect.poll(()=>page.evaluate(async()=>!!(await navigator.serviceWorker.getRegistration('/'))?.active)).toBe(true);
-  const cache=await page.evaluate(async()=>({keys:await caches.keys(),entries:await (await caches.open('cardshelf-static-v0.45.0')).keys().then(entries=>entries.map(e=>new URL(e.url).pathname))}));
-  expect(cache.keys).toContain('cardshelf-static-v0.45.0');expect(cache.entries).toEqual(['/offline.html']);
+  const cache=await page.evaluate(async()=>{
+    const keys=await caches.keys(),shell=keys.find(key=>key.startsWith('cardshelf-static-'));
+    return {keys,entries:shell?await (await caches.open(shell)).keys().then(entries=>entries.map(e=>new URL(e.url).pathname)):[]};
+  });
+  expect(cache.keys.filter(key=>key.startsWith('cardshelf-static-'))).toHaveLength(1);expect(cache.entries).toEqual(['/offline.html']);
   await context.setOffline(true);await page.goto('/app');await expect(page.locator('body')).toContainText(/offline/i);await context.setOffline(false);
 });
