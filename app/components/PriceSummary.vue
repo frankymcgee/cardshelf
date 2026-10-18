@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{ binderId?: string; refreshKey?: number }>();
+const props = defineProps<{ binderId?: string; refreshKey?: number; expanded?: boolean }>();
 const api = useApi(), auth = useAuth(), notice = useNotice();
 const data = ref<any>(null), error = ref(''), busy = ref(false);
 let alive = true, sequence = 0;
@@ -27,24 +27,29 @@ const total = computed(() => data.value?.valuation.aud_total == null ? 'Not pric
 </script>
 <template>
   <section class="panel price-summary">
-    <div class="section-heading"><div><h2>{{ binderId ? 'Planned binder value' : 'Collection market estimate' }}</h2><p>Converted overseas-market reference · AUD · not condition-adjusted</p></div><button class="button secondary" :disabled="busy" @click="refresh"><AppIcon name="refresh" :size="16" />Refresh</button></div>
+    <div class="section-heading"><div><h2>{{ binderId ? 'Planned binder value' : 'Collection market estimate' }}</h2><p>AUD reference estimate · not condition-adjusted</p></div><button class="icon-button bordered" aria-label="Refresh" :disabled="busy" @click="refresh"><AppIcon name="refresh" :size="16" /></button></div>
     <p v-if="error" class="alert warning">Prices are unavailable: {{ error }}</p>
     <template v-else-if="data">
       <strong class="price-total">{{ total }}</strong>
-      <p class="small">{{ data.valuation.priced_quantity }} / {{ data.valuation.quantity }} {{ binderId ? 'planned pockets' : 'owned copies' }} priced</p>
+      <p class="price-coverage">{{ data.valuation.priced_quantity }} / {{ data.valuation.quantity }} {{ binderId ? 'planned pockets' : 'owned copies' }} priced<template v-if="data.valuation.unpriced_quantity"> · {{ data.valuation.unpriced_quantity }} unpriced</template></p>
+      <p v-if="data.valuation.approximate_quantity" class="estimate-breakdown small">Includes {{ money(data.valuation.approximate_aud_total) }} in guide-price approximations · {{ data.valuation.approximate_quantity }} unconfirmed {{ binderId ? 'pockets' : 'copies' }}.</p>
+      <p v-if="data.valuation.stale_reference_quantity || data.valuation.failed_reference_quantity" class="alert warning compact-price-warning">Includes outdated or failed-refresh guide values.</p>
+      <UiDisclosure class="value-details" title="Value details & history" :open="expanded">
+      <CollectionValueHistory v-if="data.history" :history="data.history" :binder="!!binderId" />
       <div class="button-row"><span class="badge">{{ data.valuation.unpriced_quantity }} no available estimate</span><span class="badge amber">{{ data.valuation.stale_quantity }} stale matched quotes excluded</span><span class="badge">{{ data.valuation.fx_missing_quantity }} awaiting currency rate</span></div>
-      <div v-if="data.valuation.approximate_quantity" class="estimate-breakdown alert info"><div><strong>Includes {{ money(data.valuation.approximate_aud_total) }} in guide-price approximations (including Cardmarket)</strong><br><span>{{ data.valuation.approximate_quantity }} {{ binderId ? 'planned pockets' : 'owned copies' }} use unconfirmed reference values. Matched TCGplayer portion: {{ money(data.valuation.matched_aud_total) }}.</span></div></div>
-      <p v-if="data.valuation.stale_reference_quantity || data.valuation.failed_reference_quantity" class="alert warning">Included approximate estimates: {{ data.valuation.stale_reference_quantity }} copies have stale/unknown source dates; {{ data.valuation.failed_reference_quantity }} have a failed latest refresh. These counts can overlap. Amounts remain visible but may be inaccurate.</p>
+      <p v-if="data.valuation.approximate_quantity" class="small">Matched TCGplayer portion: {{ money(data.valuation.matched_aud_total) }}. Guide references, including Cardmarket, are not confirmed for the exact printing.</p>
+      <p v-if="data.valuation.stale_reference_quantity || data.valuation.failed_reference_quantity" class="small">Included guide values: {{ data.valuation.stale_reference_quantity }} copies have stale/unknown source dates; {{ data.valuation.failed_reference_quantity }} have a failed latest refresh. Counts can overlap.</p>
       <div v-if="binderId && data.owned_reference" class="panel owned-binder-estimate"><strong>Owned cards represented in this layout: {{ money(data.owned_reference.aud_total) }}</strong><p class="small">{{ data.owned_reference.priced_quantity }} / {{ data.owned_reference.quantity }} represented owned copies priced<template v-if="data.owned_reference.approximate_quantity"> · {{ money(data.owned_reference.approximate_aud_total) }} from guide-price approximations</template>. This is not a physical-copy allocation.</p></div>
       <p v-if="data.rates.length" class="muted small">AUD conversion: <span v-for="(rate, i) in data.rates" :key="rate.currency">{{ i ? ' · ' : '' }}{{ rate.currency }} × {{ Number(rate.aud_rate).toFixed(4) }} ({{ String(rate.rate_date).slice(0,10) }})</span></p>
-      <CollectionValueHistory v-if="data.history" :history="data.history" :binder="!!binderId" />
       <p class="data-note">Recent matched TCGplayer prices are preferred. Where unavailable or unusable, Cardmarket and additional-game guide references contribute explicitly labelled approximations, including last-known values after a failed or stale check. Retail guides are not guaranteed sale prices. Exact printing, edition, sale language, condition and provider mapping may be wrong. Missing prices and missing or outdated AUD exchange rates are still excluded; no price or conversion rate is invented.</p>
       <p v-if="binderId" class="data-note">This is the cost reference for the planned layout, not proof of cards physically in this binder. Repeated pockets count as repeated planned purchases; collection totals use actual owned quantities.</p>
       <p class="muted small">{{ data.enabled ? 'Tracked cards are checked approximately every ' + data.refresh_hours + ' hours as the worker processes the queue.' : 'Automatic price tracking is disabled.' }} Refreshing cannot make the upstream source newer.</p>
+      </UiDisclosure>
     </template>
     <p v-else class="muted small">Loading market estimates…</p>
   </section>
 </template>
 <style scoped>
 .estimate-breakdown{align-items:flex-start}.estimate-breakdown strong{font-size:13px}.owned-binder-estimate{padding:14px;margin-top:16px;border-color:var(--line);background:var(--surface-soft)}.owned-binder-estimate p{margin:6px 0 0;color:var(--muted)}
+.price-summary{padding:20px 24px}.price-summary .section-heading{margin-bottom:10px}.price-summary .section-heading h2{font-size:16px}.price-summary .section-heading p{font-size:11px;margin-top:4px}.price-summary .price-total{font-size:30px}.price-coverage{font-size:12px;margin:5px 0;color:var(--muted)}.estimate-breakdown{color:var(--muted);margin:8px 0;line-height:1.5}.compact-price-warning{margin:10px 0;padding:10px 12px}.price-summary .value-details{margin-top:10px}@media(max-width:600px){.price-summary{padding:16px}.price-summary .section-heading{gap:8px;align-items:center}.price-summary .section-heading h2{font-size:14px}.price-summary .price-total{font-size:27px}}
 </style>

@@ -4,12 +4,13 @@ import { binderTypeLabel } from '../../../shared/binder-types.mjs'
 const api = useApi(), notice = useNotice(), route = useRoute()
 const binders = ref<any[]>([]), loading = ref(true), open = ref(route.query.new === '1'), busy = ref(false)
 const gameFilter = ref('')
+const search = ref('')
 const filter = ref('all'), generatorOpen = ref(false)
 const loadError = ref('')
 let sequence = 0, alive = true
 const form = reactive({ game: 'pokemon', binder_type: 'tracking', title: '', description: '', columns: 3, rows: 3, page_count: 10, color: '#5546d8' })
 const colors = ['#5546d8', '#237b73', '#d47544', '#3467a5', '#88456e', '#303948']
-const visible = computed(() => binders.value.filter(b => (!gameFilter.value || b.game === gameFilter.value) && (filter.value === 'all' || b.binder_type === filter.value)))
+const visible = computed(() => binders.value.filter(b => (!gameFilter.value || b.game === gameFilter.value) && (filter.value === 'all' || b.binder_type === filter.value) && String(b.title).toLocaleLowerCase().includes(search.value.trim().toLocaleLowerCase())))
 async function load() {
   const current = ++sequence; loading.value = true; loadError.value = ''
   try { const result = await api('/api/binders'); if (alive && current === sequence) binders.value = result }
@@ -26,19 +27,19 @@ async function create() {
 }
 </script>
 <template>
-  <header class="page-heading"><div><span class="eyebrow">A PLACE FOR EVERY CARD</span><h1>Your binders</h1><p>A quick checklist or a detailed collection. Choose the way you collect.</p></div>
+  <header class="page-heading compact-heading"><div><h1>Your binders</h1><p v-if="!loading && !loadError">{{ binders.length }} {{ binders.length === 1 ? 'binder' : 'binders' }}</p></div>
     <div class="button-row"><button class="button primary" @click="generatorOpen = true">From set / series</button><button class="button secondary" @click="open = true"><AppIcon name="plus" :size="18" />Blank binder</button></div>
   </header>
-  <GamePicker v-model="gameFilter" all />
-  <div class="binder-type-filter" role="group" aria-label="Filter binders"><button v-for="f in ['all','tracking','collection']" :key="f" class="button secondary small-button" :aria-pressed="filter === f" :class="{ chosen: filter === f }" @click="filter = f">{{ f === 'all' ? 'All binders' : f === 'tracking' ? 'Tracking' : 'Collection' }}</button></div>
+  <div class="binder-search-row"><label class="search-field"><AppIcon name="search" /><input v-model="search" type="search" placeholder="Find a binder…" aria-label="Search binders" /></label><GamePicker v-model="gameFilter" all /></div>
+  <div class="binder-type-filter" role="group" aria-label="Filter binders"><button v-for="f in ['all','tracking','collection']" :key="f" class="button secondary small-button" :aria-pressed="filter === f" :class="{ chosen: filter === f }" @click="filter = f">{{ f === 'all' ? 'All binders' : f === 'tracking' ? 'Tracking' : 'Collection' }}</button><button v-if="search || gameFilter || filter !== 'all'" class="text-button" @click="search = ''; gameFilter = ''; filter = 'all'">Clear filters</button></div>
   <p v-if="loadError" class="alert error" role="alert">Could not load your binders. {{ loadError }} <button class="text-button" :disabled="loading" @click="load">Retry</button></p>
   <p v-if="loading" class="loading-panel" role="status">Loading binders…</p>
   <div v-else-if="visible.length" class="binder-list full-list"><NuxtLink v-for="binder in visible" :key="binder.id" :to="'/binders/' + binder.id" class="binder-card">
     <BinderCover :binder="binder" />
     <div class="binder-card-info"><strong>{{ binder.title }}</strong><small>{{ gameName(binder.game || 'pokemon') }}</small><span v-if="binder.binder_type === 'tracking'">{{ binder.collected || 0 }} / {{ binder.filled }} collected · {{ binder.filled ? Math.round((binder.collected || 0) / binder.filled * 100) : 0 }}%</span><span v-else>{{ binder.page_count }} pages · {{ binder.filled }} / {{ binder.columns * binder.rows * binder.page_count }} pockets</span><small v-if="binder.share_token" class="purple-text">Read-only sharing enabled</small></div>
   </NuxtLink></div>
-  <section v-else-if="!loadError" class="empty-state tall"><div class="empty-icon"><AppIcon name="binder" :size="46" /></div><h2>{{ binders.length ? 'No binders of this type yet.' : 'Your next collection starts here.' }}</h2><p>Generate a checklist from your imported sets, or start with empty pockets.</p><div class="button-row"><button class="button primary" @click="generatorOpen = true">Create from a set</button><button class="button secondary" @click="open = true">Start blank</button></div></section>
-  <p class="data-note">Tracking binders have independent collected/missing marks. Collection binders use your detailed inventory. Neither reserves physical copies, and switching between binders never adds inventory quantities.</p>
+  <section v-else-if="!loadError" class="empty-state tall"><div class="empty-icon"><AppIcon name="binder" :size="46" /></div><h2>{{ binders.length ? 'No binders match your filters.' : 'Your first binder starts here.' }}</h2><button v-if="binders.length" class="button secondary" @click="search = ''; gameFilter = ''; filter = 'all'">Clear filters</button><template v-else><p>Create a checklist from a set or start blank.</p><div class="button-row"><button class="button primary" @click="generatorOpen = true">Create from a set</button><button class="button secondary" @click="open = true">Start blank</button></div></template></section>
+  <UiDisclosure title="About binder types"><p class="data-note">Tracking binders have independent collected/missing marks. Collection binders use your detailed inventory. Neither reserves physical copies, and switching between binders never adds inventory quantities.</p></UiDisclosure>
   <SeriesBinderBuilder :open="generatorOpen" @close="generatorOpen = false" @created="load" />
   <AppModal :open="open" title="Create a new binder" :dismissible="!busy" @close="open = false"><form class="form-stack" @submit.prevent="create">
     <GamePicker v-model="form.game" :disabled="busy" />
@@ -55,4 +56,5 @@ async function create() {
 </template>
 <style scoped>
 .binder-type-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}.binder-type-filter .chosen{background:#253247;color:white;border-color:#253247}
+.compact-heading{margin-bottom:20px}.compact-heading h1{font-size:28px}.compact-heading p{font-size:12px;margin:5px 0 0}.binder-search-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,220px);gap:16px;align-items:end;margin-bottom:16px}.binder-search-row :deep(.game-picker){margin:0}.binder-search-row .search-field{margin:0;min-width:0}.binder-type-filter .button{min-height:44px}@media(max-width:600px){.compact-heading h1{font-size:24px}.binder-search-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.binder-search-row .search-field{grid-column:1/-1}.binder-search-row :deep(.game-picker){grid-column:1/-1}.binder-search-row :deep(select){width:100%}.binder-type-filter{gap:7px;margin-bottom:18px}}
 </style>

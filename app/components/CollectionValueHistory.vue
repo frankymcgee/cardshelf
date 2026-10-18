@@ -14,7 +14,7 @@ const money = (amount: number) => new Intl.NumberFormat('en-AU', { style: 'curre
     <ValueHistoryChart v-model:days="days" :title="binder ? 'Planned binder value history' : 'Collection value history'" :points="points" :today="history.today" />
     <template v-if="change?.total_aud != null">
       <p class="history-change"><strong>{{ money(change.total_aud) }}</strong><span v-if="change.percent != null"> ({{ change.percent > 0 ? '+' : '' }}{{ change.percent }}%)</span> in recorded value<br><small>{{ change.from }} to {{ change.to }} · AUD</small></p>
-      <dl class="history-breakdown"><div><dt>Prices & currency rates</dt><dd>{{ money(change.price_fx_aud) }}</dd></div><div><dt>{{ binder ? 'Pockets added / removed' : 'Cards added / removed' }}</dt><dd>{{ money(change.quantity_aud) }}</dd><small>+{{ change.added_quantity }} / −{{ change.removed_quantity }} copies</small></div><div><dt>Coverage & source changes</dt><dd>{{ money(change.coverage_aud) }}</dd></div></dl>
+      <UiDisclosure title="What changed"><dl class="history-breakdown"><div><dt>Prices & currency rates</dt><dd>{{ money(change.price_fx_aud) }}</dd></div><div><dt>{{ binder ? 'Pockets added / removed' : 'Cards added / removed' }}</dt><dd>{{ money(change.quantity_aud) }}</dd><small>+{{ change.added_quantity }} / −{{ change.removed_quantity }} copies</small></div><div><dt>Coverage & source changes</dt><dd>{{ money(change.coverage_aud) }}</dd></div></dl></UiDisclosure>
     </template>
     <p v-else class="small muted">Value changes need two priced daily observations.</p>
     <p v-if="!history.enabled" class="alert info">History recording is paused while automatic pricing is disabled. Previously recorded observations remain available.</p>

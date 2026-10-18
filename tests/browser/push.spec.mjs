@@ -51,7 +51,7 @@ async function fixtures(page,options={}) {
 async function open(page,options={}){const f=await fixtures(page,options);await page.goto('/notifications');await expect(page.getByRole('heading',{name:'App & notifications'})).toBeVisible();await expect(page.getByText('Checking this device…')).toHaveCount(0);return f;}
 async function nativePrompt(page,outcome='accepted') {await page.evaluate(outcome=>{const event=new Event('beforeinstallprompt',{cancelable:true});event.prompt=async()=>{window.pushFixture.prompts++};event.userChoice=Promise.resolve({outcome});window.dispatchEvent(event);},outcome);}
 test('native installation is click-driven and the prompt disappears after installation',async({page})=>{
-  const {errors}=await fixtures(page);await page.goto('/app');await expect(page.getByRole('heading',{name:'Collection overview'})).toBeVisible();
+  const {errors}=await fixtures(page);await page.goto('/app');await expect(page.getByRole('heading',{name:'My collection'})).toBeVisible();
   await nativePrompt(page);await expect(page.getByRole('button',{name:'Install CardShelf',exact:true})).toBeVisible();expect(await page.evaluate(()=>window.pushFixture.prompts)).toBe(0);
   await page.getByRole('button',{name:'Install CardShelf',exact:true}).click();expect(await page.evaluate(()=>window.pushFixture.prompts)).toBe(1);
   await page.evaluate(()=>window.dispatchEvent(new Event('appinstalled')));await expect(page.locator('.install-banner')).toHaveCount(0);expect(errors).toEqual([]);

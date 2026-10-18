@@ -66,7 +66,7 @@ async function readableLine(chart) {
 }
 for (const theme of ['light', 'dark']) {
   test(theme + ' collection graph shows daily gaps, keyboard inspection and range changes', async ({ page }, info) => {
-    const { errors } = await fixtures(page, { theme }); await page.goto('/app');
+    const { errors } = await fixtures(page, { theme }); await page.goto('/app'); await page.locator('.value-details > summary').click();
     const chart = page.getByRole('region', { name: 'Collection value history', exact: true });
     await expect(chart.getByRole('img')).toBeVisible(); await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
     await expect(chart.locator('.history-line')).toHaveCount(2); await readableLine(chart);
@@ -91,7 +91,7 @@ for (const theme of ['light', 'dark']) {
   });
 }
 test('Collection binder history is explicitly planned; Tracking binders do not request prices', async ({ page }) => {
-  const fixture = await fixtures(page); await page.goto('/binders/' + binderId);
+  const fixture = await fixtures(page); await page.goto('/binders/' + binderId); await page.getByRole('button', { name: 'Value & history', exact: true }).click();
   const chart = page.getByRole('region', { name: 'Planned binder value history', exact: true }); await expect(chart).toBeVisible();
   await expect(chart.locator('.chart-observation')).toContainText('planned pockets'); await expect(page.locator('.history-breakdown')).toContainText('Pockets added / removed'); await fits(page); expect(fixture.errors).toEqual([]);
   await page.unroute('**/api/**'); const tracking = await fixtures(page, { tracking: true }); await page.reload();
@@ -100,11 +100,11 @@ test('Collection binder history is explicitly planned; Tracking binders do not r
 });
 test('signed-in card dialog includes the same source-separated price graph', async ({ page }) => {
   const { errors } = await fixtures(page); await page.goto('/cards?ads=off&card=' + encodeURIComponent(card.id));
-  const dialog = page.getByRole('dialog'); await expect(dialog.getByRole('heading', { name: 'Card price history', exact: true })).toBeVisible();
+  const dialog = page.getByRole('dialog'); await dialog.locator('.card-value-details > summary').click(); await expect(dialog.getByRole('heading', { name: 'Card price history', exact: true })).toBeVisible();
   await expect(dialog.getByRole('combobox', { name: 'Price series' })).toBeVisible(); await fits(page); expect(errors).toEqual([]);
 });
 test('first observation, unpriced, paused and empty history do not imply a gain', async ({ page }) => {
-  const fixture = await fixtures(page, { mode: 'first' }); await page.goto('/app');
+  const fixture = await fixtures(page, { mode: 'first' }); await page.goto('/app'); await page.locator('.value-details > summary').click();
   await expect(page.getByText('First observation saved. A trend appears after another day is recorded.')).toBeVisible(); await expect(page.locator('.history-change')).toHaveCount(0);
   for (const [mode, message] of [['unpriced', 'No priced observations in this period.'], ['empty', 'No history recorded in this period yet.'], ['paused', 'History recording is paused while automatic pricing is disabled. Previously recorded observations remain available.']]) {
     fixture.setMode(mode); await page.locator('.price-summary').getByRole('button', { name: 'Refresh', exact: true }).click(); await expect(page.getByText(message, { exact: true })).toBeVisible();
@@ -112,7 +112,7 @@ test('first observation, unpriced, paused and empty history do not imply a gain'
   await fits(page); expect(fixture.errors).toEqual([]);
 });
 test('a failed refresh hides outdated history and recovers on retry', async ({ page }) => {
-  const fixture = await fixtures(page); await page.goto('/app'); await expect(page.locator('.history-plot')).toBeVisible(); fixture.setMode('error');
+  const fixture = await fixtures(page); await page.goto('/app'); await page.locator('.value-details > summary').click(); await expect(page.locator('.history-plot')).toBeVisible(); fixture.setMode('error');
   await page.locator('.price-summary').getByRole('button', { name: 'Refresh', exact: true }).click(); await expect(page.getByText('Prices are unavailable: Temporary history outage')).toBeVisible(); await expect(page.locator('.value-chart')).toHaveCount(0);
-  fixture.setMode('normal'); await page.locator('.price-summary').getByRole('button', { name: 'Refresh', exact: true }).click(); await expect(page.locator('.history-plot')).toBeVisible(); expect(fixture.errors).toEqual([]);
+  fixture.setMode('normal'); await page.locator('.price-summary').getByRole('button', { name: 'Refresh', exact: true }).click(); await page.locator('.value-details > summary').click(); await expect(page.locator('.history-plot')).toBeVisible(); expect(fixture.errors).toEqual([]);
 });

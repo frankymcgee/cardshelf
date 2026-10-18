@@ -12,7 +12,7 @@ const selected = computed(() => series.value.find(value => value.id === choice.v
     <label v-if="series.length" class="price-series">Price series<select v-model="choice"><option v-for="item in series" :key="item.id" :value="item.id">{{ item.label }}</option></select></label>
     <p v-if="selected" class="selected-series small muted">{{ selected.label }}</p>
     <ValueHistoryChart v-model:days="days" title="Card price history" :points="selected?.points || []" :currency="selected?.currency || 'USD'" />
-    <p class="data-note">Actual provider observations, in the selected source currency. Finishes, metrics and currencies stay separate. Historical AUD rates and past sale prices are not reconstructed. A provider’s 7-day or 30-day average is one observation, not daily sales. References may not match the exact printing or condition.</p>
+    <UiDisclosure title="About these prices"><p class="data-note">Actual provider observations, in the selected source currency. Finishes, metrics and currencies stay separate. Historical AUD rates and past sale prices are not reconstructed. A provider’s 7-day or 30-day average is one observation, not daily sales. References may not match the exact printing or condition.</p></UiDisclosure>
   </div>
 </template>
 <style scoped>
