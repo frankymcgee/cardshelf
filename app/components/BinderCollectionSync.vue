@@ -41,7 +41,7 @@ async function convert() {
 </script>
 <template>
   <section class="panel collection-sync-prompt">
-    <div><h3>Keep the quick checklist. Add collection sync.</h3><p>Use this same binder for ownership, prices and customisation. Cards you already own are reused, not counted again.</p></div>
+    <div><h3>Collection sync</h3><p>Link this checklist to your inventory.</p></div>
     <button class="button primary" :disabled="disabled || saving" @click="review">Enable collection sync</button>
     <AppModal :open="open" title="Convert to a collection-backed binder" :dismissible="!saving" @close="close">
       <p v-if="loading" class="muted">Reviewing your checklist and existing ownership…</p>

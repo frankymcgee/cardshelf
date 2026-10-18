@@ -112,6 +112,7 @@ jobs:
       - run: npm run test:affiliates-live
       - run: npm run test:binder-completion-ui
       - run: npm run test:value-history-ui
+      - run: npm run test:collection-ui
       - run: npm run test:variant-effects-ui
       - run: npm run test:push-ui
       - run: npm run test:card-images-ui
@@ -132,6 +133,7 @@ jobs:
             test-results/binder-completion
             test-results/scan-batch
             test-results/value-history
+            test-results/collection-ui
             test-results/variant-effects
             test-results/push
             test-results/card-images

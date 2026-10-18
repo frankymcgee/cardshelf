@@ -55,6 +55,8 @@ async function openBinder(page, options) {
 }
 async function pixelCoverage(art) {
   await art.scrollIntoViewIfNeeded();
+  // Keep the sampled surface clear of the fixed phone navigation and header.
+  await art.evaluate(node => node.scrollIntoView({block: 'center', inline: 'center', behavior: 'instant'}));
   await expect.poll(() => art.locator('img').evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
   const layers = art.locator('.foil-layer');
   await expect(layers).toHaveCount(3);
@@ -105,6 +107,9 @@ function expectClear(region, message) {
 for (const theme of ['light', 'dark']) {
   test(theme + ' foil visibly covers the correct image areas, including both EX spellings', async ({ page }, info) => {
     const fixture = await openBinder(page, { theme });
+    // Assess finish coverage in the enlarged page view. The default two-page
+    // phone spread is covered separately by the collection UI suite.
+    if (info.project.name === 'phone') await page.getByRole('button', { name: 'Single page', exact: true }).click();
     const measurements = [];
     for (const n of [0, 1, 2, 3]) measurements.push(await pixelCoverage(artwork(page, n)));
     await info.attach('rendered-foil-coverage', { body: JSON.stringify(measurements, null, 2), contentType: 'application/json' });
