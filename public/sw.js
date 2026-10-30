@@ -1,6 +1,6 @@
 /* Installable shell, push and a bounded cache of public card artwork only.
    Authenticated responses, API data and exports are never cached. No offline editing. */
-const CACHE='cardshelf-static-v0.57.2';
+const CACHE='cardshelf-static-v0.58.0';
 const ARTWORK='cardshelf-artwork-v1', ARTWORK_META='cardshelf-artwork-meta-v1';
 const DAY=86400000, MAX_ARTWORK=200, MAX_OPAQUE=6, MAX_BYTES=64*1024*1024, MAX_IMAGE=4*1024*1024;
 const pendingArtwork=new Map();

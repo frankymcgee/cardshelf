@@ -1,9 +1,10 @@
 <script setup lang="ts">
-const props = defineProps<{ hasCards: boolean; locked: boolean }>()
+const props = defineProps<{ hasCards: boolean; locked: boolean; game?: string }>()
 const emit = defineEmits<{ apply: [draft: any] }>()
 const api = useApi(), text = ref(''), preview = ref<any>(null), selections = ref<Record<string, string>>({})
 const working = ref(false), error = ref(''), replace = ref(false)
 let alive = true
+watch(() => props.game, () => { preview.value = null; selections.value = {}; replace.value = false; error.value = '' })
 watch(text, () => { preview.value = null; selections.value = {}; replace.value = false; error.value = '' })
 function choose() { if (preview.value) preview.value.complete = false; replace.value = false }
 async function readFile(event: Event) {
@@ -20,10 +21,11 @@ async function readFile(event: Event) {
 async function review() {
   if (working.value || props.locked) return
   working.value = true; error.value = ''; replace.value = false
+  const game = props.game || 'pokemon'
   try {
-    const result = await api('/api/arena/decks/preview-import', { method: 'POST', body: { text: text.value,
+    const result = await api('/api/arena/decks/preview-import', { method: 'POST', body: { game, text: text.value,
       selections: Object.entries(selections.value).filter(([, id]) => id).map(([line, card_id]) => ({ line: Number(line), card_id })) } })
-    if (alive) preview.value = result
+    if (alive && game === (props.game || 'pokemon')) preview.value = result
   } catch (e) { if (alive) { preview.value = null; error.value = errorMessage(e) } }
   finally { working.value = false }
 }
@@ -37,7 +39,7 @@ onBeforeUnmount(() => { alive = false })
   <details class="aw-import arena-panel">
     <summary>Import a deck list<span>Paste text or choose a CardShelf JSON export</span></summary>
     <div class="aw-import-content">
-      <p class="arena-muted">Use one entry per line: <code>4 en:sv03-125</code> or <code>4 Exact Card Name</code>. Names with multiple printings need a choice. External set abbreviations are not converted automatically.</p>
+      <p class="arena-muted">Use one entry per line: <code>4 en:sv03-125</code> or <code>4 Exact Card Name</code>. For other games, use the full <code>mtg:en:…</code> or <code>yugioh:en:…</code> catalogue ID. Names with multiple printings need a choice. External set abbreviations are not converted automatically.</p>
       <label>Deck list<textarea v-model="text" maxlength="32000" rows="5" :disabled="working || locked" placeholder="4 Exact Card Name&#10;56 Exact Energy Name" spellcheck="false" /></label>
       <div class="arena-actions"><button type="button" class="arena-button" :disabled="working || locked || !text.trim()" @click="review">{{ working ? 'Checking catalogue…' : 'Review import' }}</button><label class="aw-file-label">Choose deck file<input type="file" accept=".json,.txt,application/json,text/plain" :disabled="working || locked" @change="readFile"></label></div>
       <p v-if="error" class="arena-alert error" role="alert">{{ error }}</p>
