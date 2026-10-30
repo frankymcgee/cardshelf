@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import ts from 'typescript';
 import { useCardImage } from '../app/composables/useCardImage.mjs';
 import * as contract from '../shared/arena.mjs';
+import * as games from '../shared/arena-games.mjs';
 const plain=v=>JSON.parse(JSON.stringify(v));
 const source=path=>fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};};
@@ -20,7 +21,7 @@ function harness(file,api,props={},path='/arena/matches/11111111-1111-4111-8111-
   const route={params:{id:path.split('/').at(-1)},query:{},path};
   const document={hidden:false,addEventListener(){},removeEventListener(){}};
   const auth={state:{value:{user:{id:'test-user',role:'user',name:'Collector'}}}};
-  const scope={...contract,useCardImage,console,structuredClone,Date,Math,JSON,Number,String,Promise,URL,Blob,
+  const scope={...contract,...games,useCardImage,console,structuredClone,Date,Math,JSON,Number,String,Promise,URL,Blob,
     nextTick:fn=>fn(),ref:value=>({value}),reactive:value=>value,computed:fn=>({get value(){return fn();}}),watch:(a,b)=>watches.push({a,b}),
     onMounted:fn=>mounts.push(fn),onBeforeUnmount:fn=>unmounts.push(fn),defineProps:()=>props,defineEmits:()=>(...args)=>events.push(args),
     useApi:()=>api,useAuth:()=>auth,useRoute:()=>route,definePageMeta(){},onBeforeRouteLeave(){},onBeforeRouteUpdate(){},useSeoMeta(){},errorMessage:e=>e.message||'Request failed',
@@ -32,7 +33,7 @@ function harness(file,api,props={},path='/arena/matches/11111111-1111-4111-8111-
   return {...state,scope,props,route,auth,storage,mounts,unmounts,watches,events,navigation,text};
 }
 const matchId='11111111-1111-4111-8111-111111111111';
-function frame(revision=1,extra={}){return {id:matchId,revision,status:'active',seat:0,mode:'pvp',host_alias:'You',guest_alias:'Them',table:{phase:'playing',turn:0,players:[{hand:[],active:null,bench:[],discard:[],resolving:[]},{hand:[],active:null,bench:[],discard:[],resolving:[]}],events:[],legal:[],prompt:null,waiting_for:null},...extra};}
+function frame(revision=1,extra={}){return {id:matchId,revision,status:'active',seat:0,mode:'pvp',host_alias:'You',guest_alias:'Them',table:{game:'pokemon',phase:'playing',turn:0,players:[{hand:[],active:null,bench:[],discard:[],resolving:[]},{hand:[],active:null,bench:[],discard:[],resolving:[]}],events:[],legal:[],prompt:null,waiting_for:null},...extra};}
 const page='app/pages/arena/matches/[id].vue';
 test('arena client ignores stale or wrong-match views',()=>{const h=harness(page,async()=>{});h.accept(frame(5));h.accept(frame(2));h.accept(frame(9,{id:'other'}));assert.equal(h.data.value.revision,5);});
 test('one user action is submitted with an idempotency key and current revision',async()=>{const calls=[],h=harness(page,async(p,o)=>{calls.push({p,o});return frame(2)});h.accept(frame());await h.act({type:'end_turn'});assert.equal(calls.length,1);assert.equal(calls[0].o.body.revision,1);assert.match(calls[0].o.body.request_id,/^[a-f0-9-]{36}$/);assert.equal(h.data.value.revision,2);assert.equal(h.storage.size,0);});
@@ -59,7 +60,7 @@ test('private lobby invite disappears after another player joins',()=>{const h=h
 test('decision selector bounds, replacement and lock are enforced in the component',()=>{const props={prompt:{kind:'prize',options:[{id:'0'},{id:'1'}],min:1,max:1},locked:false};const h=harness('app/components/arena/ArenaDecision.vue',async()=>{},props);assert.equal(h.valid.value,false);h.toggle('0');h.toggle('1');assert.deepEqual(plain(h.selected.value),['1']);props.locked=true;h.toggle('1');assert.equal(h.valid.value,true);});
 test('private search supports a deliberate zero-card selection',()=>{const h=harness('app/components/arena/ArenaDecision.vue',async()=>{},{prompt:{kind:'search',options:[],min:0,max:0}});assert.equal(h.valid.value,true);});
 test('Free status prevents private deck and match requests on arena home',async()=>{const calls=[],h=harness('app/pages/arena/index.vue',async p=>{calls.push(p);return {allowed:false,message:'Paid only'}});await h.load();assert.deepEqual(calls,['/api/arena/status']);assert.equal(h.decks.value.length,0);assert.equal(h.matches.value.length,0);});
-test('PvP home rejects a missing saved deck before making any request',async()=>{let calls=0;const h=harness('app/pages/arena/index.vue',async()=>{calls++});await h.start('pvp');assert.equal(calls,0);assert.match(h.error.value,/saved 60-card deck/);});
+test('PvP home rejects a missing saved deck before making any request',async()=>{let calls=0;const h=harness('app/pages/arena/index.vue',async()=>{calls++});await h.start('pvp');assert.equal(calls,0);assert.match(h.error.value,/playable saved deck/);});
 test('tutorial creation explicitly selects original training cards, not an existing deck',async()=>{let body;const h=harness('app/pages/arena/index.vue',async(p,o)=>{body=o.body;return {id:matchId}});h.alias.value='Player';h.decks.value=[{id:'saved',revision:1}];h.deck.value='saved';await h.start('tutorial');assert.equal(body.training,true);assert.ok(!Object.hasOwn(body,'deck_id'));assert.equal(h.navigation[0],'/arena/matches/'+matchId);});
 test('private match home retains failed creation until same-request retry',async()=>{const calls=[],h=harness('app/pages/arena/index.vue',async(p,o)=>{calls.push(plain(o));if(calls.length===1)throw new Error('Network');return {id:matchId}});h.alias.value='Player';await h.start('practice');await h.start('tutorial');assert.equal(calls.length,1);await h.submit();assert.deepEqual(calls[1],calls[0]);});
 test('deck workshop sends identifiers and quantities, not client effect definitions',async()=>{let body;const h=harness('app/pages/arena/decks/[id].vue',async(p,o)=>{body=o.body;return {id:'saved',title:'Deck',cards:[],revision:1,validation:{playable:false,errors:[]}}},{},'/arena/decks/new');h.ready.value=true;h.title.value='Deck';h.rows.value=[{card:{id:'en:demo',program:{cheat:true}},quantity:3}];await h.save();assert.deepEqual(plain(body.cards),[{card_id:'en:demo',quantity:3}]);});
@@ -71,7 +72,7 @@ test('all arena pages declare noindex and tabletop routes avoid third-party ad c
 test('workshop sends catalogue filters to the server rather than filtering the page',async()=>{
  let sent;const h=harness('app/pages/arena/decks/[id].vue',async(p,o)=>{sent=o.query;return {items:[],has_more:false}},{},'/arena/decks/new');
  h.supportedOnly.value=true;h.kind.value='pokemon';h.energyType.value='Fire';h.set.value='en:demo';h.stage.value='Basic';h.owned.value=true;await h.search();
- assert.deepEqual(plain(sent),{q:'',page:1,owned:'1',supported:'1',kind:'pokemon',type:'Fire',set:'en:demo',stage:'Basic'});
+ assert.deepEqual(plain(sent),{game:'pokemon',q:'',page:1,owned:'1',supported:'1',kind:'pokemon',type:'Fire',set:'en:demo',stage:'Basic'});
 });
 test('uncertain new-deck saves retain a frozen request and block edits until retry',async()=>{
  const calls=[];const h=harness('app/pages/arena/decks/[id].vue',async(p,o)=>{calls.push(plain(o.body));if(calls.length===1)throw Error('Lost reply');return {id:'saved',title:'Draft',revision:1,cards:[],validation:{playable:false,errors:[]}}},{},'/arena/decks/new');
@@ -88,3 +89,6 @@ test('duplicate opens a separate unsaved draft with revision zero and no mutatio
 test('draft import preserves an existing deck title and never writes automatically',()=>{
  const h=harness('app/pages/arena/decks/[id].vue',async()=>{throw Error('unexpected write')},{},'/arena/decks/123');h.ready.value=true;h.title.value='Keep my name';h.applyImport({complete:true,title:'Imported name',cards:[{card:{id:'en:demo-1'},quantity:2}],validation:{playable:false}});assert.equal(h.title.value,'Keep my name');assert.equal(h.total.value,2);assert.equal(h.dirty.value,true);
 });
+
+test('other games require a saved deck instead of silently creating Pokémon training',async()=>{let calls=0;const h=harness('app/pages/arena/index.vue',async()=>{calls++});h.game.value='mtg';await h.start('practice');assert.equal(calls,0);assert.match(h.error.value,/saved deck/);});
+test('workshop saves selected game identity with card IDs only',async()=>{let body;const h=harness('app/pages/arena/decks/[id].vue',async(p,o)=>{body=o.body;return {id:'saved',game:'yugioh',title:'Duel',cards:[],revision:1,validation:{playable:false,errors:[]}}},{},'/arena/decks/new');h.game.value='yugioh';h.ready.value=true;h.title.value='Duel';h.rows.value=[{card:{id:'yugioh:en:demo',program:{untrusted:true}},quantity:3}];await h.save();assert.equal(body.game,'yugioh');assert.deepEqual(plain(body.cards),[{card_id:'yugioh:en:demo',quantity:3}]);});

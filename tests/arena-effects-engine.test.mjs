@@ -19,7 +19,7 @@ const effectPlan = (a, b, observer) => {
   const before = arenaView(a, observer), after = arenaView(b, observer);
   return arenaEffectPlan(arenaEffectFrame(before, 'engine-test', 1), arenaEffectFrame(after, 'engine-test', 2), after.events);
 };
-for (const version of ARENA_VERSIONS) {
+for (const version of ARENA_VERSIONS.filter(version => version.startsWith('pokemon-'))) {
   test(`${version}: setup movement is private to the seated player and does not mutate the engine`, () => {
     const before = game(version), original = JSON.stringify(before);
     const after = play(before, 0, m => m.action.type === 'setup' && m.action.zone === 'active');

@@ -1,3 +1,10 @@
+## 0.58.0 — 2026-10-30
+
+- Add game selection throughout Arena, with independent, version-pinned Yu-Gi-Oh! and Magic rules, supported-card compilers, saved decks, genuine-card CPU practice, private matches and tournaments.
+- Preserve rule stats on new game imports; older Magic/Yu-Gi-Oh! sets need a one-time re-import. Unsupported mechanics remain explicitly blocked.
+- Add game-specific tables, private face-down zones, stack/priority and combat controls. Existing Pokémon engines and saved matches remain available.
+- Document the exact admitted pools and remaining mechanics in [Multi-game Arena](docs/MULTIGAME_ARENA.md); add rules, persistence and signed-in desktop/mobile regressions.
+
 ## 0.57.2 — 2026-10-30
 
 - Consolidate Pokémon, Yu-Gi-Oh! and Magic into Administration → Game imports with one game selector, set search, worker status and import progress.

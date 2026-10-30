@@ -27,7 +27,7 @@ export default defineEventHandler(event => {
   }
   if (parts[0] === 'tournaments' && parts.length === 4 && parts[2] === 'spectate' && method === 'GET') return spectateArenaTournament(user.id, parts[1], parts[3])
   if (path === 'catalogue' && method === 'GET') return arenaCatalogue(user.id, getQuery(event))
-  if (path === 'catalogue/filters' && method === 'GET') return arenaCatalogueFilters(user.id)
+  if (path === 'catalogue/filters' && method === 'GET') return arenaCatalogueFilters(user.id, getQuery(event))
   if (path === 'decks/preview-import' && method === 'POST') {
     await rateLimit('arena-import:' + user.id, 100)
     return previewArenaImport(user.id, await platformBody(event, 65536))
