@@ -10,12 +10,12 @@ const file=new URL('../../app/pages/admin/game-catalogue.vue',import.meta.url);
 const source=readFileSync(file,'utf8').match(/<script setup lang="ts">([\s\S]*?)<\/script>/)?.[1];
 assert.ok(source,'The game-catalogue page must contain its setup script.');
 const compiled=ts.transpileModule(source+`
-globalThis.cataloguePage={game,sets,query,selected,confirmed,busy,loading,error,job,visible,load,queue};
+globalThis.cataloguePage={game,language,sets,query,selected,confirmed,busy,loading,error,job,visible,load,queue,status,statusError,refreshStatus,retryImport};
 `,{fileName:'game-catalogue.ts',reportDiagnostics:true,
   compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}});
 assert.equal(compiled.diagnostics?.filter(d=>d.category===ts.DiagnosticCategory.Error).length??0,0);
 
-export function createCataloguePage(api) {
+export function createCataloguePage(api, initialGame = 'yugioh') {
   const watchers=new WeakMap(),notices=[];
   function ref(initial) {
     let value=initial;
@@ -31,9 +31,11 @@ export function createCataloguePage(api) {
       const list=watchers.get(state)??new Set();list.add(callback);watchers.set(state,list);
       return ()=>list.delete(callback);
     },
+    onMounted(){},onBeforeUnmount(){},setTimeout(){},clearTimeout(){},
     useApi:()=>api,useNotice:()=>({show:message=>notices.push(message)}),
     errorMessage:error=>String(error?.message??error)
   };
   runInNewContext(compiled.outputText,context,{filename:file.pathname,timeout:1000});
+  context.cataloguePage.game.value=initialGame;
   return {...context.cataloguePage,notices};
 }

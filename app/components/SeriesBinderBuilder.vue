@@ -56,7 +56,7 @@ async function create() {
   <AppModal :open="open" title="Create binders from sets or a series" wide :dismissible="!busy" @close="emit('close')">
     <p class="muted small">Choose a quick checklist or a detailed collection layout. Existing binders and inventory quantities are not changed.</p>
     <p v-if="loading" class="loading-panel">Loading your imported sets…</p>
-    <p v-else-if="!sets.length" class="alert info">Import a set in Data & settings before generating a binder.</p>
+    <p v-else-if="!sets.length" class="alert info">Import a set in Game imports before generating a binder.</p>
     <form v-else class="form-stack" @submit.prevent="previewLayout">
       <fieldset :disabled="busy" class="generator-fields">
         <GamePicker v-model="game" :disabled="busy" />

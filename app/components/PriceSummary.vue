@@ -16,7 +16,7 @@ async function refresh() {
   try {
     if (auth.state.value.user?.role === 'admin' && data.value?.enabled) {
       const result = await api('/api/prices/refresh', { method: 'POST', body: {} });
-      notice.show(result.already_queued ? 'A price refresh is already queued.' : 'Due tracked cards are queued. Check progress in Data & settings.');
+      notice.show(result.already_queued ? 'A price refresh is already queued.' : 'Due tracked cards are queued. Check progress in Game imports.');
     }
     await load();
   } catch (e) { notice.show(errorMessage(e), 'error'); }

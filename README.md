@@ -1,4 +1,4 @@
-# CardShelf 0.57.1
+# CardShelf 0.57.2
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
@@ -27,6 +27,14 @@ unpatched development-tool advisories are recorded in the inspection report.
 A production launch and full feature parity are not certified by a version bump.
 See [the current inspection](docs/VERIFICATION.md) and
 [the feature/parity matrix](docs/PARITY_CHECKLIST.md) for evidence and open gates.
+
+## Catalogue imports
+
+Open **Administration → Game imports** for Pokémon, Yu-Gi-Oh! and Magic.
+Choose a game, load its available sets, select a set and queue the import.
+Pokémon supports English and Japanese, plus direct TCGdex set IDs. Import progress,
+worker status and retries appear on the same page. Data & settings retains
+collection ownership imports/exports, collector accounts and server backups.
 
 ## Complete your binder
 

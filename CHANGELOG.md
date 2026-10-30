@@ -1,3 +1,9 @@
+## 0.57.2 — 2026-10-30
+
+- Consolidate Pokémon, Yu-Gi-Oh! and Magic into Administration → Game imports with one game selector, set search, worker status and import progress.
+- Keep Pokémon English/Japanese imports and direct TCGdex set IDs, including Japanese IDs containing a plus sign. Clear selections and ignore stale list responses when the game or language changes.
+- Move catalogue progress and retries out of Data & settings; retain account, collection import/export and backup tools there. Update catalogue links while keeping the old settings anchor as a link to the unified importer.
+
 ## 0.57.1 — 2026-10-18
 
 - Handle binder touch swipes independently of pointer events, including cancelled pointer streams on mobile Safari. Claim only horizontal movement; preserve scrolling, pinch zoom, ordinary card taps and mouse rearrangement.
