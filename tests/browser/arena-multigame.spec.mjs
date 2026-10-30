@@ -15,6 +15,8 @@ for(const game of ['yugioh','mtg'])test(game+' workshop, saved-deck practice and
     await page.getByRole('button',{name:'Review import',exact:true}).click();await expect(page.getByRole('region',{name:'Import review'})).toContainText('ready to play once saved');
     await page.getByRole('button',{name:'Apply to draft',exact:true}).click();
     const saved=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/arena/decks'&&r.request().method()==='POST');await page.getByRole('button',{name:'Save deck',exact:true}).click();const deck=await json(await saved);await page.waitForURL('**/arena/decks/'+deck.id);
+    await expect(page.locator('.aw-workshop-layout')).toHaveClass(/show-deck/);
+    await expect(page.getByRole('link',{name:'Back to play',exact:true})).toBeVisible();
     await page.getByRole('link',{name:'Back to play',exact:true}).click();await page.getByRole('combobox',{name:'Card game',exact:true}).selectOption(game);await page.getByRole('combobox',{name:'Saved deck',exact:true}).selectOption(deck.id);await page.getByRole('combobox',{name:'Opponent deck',exact:true}).selectOption('mirror');
     await page.getByRole('button',{name:'Play the computer',exact:true}).click();await page.waitForURL('**/arena/matches/*');
     await expect(page.getByRole('region',{name:(game==='mtg'?'Magic: The Gathering':'Yu-Gi-Oh!')+' table'})).toBeVisible();await expect(page.locator('.game-life').first()).toContainText(game==='mtg'?'20':'8000');

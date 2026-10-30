@@ -16,7 +16,7 @@ const title = ref(''), rows = ref<any[]>([]), revision = ref(0), query = ref('')
 const kind = ref(''), energyType = ref(''), set = ref(''), stage = ref(''), filters = ref<any>({ sets: [], types: [] })
 const catalogue = ref<any>({ items: [], has_more: false }), legacy = ref<any[]>([]), legacyId = ref(''), selected = ref<any>(null)
 const error = ref(''), searchError = ref(''), filterError = ref(''), notice = ref(''), busy = ref(false), loading = ref(false), ready = ref(false), validation = ref<any>(null)
-const mobileView = ref('cards'), workshopContent = ref<HTMLDivElement | null>(null)
+const mobileView = ref(isNew.value && typeof route.query.copy !== 'string' ? 'cards' : 'deck'), workshopContent = ref<HTMLDivElement | null>(null)
 function showPanel(panel: string) { mobileView.value = panel; void nextTick(() => { if (window.innerWidth <= 950) workshopContent.value?.scrollIntoView({ block: 'start' }) }) }
 const pendingSave = ref<any>(null), baseline = ref(JSON.stringify({ title: '', game: game.value, cards: [] }))
 let alive = true, sequence = 0, debounce: ReturnType<typeof setTimeout> | undefined

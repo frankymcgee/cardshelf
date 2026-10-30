@@ -92,3 +92,8 @@ test('draft import preserves an existing deck title and never writes automatical
 
 test('other games require a saved deck instead of silently creating Pokémon training',async()=>{let calls=0;const h=harness('app/pages/arena/index.vue',async()=>{calls++});h.game.value='mtg';await h.start('practice');assert.equal(calls,0);assert.match(h.error.value,/saved deck/);});
 test('workshop saves selected game identity with card IDs only',async()=>{let body;const h=harness('app/pages/arena/decks/[id].vue',async(p,o)=>{body=o.body;return {id:'saved',game:'yugioh',title:'Duel',cards:[],revision:1,validation:{playable:false,errors:[]}}},{},'/arena/decks/new');h.game.value='yugioh';h.ready.value=true;h.title.value='Duel';h.rows.value=[{card:{id:'yugioh:en:demo',program:{untrusted:true}},quantity:3}];await h.save();assert.equal(body.game,'yugioh');assert.deepEqual(plain(body.cards),[{card_id:'yugioh:en:demo',quantity:3}]);});
+for(const game of ['pokemon','yugioh','mtg'])test(game+' saved workshop opens the deck panel with a clean draft',async()=>{
+ const h=harness('app/pages/arena/decks/[id].vue',async p=>p.endsWith('/status')?{allowed:true}:p.endsWith('/saved')?{game,title:'Saved contender',revision:1,cards:[],validation:{playable:true,errors:[]}}:p.endsWith('/decks')?{legacy:[]}:{sets:[],types:[],items:[],has_more:false},{},'/arena/decks/saved');
+ await h.mounts[0]();assert.equal(h.mobileView.value,'deck');assert.equal(h.game.value,game);assert.equal(h.dirty.value,false);assert.equal(h.validation.value.playable,true);
+});
+test('a new workshop still opens the catalogue panel',()=>{const h=harness('app/pages/arena/decks/[id].vue',async()=>{}, {},'/arena/decks/new');assert.equal(h.mobileView.value,'cards');});
