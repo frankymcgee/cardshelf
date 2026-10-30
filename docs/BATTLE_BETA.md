@@ -34,7 +34,7 @@ Open **Battle → Build a deck**. Search the locally imported English Pokémon c
 
 Save incomplete decks as drafts. Entering a match requires exactly 60 cards and at least one card whose imported category is `Pokemon` and stage is `Basic`. The validator warns about more than four copies by normalized English name across artwork variants; only explicitly identified Basic Energy is exempt from that warning. Card-specific exceptions, special-card limits, rotation and banned cards are not validated. A warning does not certify a legal tournament deck.
 
-An empty search means there may be no matching imported English cards. Use the existing Pokémon import in Data & settings. If a Basic is missing its gameplay metadata, reimport the source set rather than making an unverified assumption in the battle engine.
+An empty search means there may be no matching imported English cards. Choose Pokémon in Administration → Game imports. If a Basic is missing its gameplay metadata, reimport the source set rather than making an unverified assumption in the battle engine.
 
 Saved decks support rename, editing, deletion and JSON list export. JSON import, deck sharing and a dedicated missing-card wishlist assistant are not included. Deleting or editing a deck cannot change a match snapshot that was already taken. The beta allows 40 saved decks per account.
 

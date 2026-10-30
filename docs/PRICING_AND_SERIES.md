@@ -70,7 +70,7 @@ FX checks are periodic with successful responses cached for 12 hours.
 Card Check prices requests a single card, no more than once per hour per card.
 Overview/binder Refresh reloads estimates; for administrators it also queues due
 tracked cards. Recently checked cards are not force-refetched. Job progress/errors
-appear in Data & settings alongside catalogue imports.
+appear in Administration → Game imports alongside catalogue imports.
 
 Optional .env overrides (existing installations use these defaults automatically):
 

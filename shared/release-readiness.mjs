@@ -17,8 +17,8 @@ export function releaseChecks(snapshot, now = Date.now()) {
   const checks = [];
   const add = (id, label, status, detail, to) => checks.push({ id, label, status, detail, to });
   add('origin', 'Public HTTPS origin', snapshot.https ? 'pass' : 'blocked', snapshot.https ? 'HTTPS is configured. External TLS and DNS still require deployment acceptance.' : 'Configure the public HTTPS origin before accepting accounts.', '/admin');
-  add('schema', 'Database migrations', snapshot.missingMigrations === 0 ? 'pass' : 'blocked', `${snapshot.appliedMigrations} release migrations applied; ${snapshot.missingMigrations} missing.`, '/settings#catalogue');
-  add('worker', 'Background worker', recentTimestamp(snapshot.workerSeenAt, now, 120_000) ? 'pass' : 'blocked', 'Imports, prices, notifications and queued work need a worker heartbeat within two minutes.', '/settings#catalogue');
+  add('schema', 'Database migrations', snapshot.missingMigrations === 0 ? 'pass' : 'blocked', `${snapshot.appliedMigrations} release migrations applied; ${snapshot.missingMigrations} missing.`, '/admin/game-catalogue');
+  add('worker', 'Background worker', recentTimestamp(snapshot.workerSeenAt, now, 120_000) ? 'pass' : 'blocked', 'Imports, prices, notifications and queued work need a worker heartbeat within two minutes.', '/admin/game-catalogue');
   add('registration', 'Public Free registration', snapshot.registration ? 'pass' : 'blocked', snapshot.registration ? 'New Free accounts can register; existing tester grants are preserved.' : 'Self-registration is closed. Public browsing works, but new members cannot independently create an account for checkout.', '/admin/free-platform');
   const stripe = snapshot.stripe;
   const paidReady = stripe?.live && stripe?.enabled && stripe?.accepting && stripe?.configured && stripe?.portal && stripe?.plans?.includes('collector') && stripe?.plans?.includes('plus');
@@ -33,7 +33,7 @@ export function releaseChecks(snapshot, now = Date.now()) {
   const scanning = snapshot.scanning;
   add('scanning', 'Photo recognition configuration', scanning?.enabled && scanning?.configured ? 'pass' : 'blocked', 'The advertised scanner needs an enabled, decryptable OpenAI connection. Recognition is limited to imported English/Japanese Pokémon cards.', '/admin/scanning');
   add('scan-budget', 'Photo recognition budget', scanning?.remaining >= scanning?.reservation && scanning?.reservation > 0 ? 'pass' : 'review', 'The current shared monthly budget must cover at least one scan reservation; zero member limits mean unlimited scans, not an unlimited shared budget.', '/admin/scanning');
-  add('catalogue', 'Imported catalogue', snapshot.cards > 0 ? 'pass' : 'blocked', `${snapshot.cards} cards imported. This is not an audit of every set, language or printing.`, '/settings#catalogue');
+  add('catalogue', 'Imported catalogue', snapshot.cards > 0 ? 'pass' : 'blocked', `${snapshot.cards} cards imported. This is not an audit of every set, language or printing.`, '/admin/game-catalogue');
   add('arena', 'Arena availability', snapshot.arena ? 'pass' : 'blocked', 'Arena requires its enabled setting and an eligible member tier. Administrator or legacy tester access alone is not a player entitlement.', '/admin/arena');
   add('push', 'Persisted push identity', snapshot.pushIdentity ? 'pass' : 'review', 'The push identity is persisted after first use. Verify delivery on physical opted-in devices; do not create keys from this inspection.', '/notifications');
   add('advertising', 'Advertising configuration', snapshot.advertising?.enabled && !snapshot.advertising?.ready ? 'blocked' : snapshot.advertising?.placeholders ? 'review' : 'pass', snapshot.advertising?.enabled ? 'An enabled provider needs valid unit settings and a separate live fill/consent check.' : 'Advertising is disabled; it is optional for platform operation.', '/admin/adsense');

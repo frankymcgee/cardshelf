@@ -102,15 +102,15 @@ Legacy invited testers retain their original full-feature evaluation access.
 
 1. Deploy only after validating the PR and applying migration 013 with the existing
    upgrade helper. Keep the original database volume and all secrets.
-2. Open **Game catalogue imports** in the administrator navigation.
-3. Choose Yu-Gi-Oh! or Magic and select **Load available sets**.
+2. Open **Administration → Game imports** in the administrator navigation.
+3. Choose Pokémon, Yu-Gi-Oh! or Magic and select **Load available sets**.
 4. Search for a set, review the provider/rights notices, and queue that set.
-5. Watch the job in **Data & settings**. Open `/explore` and choose the same game to
+5. Watch the job in **Import progress** on the same page. Open `/explore` and choose the same game to
    check the public result. Use the signed-in Cards page or binder builder to use
    those records privately under the appropriate membership.
 
-Pokémon still uses its existing Data & settings import. Do not reimport Pokémon
-solely for this migration. The shared worker handles the new `import-game-set`
+Pokémon uses the same game selector, with English/Japanese and direct TCGdex set
+ID options. Do not reimport Pokémon solely for this interface change. The shared worker handles the new `import-game-set`
 jobs alongside existing imports and price refreshes. Reimporting refreshes
 catalogue metadata without resetting ownership or deleting manual printings.
 Missing artwork does not require throwing away valid card metadata.

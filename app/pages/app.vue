@@ -30,7 +30,7 @@ const stats = computed(() => [{ label: 'Cards owned', value: data.value?.counts.
       <UiDisclosure class="collection-progress" title="Set progress" :hint="data.progress.length + ' sets'">
         <p class="small muted">Unique card designs owned across {{ data.counts.catalogue_cards?.toLocaleString() || 0 }} imported cards.</p>
         <div v-if="data.progress.length" class="progress-list"><div v-for="set in data.progress" :key="set.id" class="progress-row"><div><NuxtLink :to="{ path: '/cards', query: { set: set.id } }">{{ set.name }}</NuxtLink><span class="badge">{{ set.language.toUpperCase() }}</span><small v-if="set.imported < set.card_count" class="amber-text">Partial import · {{ set.imported }}/{{ set.card_count }}</small></div><div class="progress-track"><div :style="{ width: (set.owned / Math.max(1, set.imported) * 100) + '%' }" /></div><span>{{ set.owned }} / {{ set.imported }}</span></div></div>
-        <div v-else class="empty-inline"><p>No set progress yet.</p><NuxtLink v-if="auth.state.value.user?.role === 'admin'" to="/settings#catalogue" class="text-button">Import a set<AppIcon name="arrow" :size="16" /></NuxtLink><p v-else>Ask your administrator to import the sets you collect.</p></div>
+        <div v-else class="empty-inline"><p>No set progress yet.</p><NuxtLink v-if="auth.state.value.user?.role === 'admin'" to="/admin/game-catalogue" class="text-button">Import a set<AppIcon name="arrow" :size="16" /></NuxtLink><p v-else>Ask your administrator to import the sets you collect.</p></div>
       </UiDisclosure>
     </template>
     <AdSenseSlot :content-ready="!!data && data.counts.catalogue_cards > 0" auto-only />
