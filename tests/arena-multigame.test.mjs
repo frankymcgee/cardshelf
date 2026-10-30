@@ -33,7 +33,7 @@ test('whole-effect templates reuse identical programs and preserve each printing
   assert.notEqual(sharedEffect('mtg','instant','Bolt A deals 3 damage to any target.','Bolt A').template,sharedEffect('mtg','instant','Bolt A deals 4 damage to any target.','Bolt A').template);
   const changed=compileArenaCard(gameRow('yugioh','Same name',{arena_data:{type:'Effect Monster'}}));assert.equal(changed.supported,false);
 });
-for(const overrides of [{arena_data:{types:['Creature','Artifact']}},{arena_data:{mana_cost:'{X}{G}'}},{arena_data:{supertypes:['Legendary']}},{raw_data:{public_text:'Flying. Draw a card.'}},{arena_data:{layout:'transform'}},{arena_data:{power:'*'}}])test('Magic rejects unimplemented mechanics '+JSON.stringify(overrides),()=>assert.equal(compileArenaCard(gameRow('mtg','Unsupported',overrides)).supported,false));
+for(const overrides of [{arena_data:{types:['Creature','Artifact']}},{arena_data:{mana_cost:'{X}{G}'}},{arena_data:{supertypes:['Legendary']}},{raw_data:{public_text:'Flying. Draw a card.'}},{arena_data:{layout:'transform'}},{arena_data:{power:'*'}},{arena_data:{power:true}},{arena_data:{power:' '}}])test('Magic rejects unimplemented mechanics '+JSON.stringify(overrides),()=>assert.equal(compileArenaCard(gameRow('mtg','Unsupported',overrides)).supported,false));
 test('game decks use different size and copy limits across printings, and cannot mix games',()=>{
   for(const game of ['mtg','yugioh'])assert.equal(deckValidation(gameDeck(game)).playable,true);
   const deck=gameDeck('yugioh');deck[0].quantity=4;assert.match(deckValidation(deck).errors.join(' '),/3 copies/);

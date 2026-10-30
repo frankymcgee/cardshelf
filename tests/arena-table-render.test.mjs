@@ -9,6 +9,10 @@ import * as Vue from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import { parse, compileScript } from '@vue/compiler-sfc';
 import * as contract from '../shared/arena.mjs';
+import * as games from '../shared/arena-games.mjs';
+import { newArena, arenaView } from '../lib/arena/engine.mjs';
+import { arenaSpectatorView } from '../lib/arena/spectator.mjs';
+import { gameDeck, seeded } from './helpers/arena-multigame-fixtures.mjs';
 import { useCardImage } from '../app/composables/useCardImage.mjs';
 import * as artwork from '../shared/arena-art.mjs';
 import * as statusEffects from '../shared/arena-status-effects.mjs';
@@ -21,7 +25,7 @@ function component(file) {
   const compiled = compileScript(descriptor, { id: file, inlineTemplate: true });
   const js = ts.transpileModule(compiled.content, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   const output = { exports: {} };
-  const localRequire = name => name.endsWith('.vue') ? { default: component(path.posix.normalize(path.posix.join(path.posix.dirname(file), name))) } : name.endsWith('/arena.mjs') ? contract : name.endsWith('/arena-art.mjs') ? artwork : name.endsWith('/arena-status-effects.mjs') ? statusEffects : name.endsWith('/useCardImage.mjs') ? { useCardImage } : require(name);
+  const localRequire = name => name.endsWith('.vue') ? { default: component(path.posix.normalize(path.posix.join(path.posix.dirname(file), name))) } : name.endsWith('/arena.mjs') ? contract : name.endsWith('/arena-games.mjs') ? games : name.endsWith('/arena-art.mjs') ? artwork : name.endsWith('/arena-status-effects.mjs') ? statusEffects : name.endsWith('/useCardImage.mjs') ? { useCardImage } : require(name);
   vm.runInNewContext(js, { ...Vue, exports: output.exports, module: output, require: localRequire, console }, { filename: file });
   cache.set(file, output.exports.default); return output.exports.default;
 }
@@ -105,4 +109,15 @@ for (const seat of [0, 1]) test(`seat ${seat}: missing aliases retain labelled f
   assert.ok(html.includes(`Player ${2 - seat} is playing`));
   assert.ok(html.includes(`Played by Player ${2 - seat}`));
   assert.doesNotMatch(html, /undefined (?:play area|is playing)|SECRET/);
+});
+
+for(const game of ['mtg','yugioh'])test(game+' renders actual player and neutral views without private card definitions',async()=>{
+  const state=newArena([gameDeck(game),gameDeck(game)],{version:games.arenaVersionForGame(game),rng:seeded()});
+  state.players[1].hand[0].card.name='PRIVATE_OPPONENT_HAND';
+  if(game==='yugioh'){const set=state.players[1].hand.pop();set.face_down=true;set.position='defense';set.card.name='PRIVATE_SET_MONSTER';state.players[1].field.push(set);}
+  const props={table:arenaView(state,0),aliases:['You','Opponent'],locked:false};
+  const html=await renderToString(Vue.createSSRApp(component('app/components/arena/ArenaGameTable.vue'),props));
+  assert.match(html,/Your hand/);assert.match(html,game==='mtg'?/20 <small>life/:/8000 <small>LP/);assert.doesNotMatch(html,/PRIVATE_OPPONENT_HAND|PRIVATE_SET_MONSTER/);
+  const neutral=await renderToString(Vue.createSSRApp(component('app/components/arena/ArenaGameTable.vue'),{...props,table:arenaSpectatorView(state)}));
+  assert.doesNotMatch(neutral,/PRIVATE_OPPONENT_HAND|PRIVATE_SET_MONSTER|class="game-hand"|game-controls/);
 });
