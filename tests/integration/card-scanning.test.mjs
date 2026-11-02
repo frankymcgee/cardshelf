@@ -18,7 +18,7 @@ if(process.env.ALLOW_TEST_DATABASE!=='yes'||!base||!new URL(url||'http://invalid
 const sql=postgres(url,{max:4}),origin=process.env.APP_ORIGIN||base,users=[],scanIds=[];
 const password='Synthetic scanner administrator password 123',apiKey='sk-synthetic-scanner-key-never-real';
 const group='ci-scan-'+randomUUID().replaceAll('-',''),setId='en:'+group,cardId=setId+'-025';
-const observation={card_count:1,readable:true,card_name:'Synthetic scanner card',collector_number:'025',printed_total:null,set_code:group,set_name:null,language:'en'};
+const observation={card_count:1,readable:true,card_name:'Synthetic scanner card',collector_number:'025',printed_total:'100',set_code:'TEST',set_name:null,language:'en'};
 const result={observation,input_tokens:2000,output_tokens:100,bounds_exceeded:false};
 async function account(role='user'){
   const id=randomUUID(),token=randomToken();users.push(id);
@@ -32,13 +32,13 @@ async function request(path,{user,method='GET',body,headers={}}={}){
   const r=await fetch(base+path,{method,redirect:'manual',headers:{Origin:origin,'X-Requested-With':'cardshelf',...(user?{Cookie:user.cookie}:{}),...(body===undefined?{}:{'Content-Type':'application/json'}),...headers},body:body===undefined?undefined:JSON.stringify(body)});
   assert.match(r.headers.get('content-type')||'',/json/);return {status:r.status,data:await r.json()};
 }
-function upload(){const id=randomUUID();scanIds.push(id);return {request_id:id,image:'data:image/jpeg;base64,YWJj',confirm_external_processing:true};}
+function upload(){const id=randomUUID();scanIds.push(id);return {request_id:id,image:'data:image/jpeg;base64,YWJj'};}
 const row=id=>sql`SELECT * FROM card_scans WHERE id=${id}`.then(rows=>rows[0]);
 function secretFree(value){const text=JSON.stringify(value);for(const s of [apiKey,password,process.env.CARDSHELF_INTEGRATION_KEY])assert.ok(!text.includes(s),'Secret leaked');}
 await test('card scanning receipts, spending limits and collection/binder writes',async t=>{
   const previous=await sql`SELECT * FROM card_scan_settings`,controls=await sql`SELECT * FROM stripe_billing_controls`;
   let admin,owner,other,printing,otherPrinting,binder,tracking,foreign;let calls=0;
-  const analyse=(body,user=owner,recognise=async()=>{calls++;return result;})=>analyseCardScan(user.id,body,{prepare:async()=>Buffer.from('synthetic'),recognise});
+  const analyse=(body,user=owner,recognise=async()=>{calls++;return result;})=>analyseCardScan(user.id,body,{prepare:async()=>({image:Buffer.from('synthetic'),identificationImage:Buffer.from('synthetic lower edge')}),recognise});
   const entry=()=>sql`SELECT * FROM collection_entries WHERE user_id=${owner.id} AND printing_id=${printing} AND condition='UNKNOWN'`.then(r=>r[0]);
   const binderState=()=>sql`SELECT * FROM binders WHERE id=${binder}`.then(r=>r[0]);
   const body=async(overrides={})=>({printing_id:printing,condition:'UNKNOWN',quantity:2,entry_revision:(await entry())?.revision??0,confirm:true,...overrides});
@@ -56,20 +56,22 @@ await test('card scanning receipts, spending limits and collection/binder writes
   }
   try{
     admin=await account('admin');owner=await account();other=await account();
-    await sql`INSERT INTO card_sets(id,provider_id,language,name) VALUES(${setId},${group},'en','Synthetic scanner set')`;
+    await sql`INSERT INTO card_sets(id,provider_id,language,name,printed_total,printed_codes) VALUES(${setId},${group},'en','Synthetic scanner set',100,${['TEST']})`;
     await sql`INSERT INTO cards(id,provider_id,set_id,language,local_id,name) VALUES(${cardId},${group+'-025'},${setId},'en','25',${observation.card_name})`;
     [printing,otherPrinting]=(await sql`INSERT INTO printings(card_id,key,label,source) VALUES(${cardId},'normal','Normal','tcgdex'),(${cardId},'holo','Holo','tcgdex') RETURNING id`).map(r=>r.id);
+    await sql`INSERT INTO card_price_cache(card_id,quotes,reference_prices,fetched_at,attempted_at)
+      VALUES(${cardId},${sql.json([{source:'TCGplayer',variant:'normal',currency:'USD',metric:'marketPrice',amount:2,source_updated_at:new Date().toISOString()}])},'[]'::jsonb,now(),now())`;
     for(const [user,type] of [[owner,'collection'],[owner,'tracking'],[other,'collection']]){
       const [b]=await sql`INSERT INTO binders(user_id,title,columns,rows,page_count,binder_type) VALUES(${user.id},'Scanner binder',2,2,1,${type}) RETURNING id`;
       if(user===other)foreign=b.id;else if(type==='tracking')tracking=b.id;else binder=b.id;
     }
     await sql`UPDATE card_scan_settings SET enabled=false,api_secret=null,monthly_budget_micros=0 WHERE singleton`;
-    await t.test('HTTP authentication, administration, consent, CSRF and bounded JSON bodies',async()=>{
+    await t.test('HTTP authentication, administration, direct scanning, CSRF and bounded JSON bodies',async()=>{
       for(const path of ['/api/scans','/api/admin/scanning'])assert.equal((await request(path)).status,401);
       assert.equal((await request('/api/admin/scanning',{user:owner})).status,403);
       assert.equal((await request('/api/scans',{user:owner,method:'POST',body:upload(),headers:{Origin:'https://evil.test'}})).status,403);
       assert.equal((await request('/api/scans',{user:owner,method:'POST',body:upload(),headers:{'Content-Type':'text/plain'}})).status,415);
-      assert.equal((await request('/api/scans',{user:owner,method:'POST',body:{...upload(),confirm_external_processing:false}})).status,400);
+      assert.equal((await request('/api/scans',{user:owner,method:'POST',body:{...upload(),confirm_external_processing:false}})).status,503);
       assert.equal((await request('/api/scans',{user:owner,method:'POST',body:upload()})).status,503);
       assert.equal((await request('/api/scans/'+randomUUID()+'/confirm',{user:owner,method:'POST',body:{padding:'x'.repeat(5000)}})).status,413);
       assert.equal((await scanAvailability(owner.id)).available,false);
@@ -118,6 +120,9 @@ await test('card scanning receipts, spending limits and collection/binder writes
     });
     await t.test('receipt replay calls the provider once and never exposes another account or raw photos',async()=>{
       const u=upload(),a=await analyse(u),before=calls;assert.equal(a.status,'ready');assert.equal(a.candidates[0].id,cardId);
+      assert.equal(a.candidates[0].printed_total,100);assert.deepEqual(a.candidates[0].printed_codes,['TEST']);
+      assert.ok(a.candidates[0].match_evidence.includes('Printed total'));assert.ok(a.candidates[0].match_evidence.includes('Set'));
+      assert.equal(a.candidates[0].price_from.amount,2);assert.equal(a.candidates[0].price_from.currency,'USD');
       assert.equal((await analyse(u)).id,a.id);assert.equal(calls,before);
       await expectError(()=>analyse(u,other),409);await expectError(()=>analyse({...u,image:'data:image/jpeg;base64,YWJk'}),409);
       assert.equal((await request('/api/scans/'+a.id,{user:other})).status,404);

@@ -18,6 +18,7 @@ async function fixtures(page,{theme='light',limit=0,lostUpload=false,lostSave=fa
     else if(path.startsWith('/api/ads/'))data={eligible:false};
     else if(path==='/api/binders')data=[binder];
     else if(path==='/api/binders/'+binderId)data=binder;
+    else if(path==='/api/cards/'+card.id+'/prices')data={printings:[]};
     else if(path==='/api/cards/'+card.id)data={...card,entries:[{printing_id:holo,condition:'UNKNOWN',quantity,revision}]};
     else if(path==='/api/catalogue')data={items:[card],total:1};
     else if(path==='/api/scans'&&method==='GET')data={enabled:!disabled,eligible:true,available:!disabled&&(!limit||receipts.size<limit),unlimited:limit===0,monthly_limit:limit,remaining:limit?Math.max(0,limit-receipts.size):null,binder_types:['collection','tracking'],message:disabled?'Scanning is disabled.':limit&&receipts.size>=limit?'Monthly limit reached.':'',recent:[...receipts.values()].slice(-12)};
@@ -58,7 +59,7 @@ async function fixtures(page,{theme='light',limit=0,lostUpload=false,lostSave=fa
   });
   return {calls,errors,receipts,binder,release:()=>release?.(),quantity:()=>quantity};
 }
-const analyse=async page=>{await page.getByRole('checkbox',{name:'Send the queued card photos to OpenAI for recognition.'}).check();await page.getByRole('button',{name:'Analyse queued photos',exact:true}).click()};
+const analyse=async page=>{await expect(page.getByRole('checkbox',{name:/OpenAI/})).toHaveCount(0);await page.getByRole('button',{name:'Analyse queued photos',exact:true}).click()};
 async function upload(page,files){const input=page.getByLabel('Choose card photos',{exact:true});await expect(input).toBeEnabled();await input.setInputFiles(files)}
 async function queue(page,files=photos.slice(0,2),path='/scan?mode=batch&binder='+binderId){
   await page.goto(path);await expect(page.getByRole('heading',{name:'Scan a batch',exact:true})).toBeVisible();
@@ -72,7 +73,7 @@ async function review(page,index=1,owned=2){
 const posts=state=>state.calls.filter(c=>c.path==='/api/scans'&&c.method==='POST');
 async function fits(page){expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true)}
 for(const theme of ['light','dark'])test(theme+' multi-photo queue, explicit printing review, shared binder and quantity refresh',async({page},info)=>{
-  const state=await fixtures(page,{theme});await queue(page);await expect(page.getByRole('button',{name:'Analyse queued photos',exact:true})).toBeDisabled();expect(posts(state)).toHaveLength(0);
+  const state=await fixtures(page,{theme});await queue(page);await expect(page.getByRole('button',{name:'Analyse queued photos',exact:true})).toBeEnabled();expect(posts(state)).toHaveLength(0);
   await analyse(page);await expect(page.getByRole('button',{name:'Review photo 2',exact:true})).toBeEnabled();expect(posts(state)).toHaveLength(2);expect(state.quantity()).toBe(2);
   await fits(page);await page.screenshot({path:info.outputPath(theme+'-queue.png'),fullPage:true});await review(page);
   await expect(page.getByTestId('scan-placement')).toContainText('Page 1, pocket 1');await page.getByLabel('Copies to add').fill('2');
@@ -119,7 +120,7 @@ test('failed recognition halts remaining uploads and clearing never changes rece
   await page.getByRole('button',{name:'Clear queue',exact:true}).click();await page.getByRole('dialog').getByRole('button',{name:'Clear this queue',exact:true}).click();await expect(page.locator('.batch-item')).toHaveCount(0);expect(state.receipts.size).toBe(1);expect(state.quantity()).toBe(2);
 });
 test('disabled scanning allows local preparation but cannot dispatch a batch',async({page})=>{
-  const state=await fixtures(page,{disabled:true});await queue(page,[photos[0]]);await page.getByRole('checkbox',{name:'Send the queued card photos to OpenAI for recognition.'}).check();await expect(page.getByRole('button',{name:'Analyse queued photos',exact:true})).toBeDisabled();expect(posts(state)).toHaveLength(0);
+  const state=await fixtures(page,{disabled:true});await queue(page,[photos[0]]);await expect(page.getByRole('checkbox',{name:/OpenAI/})).toHaveCount(0);await expect(page.getByRole('button',{name:'Analyse queued photos',exact:true})).toBeDisabled();expect(posts(state)).toHaveLength(0);
 });
 test('skipping the currently reviewed photo closes its addition form without saving',async({page})=>{
   const state=await fixtures(page);await queue(page,[photos[0]]);await analyse(page);await review(page);await page.getByRole('button',{name:'Skip photo 1',exact:true}).click();await expect(page.getByRole('button',{name:'Confirm & add to collection',exact:true})).toHaveCount(0);expect(state.quantity()).toBe(2);await page.getByRole('button',{name:'Restore photo 1',exact:true}).click();await review(page);expect(posts(state)).toHaveLength(1);

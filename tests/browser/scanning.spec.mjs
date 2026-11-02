@@ -3,9 +3,9 @@ import sharp from 'sharp';
 import {SCAN_DEFAULTS,SCAN_PROMPT} from '../../shared/card-scanning.mjs';
 const cardId='en:scan-fixture-025',normal='11111111-1111-4111-8111-111111111111',holo='22222222-2222-4222-8222-222222222222',binderId='33333333-3333-4333-8333-333333333333',trackingId='44444444-4444-4444-8444-444444444444';
 const fixtureImage=await sharp(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560"><rect width="400" height="560" rx="18" fill="#f4d24d"/><rect x="20" y="50" width="360" height="220" fill="#d8eaca"/><text x="25" y="35" font-size="20">Synthetic scanner card</text><text x="25" y="530" font-size="20">025 / 100 · TEST</text></svg>')).png().toBuffer();
-const card={id:cardId,game:'pokemon',language:'en',name:'Synthetic scanner card',local_id:'025',set_name:'Scanner test set',image_url:'/fixture-scanning-card.png',printings:[{id:normal,key:'normal',label:'Normal'},{id:holo,key:'holo',label:'Holo'}],entries:[{printing_id:holo,condition:'UNKNOWN',quantity:2,revision:7}],match_evidence:['Card number','Name'],match_strength:'Multiple details match'};
+const card={id:cardId,game:'pokemon',language:'en',name:'Synthetic scanner card',local_id:'025',set_name:'Scanner test set',printed_total:100,printed_codes:['TEST'],price_from:{source:'TCGplayer',currency:'USD',amount:1,aud:1.5,approximate:false},image_url:'/fixture-scanning-card.png',printings:[{id:normal,key:'normal',label:'Normal'},{id:holo,key:'holo',label:'Holo'}],entries:[{printing_id:holo,condition:'UNKNOWN',quantity:2,revision:7}],match_evidence:['Card number','Name'],match_strength:'Multiple details match'};
 const binder={id:binderId,title:'My collection binder',game:'pokemon',binder_type:'collection',columns:2,rows:2,page_count:2,revision:4,slots:[{position:1,printing_id:normal}]};
-async function fixtures(page,{noMatches=false,lostConfirmation=false,disabled=false,collectionSlots=binder.slots,trackingCollected=false,automaticPosition=0}={}){
+async function fixtures(page,{noMatches=false,lostConfirmation=false,disabled=false,collectionSlots=binder.slots,trackingCollected=false,automaticPosition=0,noPrice=false,priceFailure=false}={}){
   let receipt=null;const calls=[],errors=[];
   let cardState=structuredClone(card);
   const binderStates=[structuredClone({...binder,slots:collectionSlots}),{...binder,id:trackingId,binder_type:'tracking',title:'Prepared checklist',slots:[{position:5,printing_id:holo,is_collected:trackingCollected}]}];
@@ -20,10 +20,15 @@ async function fixtures(page,{noMatches=false,lostConfirmation=false,disabled=fa
     else if(path==='/api/binders')data=binderStates;
     else if(binderStates.some(b=>path==='/api/binders/'+b.id))data=binderStates.find(b=>path==='/api/binders/'+b.id);
     else if(path==='/api/cards/'+cardId)data=cardState;
+    else if(path==='/api/cards/'+cardId+'/prices'){
+      if(priceFailure)return route.fulfill({status:503,json:{message:'Price service unavailable'}});
+      const quote=(amount)=>({source:'TCGplayer',currency:'USD',amount:amount/1.5,aud:amount,approximate:false});
+      data={printings:[{id:normal,price:noPrice?null:quote(1.5),estimate:noPrice?null:quote(1.5)},{id:holo,price:noPrice?null:quote(12.75),estimate:noPrice?null:{...quote(12.75),source:'Cardmarket',approximate:true,stale:true}}]};
+    }
     else if(path==='/api/catalogue')data={items:[card],total:1,limit:12};
     else if(path==='/api/scans'&&method==='GET')data={available:!disabled,enabled:!disabled,eligible:true,binder_types:['collection','tracking'],remaining:99,monthly_limit:100,message:disabled?'Photo scanning has not been enabled by an administrator.':'',recent:receipt?[receipt]:[]};
     else if(path==='/api/scans'&&method==='POST'){
-      receipt={id:body.request_id,status:'ready',created_at:new Date().toISOString(),observations:{card_count:1,readable:true},candidates:noMatches?[]:[card],error:'',addition:null};data=receipt;
+      receipt={id:body.request_id,status:'ready',created_at:new Date().toISOString(),observations:{card_count:1,readable:true,collector_number:'025',printed_total:'100',set_code:'TEST'},candidates:noMatches?[]:[card],error:'',addition:null};data=receipt;
     }else if(path.endsWith('/confirm')){
       let placement=null;
       if(body.binder){
@@ -58,8 +63,8 @@ async function start(page,{goto='/scan'}={}){
   if(goto)await page.goto(goto);await expect(page.getByRole('heading',{name:'Scan a card',exact:true})).toBeVisible();
   await page.locator('input[type=file]').setInputFiles({name:'synthetic-card.png',mimeType:'image/png',buffer:fixtureImage});
   await expect(page.getByAltText('Your card photo to analyse')).toBeVisible();
-  await expect(page.getByRole('button',{name:'Find this card',exact:true})).toBeDisabled();
-  await page.getByRole('checkbox',{name:'Send this card photo to OpenAI for recognition.'}).check();
+  await expect(page.getByRole('checkbox',{name:/OpenAI/})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Find this card',exact:true})).toBeEnabled();
   await page.getByRole('button',{name:'Find this card',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Choose the matching card'})).toBeVisible();
 }
@@ -70,7 +75,30 @@ async function review(page,expectedOwned=2){
   await expect(page.getByText('You own', {exact:false})).toContainText(String(expectedOwned));
 }
 async function noOverflow(page){expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);}
-test('camera upload, consent, printing choice, binder placement, save and Undo',async({page},info)=>{
+test('scan results show the set, printed identifiers and prices for the chosen finish',async({page},info)=>{
+  const {calls,errors}=await fixtures(page);await start(page);
+  await expect(page.getByTestId('scan-observed-id')).toContainText('TEST 025 / 100');
+  await expect(page.locator('.scan-candidate')).toContainText('Set / collection: Scanner test set');
+  await expect(page.locator('.scan-candidate')).toContainText('#025 / 100');
+  await expect(page.locator('.scan-candidate').getByTestId('scan-card-price')).toContainText('From $1.50 AUD');
+  await page.locator('.scan-candidate').click();
+  await expect(page.getByTestId('scan-review-set')).toContainText('TEST · #025 / 100');
+  await expect(page.getByTestId('scan-review-price')).toContainText('Choose a printing');
+  await page.getByRole('combobox',{name:'Printing / finish',exact:true}).selectOption(normal);
+  await expect(page.getByTestId('scan-review-price')).toContainText('$1.50 AUD');
+  await page.getByRole('combobox',{name:'Printing / finish',exact:true}).selectOption(holo);
+  await expect(page.getByTestId('scan-review-price')).toContainText('Approx. $12.75 AUD');
+  await expect(page.getByTestId('scan-review-price')).toContainText('Printing not confirmed');
+  await expect(page.getByTestId('scan-review-price')).toContainText('may be outdated');
+  const upload=calls.find(c=>c.path==='/api/scans'&&c.method==='POST');expect(upload.body).not.toHaveProperty('confirm_external_processing');
+  await noOverflow(page);await page.screenshot({path:info.outputPath('scan-price-details.png'),fullPage:true});expect(errors).toEqual([]);
+});
+for(const priceFailure of [false,true])test('unavailable prices do not block card review: '+(priceFailure?'request failed':'no quote'),async({page})=>{
+  const {errors}=await fixtures(page,{noPrice:true,priceFailure});await start(page);await review(page);
+  await expect(page.getByTestId('scan-review-price')).toContainText(priceFailure?'Prices could not be loaded':'Price not available');
+  await expect(page.getByRole('button',{name:'Confirm & add to collection',exact:true})).toBeEnabled();expect(errors).toEqual([]);
+});
+test('camera upload, direct scanning, printing choice, binder placement, save and Undo',async({page},info)=>{
   const {calls,errors}=await fixtures(page);await start(page);await review(page);
   await page.getByRole('combobox',{name:'Add to a binder',exact:true}).selectOption(binderId);
   await page.getByRole('combobox',{name:'Pocket selection',exact:true}).selectOption('manual');
