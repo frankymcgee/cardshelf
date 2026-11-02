@@ -2,7 +2,7 @@ import { writeFile } from 'node:fs/promises';
 import { db,closeDatabase } from '../lib/db.mjs';
 import { configuration } from '../lib/config.mjs';
 import { randomToken } from '../lib/security.mjs';
-import { fetchProvider,sleep } from '../lib/provider.mjs';
+import { fetchProvider,sleep,printedSetDetails } from '../lib/provider.mjs';
 import { providerPrintings,safeImageUrl } from '../lib/variants.mjs';
 import { ensure } from '../lib/errors.mjs';
 import { storePricing,schedulePriceRefresh,pricingConfiguration } from '../lib/prices.mjs';
@@ -64,10 +64,12 @@ async function run(job) {
   ensure(set?.id===setId && Array.isArray(set.cards),502,'Unexpected set response from the catalogue provider.');
   const name=v.text(set.name,'Set name',1,200);
   const release=/^\d{4}-\d{2}-\d{2}$/.test(set.releaseDate??'')?set.releaseDate:null;
-  await sql`INSERT INTO card_sets(id,provider_id,language,name,series,release_date,card_count)
-    VALUES(${lang+':'+setId},${setId},${lang},${name},${String(set.serie?.name??'')},${release},${Number(set.cardCount?.total)||set.cards.length})
+  const identifiers=printedSetDetails(set,lang);
+  await sql`INSERT INTO card_sets(id,provider_id,language,name,series,release_date,card_count,printed_total,printed_codes)
+    VALUES(${lang+':'+setId},${setId},${lang},${name},${String(set.serie?.name??'')},${release},${Number(set.cardCount?.total)||set.cards.length},${identifiers.printed_total},${identifiers.printed_codes})
     ON CONFLICT(id) DO UPDATE SET name=excluded.name,series=excluded.series,release_date=excluded.release_date,
-      card_count=excluded.card_count,updated_at=now()`;
+      card_count=excluded.card_count,printed_total=coalesce(excluded.printed_total,card_sets.printed_total),
+      printed_codes=CASE WHEN cardinality(excluded.printed_codes)>0 THEN excluded.printed_codes ELSE card_sets.printed_codes END,updated_at=now()`;
   const errors=[];let done=0;
   await progress(job,done,set.cards.length,'Importing '+name);
   for(const brief of set.cards) {

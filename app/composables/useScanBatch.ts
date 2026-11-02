@@ -2,7 +2,7 @@ import { batchHasWork, batchSnapshot, batchSummary, restoreBatchSnapshot, runSca
 import { prepareCardScanPhoto, cardScanPhotoFingerprint } from '../utils/scan-photo'
 export function useScanBatch() {
   const api = useApi(), auth = useAuth()
-  const items = ref<any[]>([]), running = ref(false), preparing = ref(false), restoring = ref(false), pauseRequested = ref(false), consent = ref(false)
+  const items = ref<any[]>([]), running = ref(false), preparing = ref(false), restoring = ref(false), pauseRequested = ref(false)
   const error = ref(''), notice = ref(''), storageWarning = ref('')
   const summary = computed(() => batchSummary(items.value)), hasWork = computed(() => items.value.some(batchHasWork))
   const locked = computed(() => running.value || preparing.value || restoring.value)
@@ -45,7 +45,7 @@ export function useScanBatch() {
   async function addFiles(files: File[]) {
     if (!alive || !owner || locked.value || !files.length) return
     if (files.length > SCAN_BATCH_LIMIT) { error.value = 'Choose no more than 20 photos at once.'; return }
-    preparing.value = true; error.value = ''; notice.value = ''; consent.value = false
+    preparing.value = true; error.value = ''; notice.value = ''
     let duplicates = 0, accepted = 0
     try {
       for (const file of files) {
@@ -67,7 +67,7 @@ export function useScanBatch() {
     }
   }
   async function start(availability: () => Promise<any>) {
-    if (!alive || !owner || locked.value || !consent.value || !hasWork.value) return
+    if (!alive || !owner || locked.value || !hasWork.value) return
     running.value = true; pauseRequested.value = false; error.value = ''; notice.value = ''
     try {
       const result = await runScanBatch(items.value, { api, availability, update, alive: () => alive, paused: () => pauseRequested.value,
@@ -75,17 +75,17 @@ export function useScanBatch() {
       if (alive) { error.value = result.error || ''; notice.value = result.status === 'paused' ? 'Queue paused. Review completed scans or continue when ready.' : result.status === 'stopped' ? 'Queue stopped. No remaining photos were sent. Resolve the issue before continuing.' : 'Recognition finished. Review each match before adding cards.' }
     } finally { if (alive) running.value = false }
   }
-  function skip(item: any) { if (!locked.value) { update(item, { skipped: !item.skipped }); consent.value = false } }
+  function skip(item: any) { if (!locked.value) { update(item, { skipped: !item.skipped }) } }
   function clear() {
     if (locked.value) return
-    items.value = []; consent.value = false; error.value = ''; notice.value = 'Queue cleared. Saved scan receipts and collection additions are unchanged.'; persist()
+    items.value = []; error.value = ''; notice.value = 'Queue cleared. Saved scan receipts and collection additions are unchanged.'; persist()
   }
   watch(() => auth.state.value.user?.id, id => {
     if (owner && id !== owner) {
       alive = false; cancelWait?.(); for (const item of items.value) item.image = ''
-      items.value = []; running.value = false; preparing.value = false; restoring.value = false; consent.value = false
+      items.value = []; running.value = false; preparing.value = false; restoring.value = false
     }
   })
   onBeforeUnmount(() => { alive = false; cancelWait?.(); for (const item of items.value) item.image = '' })
-  return { items, summary, hasWork, running, preparing, restoring, locked, pauseRequested, consent, error, notice, storageWarning, restore, addFiles, start, skip, clear, syncReceipt }
+  return { items, summary, hasWork, running, preparing, restoring, locked, pauseRequested, error, notice, storageWarning, restore, addFiles, start, skip, clear, syncReceipt }
 }

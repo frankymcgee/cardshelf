@@ -1,4 +1,4 @@
-# Card photo scanning (v0.42.0)
+# Card photo scanning (v0.59.0)
 
 CardShelf can send one card-front photo to the OpenAI API, read visible identifying
 text, and suggest matching records from the imported catalogue. English and
@@ -102,8 +102,8 @@ use **Take another card photo** to add phone photos one at a time. This release
 accepts up to 20 separate one-card images, not one photo of an entire binder page.
 English/Japanese Pokémon support and the existing recognition model are unchanged.
 
-Review the queue, grant external-processing consent, then select **Analyse queued
-photos**. Each new analysis consumes one member scan, including failed recognition;
+Review the queue, then select **Analyse queued photos**. There is no additional
+OpenAI confirmation checkbox in either scanning mode. Each new analysis consumes one member scan, including failed recognition;
 `0` remains unlimited, while the shared USD budget still applies. Access is checked
 before every upload and admission remains enforced by the server. Analysis is
 sequential. **Pause after this photo** finishes/checks the current request and does
@@ -169,6 +169,30 @@ checks binder ownership, game, membership, revision and available pockets again
 under the collection lock before saving. Retrying an automatic confirmation uses
 the original receipt and cannot pick another pocket or add copies again.
 
+## Set identifiers and prices
+
+Keep the card upright, with all four corners visible and the bottom-left set code,
+collector number and printed total sharp. The recogniser receives the full image
+and a separate crop of the lower 40% of that image. The crop covers both sides of
+the lower edge for older layouts and is explicitly identified as the same card.
+Saved administrator prompts are preserved; fixed recognition instructions emphasise
+the printed identifiers for both default and custom prompts.
+
+Matches show the set / collection name, collector number / official denominator,
+language, any saved printed set codes and the catalogue's cached starting price.
+The detected text is also shown for comparison. Selecting a card loads its printing
+prices; changing the finish updates the per-card price. Approximate references,
+outdated values, absent AUD conversion and missing prices remain labelled. Price
+requests never block confirmation or trigger another recognition request.
+
+Migration `037_scan_set_identifiers.sql` backfills official denominators from
+existing imported card responses where the set's records agree. It never uses the
+total including secret cards as a printed denominator. New/repeated set imports
+retain provider-supplied abbreviations and TCG Online codes. Previously imported
+sets without those codes can still match by printed number and official total;
+a normal set re-import supplies any available codes. No code is guessed from the
+artwork or card name, and ambiguous matches still require review.
+
 ## Flow and limits
 
 - The camera/file input accepts JPEG, PNG or WebP. The browser resizes to at most
@@ -178,7 +202,11 @@ the original receipt and cannot pick another pocket or add copies again.
   image bytes, rotates/resizes and re-encodes to JPEG without metadata. One analysis
   runs at a time across the installation; a busy response can be retried.
 - Recognition uses the saved model, extraction prompt and request limits with a
-  strict JSON schema, one image and no tools. Only printed observations become
+  strict JSON schema, the full photo plus a lower-edge close-up of the same card,
+  and no tools. The close-up is always high detail; the full photo follows the
+  saved image-detail setting. Bottom-left printed identifiers are prioritised;
+  older bottom-right layouts remain visible. Both views share one request and
+  one scan allowance, with actual token usage accounted as before. Only printed observations become
   matching hints. The model
   cannot choose database IDs, add inventory, make network/tool calls, or grade cards.
 - Catalogue matches show supporting details rather than a fabricated probability.
@@ -237,7 +265,8 @@ there is no local/GPU provider selector in this release.
 
 ## Photo and credential handling
 
-The user explicitly agrees to send each photo to OpenAI. Photos stay in browser and
+Selecting **Find this card** or **Analyse queued photos** starts external recognition
+without a separate checkbox. Photos and their lower-edge crops stay in browser and
 server request memory and are not written to CardShelf's database, disk, audit log
 or catalogue. Receipts retain a SHA-256 image digest for retry detection, extracted
 identifying text, candidate IDs, usage and confirmed addition details. Treat

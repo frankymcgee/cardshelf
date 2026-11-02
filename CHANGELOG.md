@@ -1,3 +1,11 @@
+## 0.59.0 — 2026-11-02
+
+- Remove the OpenAI confirmation checkbox from single-card and batch scanning. The scan button starts recognition; each collection addition still requires review.
+- Show set / collection, printed code, collector number / official total and cached prices in scan matches and manual search. Review prices follow the selected finish, prefer AUD when conversion is available, and label approximate, stale or missing values.
+- Send a metadata-free lower-edge close-up alongside the full photo in the same recognition request. Prioritise bottom-left identifiers while preserving older bottom-right layouts, custom admin prompts and existing usage limits.
+- Rank printed number, set code and official denominator ahead of a repeated name. Migration 037 backfills consistent denominators from existing imported card data; future set imports retain official codes and totals.
+- Cover direct scanning, finish-specific prices, unavailable prices, lower-edge crops and printed-identifier matching with unit, integration and desktop/phone browser checks.
+
 ## 0.58.0 — 2026-10-30
 
 - Add game selection throughout Arena, with independent, version-pinned Yu-Gi-Oh! and Magic rules, supported-card compilers, saved decks, genuine-card CPU practice, private matches and tournaments.

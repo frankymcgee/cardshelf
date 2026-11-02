@@ -64,7 +64,7 @@ export async function runScanBatch(items, { api, availability, update, alive = (
         if (!access?.available) throw new Error(access?.message || 'Scanning is unavailable. Check your membership, allowance or the shared budget.');
         update(item, { submitted: true, analysing: true, error: '' }); // Persist the ID before dispatch.
         try {
-          receipt = validReceipt(await api('/api/scans', { method: 'POST', body: { request_id: item.id, image: item.image, confirm_external_processing: true } }), item.id);
+          receipt = validReceipt(await api('/api/scans', { method: 'POST', body: { request_id: item.id, image: item.image } }), item.id);
         } catch (original) {
           // Never generate a new ID or blindly repeat a potentially charged call.
           if (!alive()) return { status: 'paused', processed };

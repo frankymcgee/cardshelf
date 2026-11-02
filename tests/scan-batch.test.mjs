@@ -30,7 +30,7 @@ test('analysis is sequential, refreshes access per photo and never confirms inve
   const rows=[item(),item(),item()],calls=[];let active=0,max=0,checks=0;
   const result=await runScanBatch(rows,dependencies({availability:async()=>{checks++;return {available:true}},api:async(path,options)=>{
     calls.push({path,body:options?.body});active++;max=Math.max(max,active);await Promise.resolve();active--;
-    assert.equal(path,'/api/scans');assert.equal(options.body.confirm_external_processing,true);return {id:options.body.request_id,status:'ready'};
+    assert.equal(path,'/api/scans');assert.equal(Object.hasOwn(options.body,'confirm_external_processing'),false);return {id:options.body.request_id,status:'ready'};
   }}));
   assert.equal(result.status,'complete');assert.equal(result.processed,3);assert.equal(max,1);assert.equal(checks,3);assert.equal(calls.length,3);assert.ok(rows.every(i=>i.submitted&&i.receipt.status==='ready'));
 });
