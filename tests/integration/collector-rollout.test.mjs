@@ -112,6 +112,18 @@ await test('collector rollout preserves inventory, layout, private costs and wis
       assert.equal((await ok('wishlist-alerts')).events.length,3);assert.equal((await ok('wishlist-alerts')).rules[0].wishlisted,false);assert.deepEqual((await ok('wishlist-alerts',{user:1})).events,[]);
       assert.equal((await request('wishlist-alerts',{method:'POST',body:{printing_id:p.id,revision:alert.revision,target_aud_minor:1900,watch_market:true,watch_listings:false,conditions:['NM'],enabled:true}})).status,409);
     });
+    await t.test('lost access pauses scheduled checks and rejects new financial writes',async()=>{
+      await sql`UPDATE collection_entries SET wishlist=true WHERE user_id=${owner} AND printing_id=${p.id}`;
+      await sql`UPDATE app_users SET role='user' WHERE id=${owner}`;
+      await sql`DELETE FROM account_access_grants WHERE user_id=${owner}`;
+      await sql`INSERT INTO free_accounts(user_id) VALUES(${owner})`;
+      await sql`UPDATE wishlist_alerts SET checked_at=NULL,market_matched=false WHERE id=${alert.id}`;
+      await evaluateWishlistAlert(alert.id);
+      assert.equal((await sql`SELECT count(*)::integer AS n FROM wishlist_alert_events WHERE user_id=${owner}`)[0].n,3);
+      assert.equal((await request('portfolio/costs',{method:'POST',body:{request_id:randomUUID(),printing_id:p.id,condition:'NM',quantity:1,acquired_on:day,goods_minor:100,currency:'AUD',entry_revision:3}})).status,403);
+      await sql`DELETE FROM free_accounts WHERE user_id=${owner}`;
+      await sql`UPDATE app_users SET role='admin' WHERE id=${owner}`;
+    });
   } finally {
     await sql`DELETE FROM app_users WHERE id IN ${sql([owner,other])}`;
     await sql`DELETE FROM printings WHERE card_id=${card}`;

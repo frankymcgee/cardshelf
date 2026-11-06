@@ -319,3 +319,26 @@ test('purchase failure retries the same transaction while keeping inventory addi
   await expect(ledger.locator('.cost-lot')).toHaveCount(1); expect(writes).toHaveLength(2); expect(writes[1]).toEqual(writes[0]); expect(writes[0].add_to_collection).toBe(false); expect(writes[0].goods_minor).toBe(1000);
   await fits(page); await page.screenshot({path: info.outputPath('purchase-cost-ledger.png'), fullPage: true}); expect(state.errors).toEqual([]);
 });
+
+test('wishlist target saves selected conditions and opens a private match inbox', async ({page}, info) => {
+  const state = await fixtures(page); let saved = null; const writes = [];
+  await page.route('**/api/cards/**', async route => {
+    if (decodeURIComponent(new URL(route.request().url()).pathname) !== '/api/cards/' + card.id) return route.fallback();
+    return route.fulfill({json: {...card, entries: [{printing_id: normal.id, condition: 'UNKNOWN', quantity: 0, wishlist: true, notes: '', revision: 1}]}});
+  });
+  await page.route('**/api/wishlist-alerts**', async route => {
+    if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON(); writes.push(body);
+      saved = {...body, id: normal.id, revision: 1, name: card.name, card_id: card.id, label: normal.label, set_name: card.set_name, language: 'en', wishlisted: true, catalogue_available: true};
+      return route.fulfill({json: saved});
+    }
+    return route.fulfill({json: {rules: saved ? [saved] : [], unread: saved ? 1 : 0, events: saved ? [{id: holo.id, kind: 'listing', amount_aud_minor: 1200, target_aud_minor: 1500, created_at: today + 'T12:00:00Z', listing_id: binderId, listing_active: true, name: card.name, card_id: card.id, label: normal.label}] : []}});
+  });
+  await page.goto('/cards?card=' + encodeURIComponent(card.id)); const alert = page.locator('.printing-alert');
+  await alert.locator(':scope > summary').click(); await alert.getByLabel('Target total (AUD)').fill('15.00');
+  await alert.getByLabel('LP', {exact: true}).check(); await alert.getByRole('button', {name: 'Create alert', exact: true}).click();
+  await expect(alert.getByText('Saved alert · revision 1')).toBeVisible(); expect(writes).toHaveLength(1); expect(writes[0].conditions.sort()).toEqual(['LP', 'NM']); expect(writes[0].target_aud_minor).toBe(1500);
+  await alert.getByRole('link', {name: 'Wishlist alerts', exact: true}).click(); await expect(page.getByRole('heading', {name: 'Wishlist alerts', exact: true})).toBeVisible();
+  await expect(page.getByText('Member listing total $12.00 · target $15.00')).toBeVisible(); await expect(page.getByRole('link', {name: 'View listing', exact: true})).toHaveAttribute('href', '/marketplace/' + binderId);
+  await fits(page); await page.screenshot({path: info.outputPath('wishlist-alert-inbox.png'), fullPage: true}); expect(state.errors).toEqual([]);
+});

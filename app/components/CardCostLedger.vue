@@ -6,13 +6,13 @@ const form = reactive({ condition: 'NM', quantity: 1, acquired_on: today(), good
 const saleLot = ref<any>(null), sale = reactive({ quantity: 1, sold_on: today(), gross: '', fees: '0', postage: '0', currency: 'AUD', aud_rate: '' })
 const releaseId = ref('')
 let pending: { url: string; body: any } | null = null
-const retry = ref(false)
+const retry = ref(false), lotPage = ref(1)
 const money = (minor: number) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(Number(minor) / 100)
 const date = (value: string) => new Date(value).toISOString().slice(0, 10)
 const minor = (value: string) => { if (!/^\d+(\.\d{1,2})?$/.test(value)) throw new Error('Enter money with up to two decimal places.'); return Math.round(Number(value) * 100) }
 const revision = (condition: string) => ledger.value?.entries.find((e: any) => e.condition === condition)?.revision || 0
 async function load() {
-  try { ledger.value = await api('/api/portfolio/costs', { query: { printing_id: props.printingId } }) }
+  try { ledger.value = await api('/api/portfolio/costs', { query: { printing_id: props.printingId, page: lotPage.value } }) }
   catch (e) { error.value = errorMessage(e) }
 }
 async function toggle(event: Event) { opened.value = (event.target as HTMLDetailsElement).open; if (opened.value && !ledger.value) await load() }
@@ -24,7 +24,7 @@ async function send(url?: string, body?: any) {
   try {
     await api(pending.url, { method: 'POST', body: pending.body })
     pending = null; retry.value = false; saleLot.value = null; releaseId.value = ''
-    await load(); emit('saved')
+    lotPage.value = 1; await load(); emit('saved')
   } catch (e: any) {
     error.value = errorMessage(e)
     const status = e?.statusCode || e?.status || e?.response?.status
@@ -59,7 +59,7 @@ function release(lot: any) { send('/api/portfolio/costs/' + lot.id, { action: 'r
       <div v-if="lot.remaining_quantity" class="button-row"><button class="text-button" :disabled="busy || retry" @click="saleLot = lot; sale.quantity = 1; releaseId = ''">Record sale</button><button class="text-button" :disabled="busy || retry" @click="releaseId = lot.id; saleLot = null">Release cost tracking</button></div>
       <div v-if="releaseId === lot.id" class="alert info"><p>Remove cost tracking from the remaining {{ lot.remaining_quantity }} copies? Ownership and past sales stay unchanged. You can then record corrected costs.</p><button class="button secondary" :disabled="busy || retry" @click="release(lot)">Confirm release</button><button class="text-button" @click="releaseId = ''">Cancel</button></div>
       <form v-if="saleLot?.id === lot.id" class="form-stack" @submit.prevent="sell"><fieldset class="cost-fields" :disabled="busy || retry"><legend>Record sale and remove sold copies</legend><div class="form-columns"><label>Copies<input v-model.number="sale.quantity" type="number" required min="1" :max="lot.remaining_quantity" /></label><label>Sale date<input v-model="sale.sold_on" required type="date" :min="date(lot.acquired_on)" :max="today()" /></label><label>Currency<select v-model="sale.currency"><option>AUD</option><option>USD</option><option>EUR</option></select></label></div><div class="form-columns"><label>Sale total<input v-model="sale.gross" required inputmode="decimal" /></label><label>Fees total<input v-model="sale.fees" required inputmode="decimal" /></label><label>Postage paid<input v-model="sale.postage" required inputmode="decimal" /></label></div><label v-if="sale.currency !== 'AUD'">AUD per {{ sale.currency }} on sale date<input v-model="sale.aud_rate" required type="number" min="0.00000001" max="1000" step="0.00000001" /></label><p class="data-note">Saving reduces collection quantity. Cost is allocated proportionally from this lot.</p><button class="button primary">Save sale</button><button type="button" class="text-button" @click="saleLot = null">Cancel</button></fieldset></form>
-    </article><details v-if="ledger.sales.length"><summary>Recent sales (up to 100)</summary><p v-for="s in ledger.sales" :key="s.id" class="small">{{ date(s.sold_on) }} · {{ s.quantity }} copies · net {{ money(s.net_aud_minor) }} · profit/loss {{ money(Number(s.net_aud_minor) - Number(s.cost_aud_minor)) }}</p></details>
+    </article><div v-if="ledger.total > 50" class="button-row"><button class="button secondary" :disabled="busy || retry || lotPage <= 1" @click="lotPage--; load()">Previous lots</button><span class="small">Page {{ lotPage }} of {{ Math.ceil(ledger.total / 50) }}</span><button class="button secondary" :disabled="busy || retry || lotPage * 50 >= ledger.total" @click="lotPage++; load()">Next lots</button></div><details v-if="ledger.sales.length"><summary>Recent sales (up to 100)</summary><p v-for="s in ledger.sales" :key="s.id" class="small">{{ date(s.sold_on) }} · {{ s.quantity }} copies · net {{ money(s.net_aud_minor) }} · profit/loss {{ money(Number(s.net_aud_minor) - Number(s.cost_aud_minor)) }}</p></details>
     </template>
   </details>
 </template>

@@ -99,7 +99,7 @@ export default defineEventHandler(async event => {
     if (route === 'wishlist-alerts' && method === 'GET') return await wishlistAlerts.wishlistAlerts(user.id, query.printing_id ? String(query.printing_id) : null)
     if (route === 'wishlist-alerts' && method === 'POST') { await auth.rateLimit('alerts:' + user.id, 60); return await wishlistAlerts.saveWishlistAlert(user.id, await readJSON(event)) }
     if (parts[0] === 'wishlist-alerts' && parts.length === 3 && parts[2] === 'seen' && method === 'POST') return await wishlistAlerts.markWishlistAlertSeen(user.id, parts[1])
-    if (route === 'portfolio/costs' && method === 'GET') return query.printing_id ? await costs.purchaseLedger(user.id, query.printing_id) : await costs.costSummary(user.id)
+    if (route === 'portfolio/costs' && method === 'GET') return query.printing_id ? await costs.purchaseLedger(user.id, query.printing_id, Number(query.page || 1)) : await costs.costSummary(user.id)
     if (route === 'portfolio/costs' && method === 'POST') { await auth.rateLimit('costs:' + user.id, 90); return await costs.recordPurchase(user.id, await readJSON(event)) }
     if (parts[0] === 'portfolio' && parts[1] === 'costs' && parts.length === 3 && method === 'POST') { await auth.rateLimit('costs:' + user.id, 90); return await costs.changeCostLot(user.id, parts[2], await readJSON(event)) }
     if (route === 'collection' && method === 'PUT') return await collection.saveEntry(user.id, await readJSON(event))
