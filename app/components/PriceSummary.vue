@@ -34,6 +34,7 @@ const total = computed(() => data.value?.valuation.aud_total == null ? 'Not pric
       <p class="price-coverage">{{ data.valuation.priced_quantity }} / {{ data.valuation.quantity }} {{ binderId ? 'planned pockets' : 'owned copies' }} priced<template v-if="data.valuation.unpriced_quantity"> · {{ data.valuation.unpriced_quantity }} unpriced</template></p>
       <p v-if="data.valuation.approximate_quantity" class="estimate-breakdown small">Includes {{ money(data.valuation.approximate_aud_total) }} in guide-price approximations · {{ data.valuation.approximate_quantity }} unconfirmed {{ binderId ? 'pockets' : 'copies' }}.</p>
       <p v-if="data.valuation.stale_reference_quantity || data.valuation.failed_reference_quantity" class="alert warning compact-price-warning">Includes outdated or failed-refresh guide values.</p>
+      <PortfolioOverview v-if="!binderId && data.history" :history="data.history" :portfolio="data.portfolio" />
       <UiDisclosure class="value-details" title="Value details & history" :open="expanded">
       <CollectionValueHistory v-if="data.history" :history="data.history" :binder="!!binderId" />
       <div class="button-row"><span class="badge">{{ data.valuation.unpriced_quantity }} no available estimate</span><span class="badge amber">{{ data.valuation.stale_quantity }} stale matched quotes excluded</span><span class="badge">{{ data.valuation.fx_missing_quantity }} awaiting currency rate</span></div>

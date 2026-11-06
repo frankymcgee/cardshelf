@@ -58,6 +58,7 @@ for (const theme of ['light', 'dark']) {
     await expect(page.locator('.price-total')).toHaveText('$180.00');
     await expect(details).not.toHaveAttribute('open');
     await expect(page.getByRole('region', {name: 'Collection value history', exact: true})).not.toBeVisible();
+    await expect(page.getByRole('region', {name: 'Portfolio overview', exact: true}).getByRole('img')).toBeVisible();
     await expect(page.locator('.compact-price-warning')).toBeVisible();
     const first = page.locator('.dashboard-binders .binder-card').first(); await expect(first).toBeVisible();
     expect((await first.boundingBox()).y).toBeLessThan(page.viewportSize().height);

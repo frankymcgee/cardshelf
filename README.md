@@ -1,8 +1,18 @@
-# CardShelf 0.59.0
+# CardShelf 0.60.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
 binders, quick tracking, artwork effects, binder themes and a member marketplace.
+
+## Portfolio and completion estimates
+
+**My collection** now shows a compact 7/30/90-day trend without expanding the full
+history. **Portfolio insights** breaks estimated value down by game and shows
+the biggest changes on retained copies using comparable prices, including currency
+movements. **Complete this binder** adds an estimated remaining cost and price
+sorting. Unpriced targets and approximate guides remain visible; owned unchecked
+Tracking targets do not become purchase costs. See [portfolio and completion
+estimates](docs/PORTFOLIO_COMPLETION.md).
 
 Arena now gives cards hover lift and selection feedback, plays and evolutions
 landing pulses, and attacks card lunges, type-coloured trails and damage bursts.
