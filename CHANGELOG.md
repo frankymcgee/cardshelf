@@ -1,3 +1,10 @@
+## 0.62.0 — 2026-11-06
+
+- Extend the existing TCGdex pricing feed with detailed per-variant TCGplayer matching, product IDs and separate low/mid/high/direct asking-price comparisons. Special foils, stamped cards, jumbo cards, ambiguous variants and conflicting product IDs are not silently mapped to ordinary finishes.
+- Preserve dated last-known provider observations when TCGdex returns missing or older market data. Retained matched prices stay excluded from current matched valuations and wishlist price alerts; Cardmarket guides remain labelled approximations. Expose provider status and receipt/source dates in card details.
+- Keep older snapshots from replacing newer prices, avoid adding retained data to price history, and classify changed marketplace product mappings as coverage changes rather than market gains.
+- Add migration 041 and regression coverage for variant matching, partial feeds, provider recovery, dated caches, price alerts and mobile price details. No extra API key or provider connection is required.
+
 ## 0.61.0 — 2026-11-06
 
 - Grey missing cards in private Collection binder Layout view, with readable pocket labels and ownership status.

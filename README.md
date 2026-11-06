@@ -1,8 +1,15 @@
-# CardShelf 0.61.0
+# CardShelf 0.62.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
 binders, quick tracking, artwork effects, binder themes and a member marketplace.
+
+## TCGdex market pricing
+
+Pokémon prices use the existing TCGdex feed with detailed finish matching, source
+freshness and safe retention of missing provider observations. Card details add
+separate TCGplayer asking-price comparisons and product links. See
+[TCGdex markets](docs/TCGDEX_MARKETS.md).
 
 ## Purchase costs, alerts and binder options
 

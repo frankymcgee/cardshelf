@@ -78,11 +78,11 @@ await test('free-feed price references, alias matching and preserved valuation b
       const summary=await priceSummary(userId);assert.equal(summary.valuation.aud_total,340);assert.equal(summary.valuation.failed_reference_quantity,2);
       assert.equal(summary.valuation.matched_quantity,0);assert.equal(summary.valuation.approximate_quantity,2);
     });
-    await t.test('successful empty pricing clears old values without changing ownership',async()=>{
+    await t.test('empty pricing retains dated unavailable observations without changing ownership',async()=>{
       await storePricing(cardId,{});
-      const {data}=await prices();assert.equal(data.last_error,'');assert.deepEqual(data.references,[]);
-      assert.ok(data.printings.every(p=>p.price===null));
-      assert.match(priceAvailabilityMessage(data),/current feed returned no supported price/);
+      const {data}=await prices();assert.equal(data.last_error,'');assert.ok(data.references.every(q=>q.retained && q.fetch_error));
+      assert.ok(data.printings.filter(p=>p.price).every(p=>p.price.retained && p.price.fetch_error));
+      assert.equal(data.providers.TCGplayer.state,'missing');assert.equal(data.providers.Cardmarket.state,'missing');
       assert.equal((await sql`SELECT quantity FROM collection_entries WHERE user_id=${userId} AND printing_id=${holo.id}`)[0].quantity,2);
     });
   } finally {
