@@ -310,7 +310,7 @@ test('purchase failure retries the same transaction while keeping inventory addi
     lot = {id: normal.id, acquired_on: today, condition: 'NM', quantity: 2, remaining_quantity: 2, currency: 'AUD', cost_aud_minor: 1000, revision: 1};
     return route.fulfill({json: {lot}});
   });
-  await page.goto('/cards?card=' + encodeURIComponent(card.id)); const ledger = page.locator('.cost-ledger');
+  await page.goto('/cards?ads=off&card=' + encodeURIComponent(card.id)); const ledger = page.locator('.cost-ledger');
   await ledger.locator(':scope > summary').click(); const form = ledger.locator('form').first();
   await expect(form.getByLabel('Also add these copies to my collection')).not.toBeChecked();
   await form.getByLabel('Copies', {exact: true}).fill('2'); await form.getByLabel('Cards total', {exact: true}).fill('10.00');
@@ -334,7 +334,7 @@ test('wishlist target saves selected conditions and opens a private match inbox'
     }
     return route.fulfill({json: {rules: saved ? [saved] : [], unread: saved ? 1 : 0, events: saved ? [{id: holo.id, kind: 'listing', amount_aud_minor: 1200, target_aud_minor: 1500, created_at: today + 'T12:00:00Z', listing_id: binderId, listing_active: true, name: card.name, card_id: card.id, label: normal.label}] : []}});
   });
-  await page.goto('/cards?card=' + encodeURIComponent(card.id)); const alert = page.locator('.printing-alert');
+  await page.goto('/cards?ads=off&card=' + encodeURIComponent(card.id)); const alert = page.locator('.printing-alert');
   await alert.locator(':scope > summary').click(); await alert.getByLabel('Target total (AUD)').fill('15.00');
   await alert.getByLabel('LP', {exact: true}).check(); await alert.getByRole('button', {name: 'Create alert', exact: true}).click();
   await expect(alert.getByText('Saved alert · revision 1')).toBeVisible(); expect(writes).toHaveLength(1); expect(writes[0].conditions.sort()).toEqual(['LP', 'NM']); expect(writes[0].target_aud_minor).toBe(1500);

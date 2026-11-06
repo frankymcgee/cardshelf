@@ -109,6 +109,7 @@ jobs:
             printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
           fi
           npx playwright install --with-deps chromium webkit
+      - run: npm run test:collection-ui
       - run: npm run test:security-ui
       - run: npm run test:release-ui
       - run: npm run test:scan-batch-ui
@@ -120,7 +121,6 @@ jobs:
       - run: npm run test:affiliates-live
       - run: npm run test:binder-completion-ui
       - run: npm run test:value-history-ui
-      - run: npm run test:collection-ui
       - run: npm run test:variant-effects-ui
       - run: npm run test:push-ui
       - run: npm run test:card-images-ui
