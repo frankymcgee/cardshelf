@@ -358,3 +358,21 @@ test('an existing pocket can inspect its retired printing without substituting a
   await expect(dialog.getByText('Retired catalogue printing', {exact: true})).toBeVisible();
   expect(state.errors).toEqual([]);
 });
+
+test('TCGdex prices show partial sources, dated retained values and separate asking comparisons', async ({page}, info) => {
+  const state = await fixtures(page), now = new Date().toISOString();
+  const quote = {source: 'TCGplayer', variant: 'normal', currency: 'USD', metric: 'marketPrice', amount: 10, aud: 15,
+    product_id: 123, mapping_basis: 'detailed_variant', received_at: now, source_updated_at: now, retained: true, fetch_error: true, stale: false};
+  await page.route('**/api/cards/**/prices', route => route.fulfill({json: {enabled: true, game: 'pokemon', fetched_at: now, attempted_at: now, last_error: '', history: [],
+    printings: [{...normal, price: quote}], references: [], market_metrics: ['lowPrice','midPrice','highPrice','directLowPrice'].map((metric, i) => ({...quote, metric, amount: i + 1, aud: (i + 1) * 1.5})),
+    providers: {TCGplayer: {state: 'missing', checked_at: now, received_at: now, source_updated_at: now}, Cardmarket: {state: 'available', checked_at: now, received_at: now, source_updated_at: now}}
+  }}));
+  await page.goto('/cards?ads=off&card=' + encodeURIComponent(card.id)); const dialog = page.getByRole('dialog');
+  await dialog.locator('.card-value-details > summary').click(); const prices = dialog.locator('.card-prices');
+  await expect(prices.getByText('Last received price · not current', {exact: true})).toBeVisible();
+  await prices.locator('.market-feed-status > summary').click(); await expect(prices.getByText('No usable prices returned', {exact: true})).toBeVisible();
+  await prices.locator('.tcg-market-metrics > summary').click(); await expect(prices.getByText('Lowest asking price', {exact: true})).toBeVisible();
+  await expect(prices.getByRole('link', {name: 'View TCGplayer product', exact: true})).toHaveAttribute('href', 'https://www.tcgplayer.com/product/123');
+  expect(await prices.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true); await fits(page);
+  await page.screenshot({path: info.outputPath('tcgdex-market-details.png'), fullPage: true}); expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
+});

@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { cardmarketHighlights, cardmarketMetricLabel, cardmarketGroupLabel, priceAvailabilityMessage, missingPrintingMessage } from '../../shared/price-display.mjs';
+import { tcgplayerMetricLabel, tcgplayerProductUrl, cardmarketHighlights, cardmarketMetricLabel, cardmarketGroupLabel, priceAvailabilityMessage, missingPrintingMessage } from '../../shared/price-display.mjs';
 import type { DisplayQuote } from '../../shared/price-display.mjs';
 interface PrintingPrice { id: string; key: string; label: string; source: string; price: DisplayQuote | null; estimate?: DisplayQuote | null }
 interface PricesResponse {
   game?: string; enabled: boolean; fetched_at: string | null; attempted_at: string | null; last_error: string;
-  printings: PrintingPrice[]; references: DisplayQuote[]; history: DisplayQuote[];
+  printings: PrintingPrice[]; references: DisplayQuote[]; history: DisplayQuote[]; market_metrics?: DisplayQuote[]; providers?: Record<string, {state: string;checked_at: string;received_at: string|null;source_updated_at:string|null}>;
 }
 const props = defineProps<{ cardId: string }>();
 const api = useApi(), notice = useNotice();
 const data = ref<PricesResponse | null>(null), error = ref(''), busy = ref(false), waiting = ref(false);
 let sequence = 0, timer: ReturnType<typeof setTimeout> | undefined, alive = true;
 const money = (amount: number | null, currency: string) => amount == null ? 'Unavailable' : new Intl.NumberFormat('en-AU', { style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).format(amount);
+const metricQuotes = (key: string) => (data.value?.market_metrics || []).filter(q => q.variant === key)
+const feedPartial = computed(() => Object.values(data.value?.providers || {}).some(p => p.state !== 'available'))
+const feedState = (state: string) => ({available: 'Prices returned', partial: 'Some older observations retained', missing: 'No usable prices returned', older: 'Previous observations retained'} as Record<string, string>)[state] || 'Not checked'
 const highlights = computed(() => cardmarketHighlights(data.value?.references || []));
 const additionalGame = computed(() => !!data.value?.game && data.value.game !== 'pokemon');
 const availability = computed(() => !data.value ? '' : additionalGame.value && data.value.references.length ? 'Available provider references are shown below. Edition, condition and realised sale values are not confirmed.' : priceAvailabilityMessage(data.value));
@@ -57,6 +60,8 @@ async function refresh() {
       <p v-if="data.last_error" class="alert warning">Latest refresh failed. Last-known reference approximations remain visible and may contribute to estimated totals; failed matched quotes are excluded. {{ data.last_error }}</p>
       <p v-if="availability" class="alert info" role="status">{{ availability }}</p>
 
+      <details v-if="!additionalGame && data.providers && Object.keys(data.providers).length" class="market-feed-status"><summary>TCGdex feed status<span v-if="feedPartial" class="badge amber">Partial data</span></summary><p class="data-note">TCGdex supplies both marketplaces. Missing responses retain last-known observations with their original dates. Retained matched quotes cannot trigger price alerts or contribute matched collection values.</p><div v-for="(provider, name) in data.providers" :key="name" class="feed-provider"><strong>{{ name }}</strong><span>{{ feedState(provider.state) }}</span><small>Checked {{ date(provider.checked_at) }} · Last received {{ date(provider.received_at) }}</small><small>Source updated {{ date(provider.source_updated_at) }}</small></div><p class="data-note">Provider finish and product mappings are not an independent verification of a listing, language or card condition.</p></details>
+
       <!-- A reference is presented once per provider category, never attached to
            a matched printing value. Approximate selections are labelled separately. -->
       <section v-if="!additionalGame && highlights.length" class="cm-references" aria-label="Cardmarket reference prices">
@@ -89,10 +94,12 @@ async function refresh() {
         <template v-if="printing.price">
           <span>{{ printing.price.aud == null ? money(printing.price.amount, printing.price.currency) : money(printing.price.aud, 'AUD') + ' AUD' }}</span>
           <small class="muted">{{ printing.price.source }} · {{ money(printing.price.amount, printing.price.currency) }} {{ printing.price.currency }} · {{ printing.price.metric === 'retail' ? 'Retail reference' : 'Market price' }}</small>
-          <small class="muted">Source updated {{ date(printing.price.source_updated_at) }}<template v-if="printing.price.fx_date"> · AUD rate date {{ printing.price.fx_date }}</template></small>
+          <small v-if="printing.price.retained" class="badge amber">Last received price · not current</small><small v-if="printing.price.mapping_basis === 'detailed_variant'" class="muted">Matched to the provider’s detailed finish</small><small class="muted">Source updated {{ date(printing.price.source_updated_at) }}<template v-if="printing.price.fx_date"> · AUD rate date {{ printing.price.fx_date }}</template></small>
           <span v-if="printing.price.stale" class="badge amber">Stale / source date unavailable</span><span v-if="printing.price.aud == null" class="badge">AUD rate unavailable</span>
         </template>
         <span v-else class="muted small">{{ additionalGame ? 'No matched printing quote is available. Any guide value shown above is approximate.' : missingPrintingMessage(printing, data) }}</span>
+        <details v-if="!additionalGame && metricQuotes(printing.key).length" class="tcg-market-metrics"><summary>More TCGplayer prices</summary><p class="data-note">Asking-price comparisons are shown separately from the market value used for your collection.</p><dl><template v-for="quote in metricQuotes(printing.key)" :key="quote.metric"><dt>{{ tcgplayerMetricLabel(quote.metric) }}</dt><dd>{{ money(quote.amount, 'USD') }} USD<template v-if="quote.aud != null"> · {{ money(quote.aud, 'AUD') }} AUD</template><span v-if="quote.retained || quote.stale || quote.fetch_error" class="badge amber">Last-known / may be outdated</span></dd></template></dl></details>
+        <a v-if="printing.price && tcgplayerProductUrl(printing.price.product_id)" class="text-button" :href="tcgplayerProductUrl(printing.price.product_id) || undefined" target="_blank" rel="noopener noreferrer">View TCGplayer product</a>
       </div>
       <CardPriceHistory :history="data.history" />
     </template>
@@ -101,6 +108,8 @@ async function refresh() {
   </section>
 </template>
 <style scoped>
+.market-feed-status{margin:12px 0 18px}.market-feed-status summary,.tcg-market-metrics summary{cursor:pointer;min-height:36px;font-size:12px}.market-feed-status summary .badge{margin-left:8px}.feed-provider{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding:12px 0;font-size:12px}.tcg-market-metrics{width:100%;min-width:0}.tcg-market-metrics dl{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}.tcg-market-metrics dd{margin:0;text-align:right}.tcg-market-metrics .badge{white-space:normal}
+
 .cm-references{border:1px solid var(--border,#dcdfe7);border-radius:12px;padding:16px;margin:16px 0;min-width:0}
 .cm-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .cm-heading h4,.tcg-heading{margin:0;font-size:1rem}

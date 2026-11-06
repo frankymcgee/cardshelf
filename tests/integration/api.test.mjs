@@ -142,7 +142,7 @@ await test('isolated end-to-end API and database checks',async t=> {
     await t.test('a successful absent-price response does not keep a withdrawn quote current',async()=>{
       await storePricing('en:demo-1',null);
       const prices=(await request('cards/en%3Ademo-1/prices',{cookie:adminCookie})).data;
-      assert.equal(prices.printings[0].price,null);assert.equal(prices.last_error,'');assert.equal(prices.history.length,2);
+      assert.equal(prices.printings[0].price.amount,10);assert.equal(prices.printings[0].price.retained,true);assert.equal(prices.printings[0].price.fetch_error,true);assert.equal(prices.last_error,'');assert.equal(prices.history.length,2);
       await storePricing('en:demo-1',{tcgplayer:{unit:'USD',updated:new Date().toISOString(),normal:{marketPrice:10}}});
     });
     await t.test('price refresh endpoints require authentication and limit repeated requests',async()=>{

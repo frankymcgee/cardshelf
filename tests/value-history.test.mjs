@@ -75,3 +75,10 @@ test('card history never merges sources, currencies, finishes or metrics and kee
   assert.equal(series.length, 5); assert.equal(series.find(s => s.label === 'TCGplayer · Normal · Market price · USD').points[0].value, 13);
   assert.ok(series.every(s => s.points.length === 1));
 });
+
+test('a corrected marketplace product mapping is coverage change rather than a retained-copy gain', () => {
+  const before = old([{ ...row, quotes: [{ ...quote, product_id: 123 }] }]);
+  const after = snapshot([{ ...row, quotes: [{ ...quote, product_id: 456, amount: 20 }] }]);
+  const change = valueHistoryChange(before, after);
+  assert.equal(change.price_fx_aud, 0); assert.equal(change.coverage_aud, 30);
+});

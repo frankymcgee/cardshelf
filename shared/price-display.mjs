@@ -13,6 +13,10 @@
  * @property {number|null} [fx_rate]
  * @property {boolean} [stale]
  * @property {boolean} [fetch_error]
+ * @property {boolean} [retained]
+ * @property {string|null} [received_at]
+ * @property {number} [product_id]
+ * @property {string} [mapping_basis]
  * @property {boolean} [approximate]
  * @property {string} [estimate_note]
  */
@@ -93,4 +97,13 @@ export function missingPrintingMessage(printing, state) {
   }
   const label = labels[/** @type {keyof typeof labels} */ (printing.key)];
   return `No matched TCGplayer ${label} market price in the last successful feed response.`;
+}
+
+/** @param {string} metric */
+export function tcgplayerMetricLabel(metric) {
+  return ({marketPrice:'Market price',lowPrice:'Lowest asking price',midPrice:'Median asking price',highPrice:'Highest asking price',directLowPrice:'Direct lowest asking price'})[metric] || 'Provider quote';
+}
+/** Build fixed-provider URLs only, never use URLs supplied in a price payload. */
+export function tcgplayerProductUrl(value) {
+  return Number.isSafeInteger(value)&&value>0&&value<=2147483647 ? 'https://www.tcgplayer.com/product/'+value : null;
 }

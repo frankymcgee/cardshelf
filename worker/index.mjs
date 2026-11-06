@@ -55,7 +55,7 @@ async function importCard(raw,lang,setId,requestedId) {
         category=excluded.category,image_url=excluded.image_url,dex_ids=excluded.dex_ids,raw_data=excluded.raw_data,updated_at=now()`;
     await reconcileProviderPrintings(tx,id,raw.variants);
   });
-  if(pricingConfiguration().enabled) await storePricing(id,raw.pricing);
+  if(pricingConfiguration().enabled) await storePricing(id,raw.pricing,raw.variants_detailed);
 }
 async function run(job) {
   const lang=v.language(job.payload.language),setId=v.providerId(job.payload.set_id);
