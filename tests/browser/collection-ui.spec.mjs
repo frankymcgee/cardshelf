@@ -344,3 +344,17 @@ test('wishlist target saves selected conditions and opens a private match inbox'
   await expect(page.getByText('Member listing total $12.00 · target $15.00')).toBeVisible(); await expect(page.getByRole('link', {name: 'View listing', exact: true})).toHaveAttribute('href', '/marketplace/' + binderId);
   await fits(page); await page.screenshot({path: info.outputPath('wishlist-alert-inbox.png'), fullPage: true}); expect(state.errors).toEqual([]);
 });
+
+test('an existing pocket can inspect its retired printing without substituting another finish', async ({page}) => {
+  const state = await fixtures(page);
+  await page.route('**/api/cards/**', async route => {
+    if (decodeURIComponent(new URL(route.request().url()).pathname) !== '/api/cards/' + card.id) return route.fallback();
+    return route.fulfill({json: {...card, printings: [{...normal, catalogue_available: false}, {...holo, catalogue_available: true}]}});
+  });
+  await page.goto('/binders/' + binderId); await page.locator('.pocket.filled').first().click();
+  await page.getByRole('button', {name: 'View card & ownership', exact: true}).click();
+  const dialog = page.getByRole('dialog', {name: card.name, exact: true});
+  await expect(dialog.getByLabel('Visualise printing')).toHaveValue(normal.id);
+  await expect(dialog.getByText('Retired catalogue printing', {exact: true})).toBeVisible();
+  expect(state.errors).toEqual([]);
+});

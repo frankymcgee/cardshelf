@@ -4,7 +4,7 @@ const props = defineProps<{ cardId: string | null; printingId?: string; effectsM
 const api = useApi(), auth = useAuth(), notice = useNotice()
 const card = ref<any>(null), loading = ref(false), busy = ref(false), loadError = ref('')
 const drafts = reactive<Record<string, any>>({}), manual = reactive({ label: '', verified: false })
-const visiblePrintings = computed(() => card.value?.printings.filter((p: any) => p.catalogue_available !== false || card.value.entries.some((e: any) => e.printing_id === p.id && (e.quantity > 0 || e.wishlist || e.notes))) || [])
+const visiblePrintings = computed(() => card.value?.printings.filter((p: any) => p.catalogue_available !== false || p.id === props.printingId || card.value.entries.some((e: any) => e.printing_id === p.id && (e.quantity > 0 || e.wishlist || e.notes))) || [])
 const visualPrintingId = ref(''), wishlistBusy = ref(false), wishlistError = ref('')
 const visualPrinting = computed(() => card.value?.printings.find((p: any) => p.id === visualPrintingId.value))
 const visualWishlisted = computed(() => printingWishlisted(card.value?.entries || [], visualPrintingId.value))
@@ -21,7 +21,7 @@ async function load() {
     const next = await api('/api/cards/' + encodeURIComponent(props.cardId))
     if (request !== sequence) return
     card.value = next
-    const choices = next.printings.filter((p: any) => p.catalogue_available !== false || next.entries.some((e: any) => e.printing_id === p.id && (e.quantity > 0 || e.wishlist || e.notes)))
+    const choices = next.printings.filter((p: any) => p.catalogue_available !== false || p.id === props.printingId || next.entries.some((e: any) => e.printing_id === p.id && (e.quantity > 0 || e.wishlist || e.notes)))
     visualPrintingId.value = choices.find((p: any) => p.id === visualPrintingId.value)?.id || choices.find((p: any) => p.id === props.printingId)?.id || choices[0]?.id || ''
     for (const key of Object.keys(drafts)) delete drafts[key]
     for (const p of next.printings) chooseCondition(p, next.entries.find((e: any) => e.printing_id === p.id && e.quantity > 0)?.condition || next.entries.find((e: any) => e.printing_id === p.id && e.wishlist)?.condition || 'NM')
