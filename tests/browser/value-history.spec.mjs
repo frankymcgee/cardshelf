@@ -77,7 +77,7 @@ for (const theme of ['light', 'dark']) {
     await overview.getByRole('button', { name: 'Portfolio insights', exact: true }).click();
     await expect(overview.getByRole('region', { name: 'Value by game' })).toContainText('Magic: The Gathering');
     await expect(overview.getByRole('region', { name: 'Biggest movers' })).toContainText('2 retained copies');
-    await expect(overview.getByRole('link', { name: /History Pikachu/ })).toHaveAttribute('href', '/cards?card=' + encodeURIComponent(card.id));
+    await expect(overview.getByRole('link', { name: /History Pikachu/ })).toHaveAttribute('href', '/cards?ads=off&card=' + encodeURIComponent(card.id));
     await fits(page); await overview.screenshot({ path: info.outputPath(theme + '-portfolio.png') }); expect(state.errors).toEqual([]);
   });
   test(theme + ' collection graph shows daily gaps, keyboard inspection and range changes', async ({ page }, info) => {
