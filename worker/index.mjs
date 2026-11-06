@@ -3,10 +3,12 @@ import { db,closeDatabase } from '../lib/db.mjs';
 import { configuration } from '../lib/config.mjs';
 import { randomToken } from '../lib/security.mjs';
 import { fetchProvider,sleep,printedSetDetails } from '../lib/provider.mjs';
-import { providerPrintings,safeImageUrl } from '../lib/variants.mjs';
+import { safeImageUrl } from '../lib/variants.mjs';
+import { reconcileProviderPrintings } from '../lib/printing-availability.mjs';
 import { ensure } from '../lib/errors.mjs';
 import { storePricing,schedulePriceRefresh,pricingConfiguration } from '../lib/prices.mjs';
 import { runPriceJob,refreshFx } from '../lib/price-worker.mjs';
+import { checkWishlistAlerts } from '../lib/wishlist-alerts.mjs';
 import { recordDueValueHistory } from '../lib/value-history.mjs';
 import { runGameImport } from '../lib/game-catalogue.mjs';
 import * as v from '../lib/validate.mjs';
@@ -44,7 +46,6 @@ async function importCard(raw,lang,setId,requestedId) {
   ensure(raw?.id===requestedId && raw?.set?.id===setId,502,'Provider card identity does not match the requested set.');
   const id=`${lang}:${v.providerId(raw.id)}`;
   const name=v.text(raw.name,'Card name',1,200),localId=v.text(String(raw.localId),'Card number',1,50);
-  const variants=providerPrintings(raw.variants);
   const dexIds=Array.isArray(raw.dexId)?raw.dexId.filter(n=>Number.isInteger(n)&&n>0&&n<=10000):[];
   await sql.begin(async tx=> {
     await tx`INSERT INTO cards(id,provider_id,set_id,language,local_id,name,illustrator,rarity,category,image_url,dex_ids,raw_data)
@@ -52,9 +53,7 @@ async function importCard(raw,lang,setId,requestedId) {
         ${String(raw.category??'')},${safeImageUrl(raw.image)},${dexIds},${tx.json(raw)})
       ON CONFLICT(id) DO UPDATE SET name=excluded.name,illustrator=excluded.illustrator,rarity=excluded.rarity,
         category=excluded.category,image_url=excluded.image_url,dex_ids=excluded.dex_ids,raw_data=excluded.raw_data,updated_at=now()`;
-    for(const p of variants) await tx`INSERT INTO printings(card_id,key,label,source,verified,metadata)
-      VALUES(${id},${p.key},${p.label},'tcgdex',false,${tx.json(p.metadata)})
-      ON CONFLICT(card_id,key) DO UPDATE SET metadata=excluded.metadata WHERE printings.source='tcgdex'`;
+    await reconcileProviderPrintings(tx,id,raw.variants);
   });
   if(pricingConfiguration().enabled) await storePricing(id,raw.pricing);
 }
@@ -118,6 +117,7 @@ try {
         } finally {clearInterval(leaseTimer);}
       } else await sleep(3000);
       await recordDueValueHistory();
+      await checkWishlistAlerts();
     } catch(error) {console.error('Worker loop:',error.message);await sleep(5000);}
   }
 } finally {await closeDatabase();}

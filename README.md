@@ -1,8 +1,15 @@
-# CardShelf 0.60.0
+# CardShelf 0.61.0
 
 Independent, self-hosted card collection software. Public product pages lead into a
 private collector workspace with card catalogues, collection records, set/series
 binders, quick tracking, artwork effects, binder themes and a member marketplace.
+
+## Purchase costs, alerts and binder options
+
+Record purchase costs and sales in a card’s details, see known-cost profit/loss in
+Portfolio Insights, and set private in-app wishlist targets for prices and member
+listings. Binder Settings adds a blank inside cover and optional gap closing.
+See [collector costs, alerts and binder options](docs/COLLECTOR_COSTS_ALERTS.md).
 
 ## Portfolio and completion estimates
 

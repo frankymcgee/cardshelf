@@ -1,10 +1,11 @@
 <script setup lang="ts">
-const props = withDefaults(defineProps<{ modelValue: number; pages: number; spread?: boolean; disabled?: boolean }>(), { spread: true, disabled: false })
+import { binderSpread } from '../../shared/binder-book.mjs'
+const props = withDefaults(defineProps<{ modelValue: number; pages: number; spread?: boolean; startOnRight?: boolean; disabled?: boolean }>(), { spread: true, disabled: false })
 const emit = defineEmits<{ 'update:modelValue': [page: number]; 'update:spread': [spread: boolean] }>()
-const step = computed(() => props.spread ? 2 : 1)
 const total = computed(() => Math.max(1, props.pages))
-const current = computed(() => Math.floor(Math.max(0, Math.min(props.modelValue, total.value - 1)) / step.value) * step.value)
-const last = computed(() => Math.min(total.value, current.value + step.value))
+const layout = computed(() => binderSpread(props.modelValue, total.value, props.spread, props.startOnRight))
+const current = computed(() => layout.value.current)
+const last = computed(() => layout.value.last)
 const turning = ref(false), direction = ref('next')
 let start: { id: number; x: number; y: number; time: number; horizontal: boolean } | null = null
 let clickUntil = 0, timer: ReturnType<typeof setTimeout> | undefined, frame: number | undefined
@@ -12,8 +13,8 @@ watch([current, () => props.modelValue], () => { if (current.value !== props.mod
 onBeforeUnmount(() => { clearTimeout(timer); if (frame !== undefined) cancelAnimationFrame(frame) })
 function turn(delta: number) {
   if (props.disabled || turning.value) return
-  const next = current.value + delta * step.value
-  if (next < 0 || next >= total.value) return
+  const next = delta < 0 ? layout.value.previous : layout.value.next
+  if (next === null) return
   direction.value = delta > 0 ? 'next' : 'previous'
   turning.value = true
   emit('update:modelValue', next)
@@ -91,7 +92,7 @@ function preventSwipeClick(event: MouseEvent) {
 function toggleSpread() {
   if (props.disabled || turning.value) return
   emit('update:spread', !props.spread)
-  emit('update:modelValue', Math.floor(current.value / (props.spread ? 1 : 2)) * (props.spread ? 1 : 2))
+  emit('update:modelValue', binderSpread(current.value, total.value, !props.spread, props.startOnRight).current)
 }
 </script>
 <template>

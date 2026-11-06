@@ -7,7 +7,10 @@ import { adminAdView, adsenseSettings } from '../../lib/adsense.mjs'
 import * as auth from '../../lib/auth.mjs'
 import { securityStatus } from '../../lib/account-security.mjs'
 import { authenticationResult, clearAuthCookies, securityTokens } from '../utils/security-api'
+import { correctPrinting } from '../../lib/printing-availability.mjs'
 import * as catalogue from '../../lib/catalogue.mjs'
+import * as wishlistAlerts from '../../lib/wishlist-alerts.mjs'
+import * as costs from '../../lib/collection-costs.mjs'
 import * as collection from '../../lib/collection.mjs'
 import * as binders from '../../lib/binders.mjs'
 import * as jobs from '../../lib/jobs.mjs'
@@ -89,6 +92,16 @@ export default defineEventHandler(async event => {
       ensure(user.role === 'admin', 403, 'Only an administrator can edit the catalogue.')
       return await catalogue.addPrinting(user.id, parts[1], await readJSON(event))
     }
+    if (parts[0] === 'cards' && parts[2] === 'printings' && parts.length === 4 && method === 'PATCH') {
+      ensure(user.role === 'admin', 403, 'Only an administrator can edit the catalogue.')
+      return await correctPrinting(user.id, parts[1], parts[3], await readJSON(event))
+    }
+    if (route === 'wishlist-alerts' && method === 'GET') return await wishlistAlerts.wishlistAlerts(user.id, query.printing_id ? String(query.printing_id) : null)
+    if (route === 'wishlist-alerts' && method === 'POST') { await auth.rateLimit('alerts:' + user.id, 60); return await wishlistAlerts.saveWishlistAlert(user.id, await readJSON(event)) }
+    if (parts[0] === 'wishlist-alerts' && parts.length === 3 && parts[2] === 'seen' && method === 'POST') return await wishlistAlerts.markWishlistAlertSeen(user.id, parts[1])
+    if (route === 'portfolio/costs' && method === 'GET') return query.printing_id ? await costs.purchaseLedger(user.id, query.printing_id) : await costs.costSummary(user.id)
+    if (route === 'portfolio/costs' && method === 'POST') { await auth.rateLimit('costs:' + user.id, 90); return await costs.recordPurchase(user.id, await readJSON(event)) }
+    if (parts[0] === 'portfolio' && parts[1] === 'costs' && parts.length === 3 && method === 'POST') { await auth.rateLimit('costs:' + user.id, 90); return await costs.changeCostLot(user.id, parts[2], await readJSON(event)) }
     if (route === 'collection' && method === 'PUT') return await collection.saveEntry(user.id, await readJSON(event))
     if (route === 'collection/export' && method === 'GET') {
       const format = v.oneOf(query.format || 'json', 'Export format', ['json','csv'])
@@ -127,6 +140,7 @@ export default defineEventHandler(async event => {
     }
     throw new AppError(404, 'Endpoint not found.')
   } catch (error: any) {
+    if (error?.code === '23514' && error?.constraint_name === 'collection_cost_coverage') throw createError({ statusCode: 409, message: 'These copies have purchase costs. Record a sale or release cost tracking before reducing the quantity.' })
     if (error instanceof AppError) throw createError({ statusCode: error.status, message: error.message, data: error.details })
     if (error?.statusCode) throw error
     console.error('CardShelf API: request failed; inspect service health without exposing request or credential data.')

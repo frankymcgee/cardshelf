@@ -23,6 +23,7 @@ export async function platformBody(event: H3Event, maxBytes = 16384) {
 export async function platformResult<T>(run: () => Promise<T>) {
   try { return await run() }
   catch (error: any) {
+    if (error?.code === '23514' && error?.constraint_name === 'collection_cost_coverage') throw createError({statusCode:409,message:'These copies have purchase costs. Record a sale or release cost tracking before reducing the quantity.'})
     if (error instanceof AppError) throw createError({statusCode:error.status,message:error.message})
     if (error?.statusCode) throw error
     console.error('CardShelf platform:',error)
