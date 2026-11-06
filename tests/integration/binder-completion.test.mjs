@@ -73,6 +73,23 @@ await test('binder completion uses exact targets and atomic private wishlist upd
       const tracker=await preview(tracking);assert.deepEqual(tracker.items.map(i=>i.printing_id),[normal,reverse]);assert.equal(tracker.items[0].owned_quantity,3);assert.equal(tracker.progress.completed,1);
       assert.ok(!JSON.stringify(view).includes('Private wanted notes'));assert.ok(!JSON.stringify(view).includes('Private owned notes'));
     });
+    await t.test('cached completion costs price missing printings once and exclude owned unchecked targets',async()=>{
+      const savedRates=await sql`SELECT * FROM price_fx_rates`, date=new Date().toISOString();
+      try {
+        await sql`INSERT INTO price_fx_rates(currency,aud_rate,rate_date) VALUES('USD',1.5,${date.slice(0,10)})
+          ON CONFLICT(currency) DO UPDATE SET aud_rate=1.5,rate_date=excluded.rate_date`;
+        const quotes=[['normal',10],['holo',20],['reverse',4]].map(([variant,amount])=>({source:'TCGplayer',variant,currency:'USD',metric:'marketPrice',amount,source_updated_at:date}));
+        await sql`INSERT INTO card_price_cache(card_id,quotes,fetched_at) VALUES(${cards[0]},${sql.json(quotes)},now())`;
+        const view=await preview();assert.equal(view.permissions.can_view_prices,true);assert.equal(view.pricing.aud_total,36);
+        assert.equal(view.pricing.needed_printings,2);assert.equal(view.items.find(i=>i.printing_id===holo).price_estimate.aud,30);
+        const tracked=await preview(tracking);assert.equal(tracked.pricing.aud_total,6);assert.equal(tracked.pricing.already_owned_printings,1);
+        assert.equal(tracked.items.find(i=>i.printing_id===normal).price_estimate,null);
+        await sql`UPDATE card_price_cache SET quotes='[]'::jsonb WHERE card_id=${cards[0]}`;
+        const unpriced=await preview();assert.equal(unpriced.pricing.aud_total,null);assert.equal(unpriced.pricing.priced_quantity,0);
+      } finally {
+        await sql`DELETE FROM price_fx_rates`;for(const row of savedRates)await sql`INSERT INTO price_fx_rates ${sql(row)}`;
+      }
+    });
     await t.test('matching is exact, active, visible, not your own and paginated without private seller data',async()=>{
       const view=await preview();assert.equal(view.items[0].match_count,7);assert.equal(view.items[1].match_count,1);
       const r=await request(path(collection)+'/matches?printing_id='+holo);assert.equal(r.status,200);assert.equal(r.data.total,7);assert.equal(r.data.items.length,6);
@@ -131,6 +148,8 @@ await test('binder completion uses exact targets and atomic private wishlist upd
       for(const [index,user] of [[2,collector],[3,plus],[4,free]]){
         const b=await makeBinder('tracking',user);await sql`INSERT INTO binder_slots(binder_id,position,printing_id) VALUES(${b},0,${holo})`;
         const view=await preview(b,index);assert.equal(view.permissions.can_add_wishlist,index===3);assert.equal(view.permissions.can_browse_marketplace,index!==4);
+        assert.equal(view.permissions.can_view_prices,index===3);
+        assert.equal('pricing' in view,index===3);assert.equal('price_estimate' in view.items[0],index===3);
         assert.equal((await save(b,payload(view,[holo]),index)).status,index===3?200:403);
         assert.equal((await request(path(b)+'/matches?printing_id='+holo,{user:index})).status,index===4?403:200);
       }

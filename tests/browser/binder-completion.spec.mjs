@@ -35,6 +35,27 @@ async function fixtures(page,options={}){
 }
 async function visit(page){await page.goto('/binders/complete/'+binderId);await expect(page.getByRole('heading',{name:'Complete this binder',exact:true})).toBeVisible();}
 async function fits(page){expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);}
+test('completion costs and price sorting preserve exact targets, unknown prices and wishlist selections',async({page},info)=>{
+  const state=await fixtures(page);const data=fixtureData();data.permissions.can_view_prices=true;
+  data.pricing={aud_total:35,needed_printings:3,priced_quantity:2,approximate_quantity:1,unpriced_quantity:1,stale_quantity:0,fx_missing_quantity:0,already_owned_printings:0,enabled:true};
+  data.items[0].price_estimate={aud:30,source:'TCGplayer',approximate:false};
+  data.items[1].price_estimate={aud:5,source:'Cardmarket',approximate:true};data.items[2].price_estimate=null;
+  state.setData(data);await visit(page);
+  const cost=page.getByRole('region',{name:'Cost to complete binder'});await expect(cost).toContainText('$35.00');await expect(cost).toContainText('Partial estimate');
+  await expect(cost).toContainText('2 / 3 printings to acquire priced');
+  await page.getByLabel('Select Pikachu · Reverse Holo · EN',{exact:true}).check();
+  await page.getByRole('combobox',{name:'Order',exact:true}).selectOption('lowest');
+  await expect(page.locator('.completion-card').first()).toHaveAttribute('data-printing',printing(2));
+  await expect(page.locator('.completion-card').last()).toHaveAttribute('data-printing',printing(3));
+  await expect(page.getByLabel('Select Pikachu · Reverse Holo · EN',{exact:true})).toBeChecked();
+  await page.getByRole('combobox',{name:'Order',exact:true}).selectOption('highest');
+  await expect(page.locator('.completion-card').first()).toHaveAttribute('data-printing',printing(1));
+  await fits(page);await page.screenshot({path:info.outputPath('completion-cost.png'),fullPage:true});expect(state.errors).toEqual([]);
+  data.pricing={...data.pricing,aud_total:null,priced_quantity:0,unpriced_quantity:3};data.items.forEach(item=>item.price_estimate=null);
+  await page.getByRole('button',{name:'Refresh missing cards'}).click();await expect(cost).toContainText('Not priced yet');await expect(cost).not.toContainText('$0.00');
+  delete data.pricing;data.permissions.can_view_prices=false;await page.getByRole('button',{name:'Refresh missing cards'}).click();
+  await expect(cost).toHaveCount(0);await expect(page.getByRole('combobox',{name:'Order',exact:true})).toHaveCount(0);
+});
 for(const theme of ['light','dark'])test(theme+' completion supports wishlist selection and exact listing details',async({page},info)=>{
   const {calls,errors}=await fixtures(page,{theme});await visit(page);
   await expect(page.locator('html')).toHaveAttribute('data-theme',theme);await expect(page.locator('.completion-card')).toHaveCount(3);

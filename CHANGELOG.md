@@ -1,3 +1,10 @@
+## 0.60.0 — 2026-11-06
+
+- Show a compact 7/30/90-day portfolio trend on the collection overview, with recorded value changes separated from card additions/removals and pricing coverage.
+- Add optional portfolio insights for estimated value by game and biggest movers on retained copies with comparable price sources. Private snapshot holdings remain private.
+- Estimate the cost to finish a binder using one copy of each missing printing. Exclude already-owned unchecked Tracking targets, label partial/unavailable pricing and guide estimates, and sort missing cards by estimated cost.
+- Preserve existing pricing memberships, exact printing/language matching, wishlist confirmation, binder marks, inventory quantities and sharing boundaries. No migration or new price provider is required.
+
 ## 0.59.0 — 2026-11-02
 
 - Remove the OpenAI confirmation checkbox from single-card and batch scanning. The scan button starts recognition; each collection addition still requires review.

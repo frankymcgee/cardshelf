@@ -34,6 +34,9 @@ await test('observed value history persists privately without inventing holdings
       const response = await request('/api/prices/summary'); assert.equal(response.status, 200);
       assert.equal(response.data.valuation.aud_total, 45); assert.equal(response.data.history.points.length, 1);
       assert.equal(response.data.history.points[0].snapshot_date, day); assert.equal(response.data.history.changes[30], null);
+      assert.equal(response.data.portfolio.allocation[0].game, 'pokemon');
+      assert.equal(response.data.portfolio.allocation[0].aud_total, 45);
+      assert.equal(response.data.portfolio.movers[30], null);
       assert.equal('holdings' in response.data.history.points[0], false); assert.equal('user_id' in response.data.history.points[0], false);
     });
     await t.test('concurrent summary refreshes update one observation per scope and UTC day', async () => {
@@ -43,6 +46,7 @@ await test('observed value history persists privately without inventing holdings
     await t.test('binder history counts planned repeats, separately from represented ownership', async () => {
       const data = await priceSummary(owner, binder); assert.equal(data.valuation.aud_total, 60); assert.equal(data.valuation.quantity, 4);
       assert.equal(data.owned_reference.aud_total, 45); assert.equal(data.history.points[0].owned_reference.quantity, 3);
+      assert.equal('portfolio' in data, false);
       assert.equal((await priceSummary(owner)).valuation.aud_total, 45);
     });
     await t.test('authentication, ownership and Tracking boundaries remain enforced', async () => {
@@ -52,7 +56,7 @@ await test('observed value history persists privately without inventing holdings
       assert.equal((await request('/api/prices/summary?binder_id=invalid')).status, 400);
       const other = await request('/api/prices/summary', 1); assert.equal(other.data.valuation.quantity, 0); assert.equal(other.data.valuation.aud_total, null);
       const publicShare = await request('/api/shared/' + share, null); assert.equal(publicShare.status, 200);
-      for (const key of ['history', 'holdings', 'valuation', 'owned_reference']) assert.equal(key in publicShare.data, false);
+      for (const key of ['history', 'holdings', 'valuation', 'owned_reference', 'portfolio']) assert.equal(key in publicShare.data, false);
     });
     await t.test('closed days preserve original quantities and FX; same-day changes replace only today', async () => {
       // Move a synthetic observation to yesterday to exercise the real boundary.
@@ -63,6 +67,9 @@ await test('observed value history persists privately without inventing holdings
       await storePricing(card, { tcgplayer: { unit: 'USD', updated: date, normal: { marketPrice: 12 } } });
       const data = await priceSummary(owner); assert.equal(data.valuation.aud_total, 76.8); assert.equal(data.history.points.length, 2);
       assert.equal(data.history.changes[7].price_fx_aud, 12.6); assert.equal(data.history.changes[7].quantity_aud, 19.2); assert.equal(data.history.changes[7].total_aud, 31.8);
+      assert.equal(data.portfolio.movers[7].gainers[0].change_aud, 12.6);
+      assert.equal(data.portfolio.movers[7].gainers[0].quantity, 3);
+      assert.equal(data.portfolio.movers[7].gainers[0].card_id, card);
       const [unchanged] = await sql`SELECT * FROM value_history_snapshots WHERE id=${baseline.id}`;
       assert.deepEqual(unchanged, baseline);
     });

@@ -14,7 +14,9 @@ function summary(mode = 'normal') {
     const total = first && last && first.valuation.aud_total != null && last.valuation.aud_total != null ? last.valuation.aud_total - first.valuation.aud_total : null;
     return [days, visible.length < 2 ? null : { from: first.snapshot_date, to: last.snapshot_date, total_aud: total, percent: total == null ? null : total / first.valuation.aud_total * 100, price_fx_aud: total == null ? 0 : total - 40, quantity_aud: 30, coverage_aud: 10, added_quantity: 2, removed_quantity: 0 }];
   }));
-  return { enabled: mode !== 'paused', refresh_hours: 6, rates: [], valuation: valuation(mode === 'unpriced' ? null : 180), owned_reference: { ...valuation(90), quantity: 6, priced_quantity: 5 }, history: { today, enabled: mode !== 'paused', points, changes } };
+  return { enabled: mode !== 'paused', refresh_hours: 6, rates: [], valuation: valuation(mode === 'unpriced' ? null : 180), owned_reference: { ...valuation(90), quantity: 6, priced_quantity: 5 }, history: { today, enabled: mode !== 'paused', points, changes },
+    portfolio: { allocation: [{ game: 'pokemon', ...valuation(120) }, { game: 'mtg', ...valuation(60) }], movers: Object.fromEntries([7,30,90].map(days => [days, { from: day(6), to: today, comparable_printings: 2,
+      gainers: [{ printing_id: printingId, card_id: card.id, name: 'History Pikachu', set_name: 'Fixture set', label: 'Normal', language: 'en', quantity: 2, change_aud: 10, percent: 12 }], decliners: [] }])) } };
 }
 function cardPrices() {
   return { enabled: true, game: 'pokemon', fetched_at: new Date().toISOString(), attempted_at: null, last_error: '', printings: [], references: [], history: [
@@ -65,6 +67,19 @@ async function readableLine(chart) {
   expect(contrast, 'drawn chart line has at least 3:1 contrast against its painted surface').toBeGreaterThanOrEqual(3);
 }
 for (const theme of ['light', 'dark']) {
+  test(theme + ' compact portfolio trend is visible with game allocation and retained-copy movers', async ({ page }, info) => {
+    const state = await fixtures(page, { theme }); await page.goto('/app');
+    const overview = page.getByRole('region', { name: 'Portfolio overview', exact: true });
+    await expect(overview.getByRole('img')).toBeVisible(); await expect(page.locator('.value-details')).not.toHaveAttribute('open');
+    await expect(overview.locator('.portfolio-sparkline path')).toHaveCount(2);
+    await overview.getByRole('button', { name: '7D', exact: true }).click();
+    await expect(overview.getByRole('button', { name: '7D', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await overview.getByRole('button', { name: 'Portfolio insights', exact: true }).click();
+    await expect(overview.getByRole('region', { name: 'Value by game' })).toContainText('Magic: The Gathering');
+    await expect(overview.getByRole('region', { name: 'Biggest movers' })).toContainText('2 retained copies');
+    await expect(overview.getByRole('link', { name: /History Pikachu/ })).toHaveAttribute('href', '/cards?card=' + encodeURIComponent(card.id));
+    await fits(page); await overview.screenshot({ path: info.outputPath(theme + '-portfolio.png') }); expect(state.errors).toEqual([]);
+  });
   test(theme + ' collection graph shows daily gaps, keyboard inspection and range changes', async ({ page }, info) => {
     const { errors } = await fixtures(page, { theme }); await page.goto('/app'); await page.locator('.value-details > summary').click();
     const chart = page.getByRole('region', { name: 'Collection value history', exact: true });

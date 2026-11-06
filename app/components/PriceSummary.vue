@@ -32,8 +32,9 @@ const total = computed(() => data.value?.valuation.aud_total == null ? 'Not pric
     <template v-else-if="data">
       <strong class="price-total">{{ total }}</strong>
       <p class="price-coverage">{{ data.valuation.priced_quantity }} / {{ data.valuation.quantity }} {{ binderId ? 'planned pockets' : 'owned copies' }} priced<template v-if="data.valuation.unpriced_quantity"> · {{ data.valuation.unpriced_quantity }} unpriced</template></p>
-      <p v-if="data.valuation.approximate_quantity" class="estimate-breakdown small">Includes {{ money(data.valuation.approximate_aud_total) }} in guide-price approximations · {{ data.valuation.approximate_quantity }} unconfirmed {{ binderId ? 'pockets' : 'copies' }}.</p>
+      <p v-if="data.valuation.approximate_quantity" class="estimate-breakdown small">Guide estimates: {{ money(data.valuation.approximate_aud_total) }} · {{ data.valuation.approximate_quantity }} unconfirmed {{ binderId ? 'pockets' : 'copies' }}.</p>
       <p v-if="data.valuation.stale_reference_quantity || data.valuation.failed_reference_quantity" class="alert warning compact-price-warning">Includes outdated or failed-refresh guide values.</p>
+      <PortfolioOverview v-if="!binderId && data.history" :history="data.history" :portfolio="data.portfolio" />
       <UiDisclosure class="value-details" title="Value details & history" :open="expanded">
       <CollectionValueHistory v-if="data.history" :history="data.history" :binder="!!binderId" />
       <div class="button-row"><span class="badge">{{ data.valuation.unpriced_quantity }} no available estimate</span><span class="badge amber">{{ data.valuation.stale_quantity }} stale matched quotes excluded</span><span class="badge">{{ data.valuation.fx_missing_quantity }} awaiting currency rate</span></div>
@@ -52,4 +53,6 @@ const total = computed(() => data.value?.valuation.aud_total == null ? 'Not pric
 <style scoped>
 .estimate-breakdown{align-items:flex-start}.estimate-breakdown strong{font-size:13px}.owned-binder-estimate{padding:14px;margin-top:16px;border-color:var(--line);background:var(--surface-soft)}.owned-binder-estimate p{margin:6px 0 0;color:var(--muted)}
 .price-summary{padding:20px 24px}.price-summary .section-heading{margin-bottom:10px}.price-summary .section-heading h2{font-size:16px}.price-summary .section-heading p{font-size:11px;margin-top:4px}.price-summary .price-total{font-size:30px}.price-coverage{font-size:12px;margin:5px 0;color:var(--muted)}.estimate-breakdown{color:var(--muted);margin:8px 0;line-height:1.5}.compact-price-warning{margin:10px 0;padding:10px 12px}.price-summary .value-details{margin-top:10px}@media(max-width:600px){.price-summary{padding:16px}.price-summary .section-heading{gap:8px;align-items:center}.price-summary .section-heading h2{font-size:14px}.price-summary .price-total{font-size:27px}}
+
+@media(max-width:600px){.price-summary{padding:14px}.estimate-breakdown{margin:6px 0}.compact-price-warning{padding:8px 10px;margin:8px 0}.price-summary .value-details{margin-top:8px}}
 </style>

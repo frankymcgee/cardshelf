@@ -47,7 +47,13 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
       - name: Install test browsers
-        run: npx playwright install --with-deps chromium webkit
+        timeout-minutes: 15
+        run: |
+          # Use the same main Ubuntu archive as the application browser suite.
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
+          fi
+          npx playwright install --with-deps chromium webkit
       - run: npm run build
       - run: npm run migrate
       - name: Start production Node server

@@ -10,6 +10,7 @@ const valuation = {aud_total: 180, quantity: 12, priced_quantity: 10, unpriced_q
   fx_missing_quantity: 0, approximate_quantity: 2, approximate_aud_total: 20, matched_aud_total: 160,
   stale_reference_quantity: 1, failed_reference_quantity: 0};
 const summary = {enabled: true, refresh_hours: 6, rates: [], valuation,
+  portfolio: {allocation: [], movers: {}},
   history: {today, enabled: true, points: [yesterday, today].map((date, i) => ({snapshot_date: date, valuation: {...valuation, aud_total: 170 + i * 10}})),
     changes: {30: {from: yesterday, to: today, total_aud: 10, percent: 5.88, price_fx_aud: 10,
       quantity_aud: 0, coverage_aud: 0, added_quantity: 0, removed_quantity: 0}}}};
@@ -58,6 +59,7 @@ for (const theme of ['light', 'dark']) {
     await expect(page.locator('.price-total')).toHaveText('$180.00');
     await expect(details).not.toHaveAttribute('open');
     await expect(page.getByRole('region', {name: 'Collection value history', exact: true})).not.toBeVisible();
+    await expect(page.getByRole('region', {name: 'Portfolio overview', exact: true}).getByRole('img')).toBeVisible();
     await expect(page.locator('.compact-price-warning')).toBeVisible();
     const first = page.locator('.dashboard-binders .binder-card').first(); await expect(first).toBeVisible();
     expect((await first.boundingBox()).y).toBeLessThan(page.viewportSize().height);
