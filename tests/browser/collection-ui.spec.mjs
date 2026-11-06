@@ -313,6 +313,8 @@ test('purchase failure retries the same transaction while keeping inventory addi
   await page.goto('/cards?ads=off&card=' + encodeURIComponent(card.id)); const ledger = page.locator('.cost-ledger');
   await ledger.locator(':scope > summary').click(); const form = ledger.locator('form').first();
   await expect(form.getByLabel('Also add these copies to my collection')).not.toBeChecked();
+  expect(await form.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+  await expect(form.getByLabel('Also add these copies to my collection')).toHaveCSS('width', '17px');
   await form.getByLabel('Copies', {exact: true}).fill('2'); await form.getByLabel('Cards total', {exact: true}).fill('10.00');
   await form.getByRole('button', {name: 'Save purchase', exact: true}).click(); await expect(ledger.getByRole('button', {name: 'Retry transaction'})).toBeVisible();
   await expect(form.getByLabel('Cards total', {exact: true})).toBeDisabled(); await ledger.getByRole('button', {name: 'Retry transaction'}).click();
