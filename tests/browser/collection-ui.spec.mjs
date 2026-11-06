@@ -10,6 +10,7 @@ const valuation = {aud_total: 180, quantity: 12, priced_quantity: 10, unpriced_q
   fx_missing_quantity: 0, approximate_quantity: 2, approximate_aud_total: 20, matched_aud_total: 160,
   stale_reference_quantity: 1, failed_reference_quantity: 0};
 const summary = {enabled: true, refresh_hours: 6, rates: [], valuation,
+  portfolio: {allocation: [], movers: {}},
   history: {today, enabled: true, points: [yesterday, today].map((date, i) => ({snapshot_date: date, valuation: {...valuation, aud_total: 170 + i * 10}})),
     changes: {30: {from: yesterday, to: today, total_aud: 10, percent: 5.88, price_fx_aud: 10,
       quantity_aud: 0, coverage_aud: 0, added_quantity: 0, removed_quantity: 0}}}};

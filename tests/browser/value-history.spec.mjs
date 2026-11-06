@@ -74,7 +74,7 @@ for (const theme of ['light', 'dark']) {
     await expect(overview.locator('.portfolio-sparkline path')).toHaveCount(2);
     await overview.getByRole('button', { name: '7D', exact: true }).click();
     await expect(overview.getByRole('button', { name: '7D', exact: true })).toHaveAttribute('aria-pressed', 'true');
-    await overview.getByText('Portfolio insights', { exact: true }).click();
+    await overview.getByRole('button', { name: 'Portfolio insights', exact: true }).click();
     await expect(overview.getByRole('region', { name: 'Value by game' })).toContainText('Magic: The Gathering');
     await expect(overview.getByRole('region', { name: 'Biggest movers' })).toContainText('2 retained copies');
     await expect(overview.getByRole('link', { name: /History Pikachu/ })).toHaveAttribute('href', '/cards?card=' + encodeURIComponent(card.id));
