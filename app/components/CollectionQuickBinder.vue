@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { binderSpread } from '../../shared/binder-book.mjs'
 const props = defineProps<{ binder: any; disabled?: boolean }>()
 const emit = defineEmits<{ saved: []; reload: []; add: [position: number]; inspect: [slot: any]; saving: [value: boolean] }>()
 const api = useApi(), notice = useNotice()
@@ -19,7 +20,9 @@ const pages = computed(() => filtered.value ? Math.max(1, Math.ceil(matches.valu
 const visible = computed<any[]>(() => filtered.value ? matches.value.slice(page.value * size.value, (page.value + 1) * size.value) :
   Array.from({ length: size.value }, (_, i) => slots.value.find(slot => slot.position === page.value * size.value + i) || { position: page.value * size.value + i, empty: true }))
 const spread = ref(true)
-const pageNumbers = computed(() => Array.from({length: Math.min(spread.value ? 2 : 1, Math.max(1, pages.value - page.value))}, (_, i) => page.value + i))
+const startOnRight = computed(() => props.binder.start_on_right && !filtered.value)
+const bookLayout = computed(() => binderSpread(page.value, pages.value, spread.value, startOnRight.value))
+const pageNumbers = computed(() => bookLayout.value.pages)
 function pageItems(number: number): any[] {
   if (filtered.value) return matches.value.slice(number * size.value, (number + 1) * size.value)
   return Array.from({length: size.value}, (_, i) => slots.value.find(slot => slot.position === number * size.value + i) || {position: number * size.value + i, empty: true})
@@ -63,13 +66,13 @@ async function mark(collected: boolean) {
     <div class="collection-quick-summary panel"><div><span class="eyebrow">COLLECTION-SYNCED CHECKLIST</span><h2>{{ collected }} / {{ slots.length }} pockets owned</h2><p>Tap a missing card, then “I have this card”. Its displayed printing becomes owned in your collection and every collection-backed binder.</p></div><strong>{{ percent }}%</strong></div>
     <div class="quick-progress" role="progressbar" :aria-valuenow="percent" aria-valuemin="0" aria-valuemax="100" aria-label="Owned checklist progress"><span :style="{width: percent + '%'}" /></div>
     <div class="quick-tools"><div class="button-row" role="group" aria-label="Filter by ownership"><button v-for="option in ['all','missing','collected']" :key="option" class="button secondary" :aria-pressed="filter === option" @click="filter = option">{{ option === 'all' ? 'All cards' : option === 'collected' ? 'Owned' : 'Missing' }}</button></div><label><span class="sr-only">Search collection binder</span><input v-model="search" type="search" maxlength="100" placeholder="Name, number or set…"></label></div>
-    <BinderBook v-model="page" v-model:spread="spread" :pages="pages" :disabled="saving || disabled"><div class="quick-spread" :class="{ 'one-page': !spread }"><div v-for="number in pageNumbers" :key="number" class="quick-page"><div class="quick-page-heading">PAGE {{ number + 1 }}</div><div class="quick-grid" :style="{gridTemplateColumns:'repeat(' + binder.columns + ',minmax(0,1fr))'}">
+    <BinderBook v-model="page" v-model:spread="spread" :pages="pages" :start-on-right="startOnRight" :disabled="saving || disabled"><div class="quick-spread" :class="{ 'one-page': !spread }"><div v-if="bookLayout.leadingBlank" class="quick-page empty-book-leaf" aria-hidden="true" /><div v-for="number in pageNumbers" :key="number" class="quick-page"><div class="quick-page-heading">PAGE {{ number + 1 }}</div><div class="quick-grid" :style="{gridTemplateColumns:'repeat(' + binder.columns + ',minmax(0,1fr))'}">
       <button v-for="slot in pageItems(number)" :key="slot.position" type="button" class="quick-card" data-book-tap :class="{missing:!slot.empty && !slot.owned,owned:slot.owned,empty:slot.empty}" :disabled="saving || disabled" :aria-label="slot.empty ? 'Add card to pocket ' + (slot.position + 1) : slot.name + ', ' + slot.label + ', ' + (slot.owned ? 'owned' : 'missing')" @click="select(slot)">
         <template v-if="!slot.empty"><CardArtwork :card="slot" :printing="slot" effects-mode="off" /><span class="quick-status"><AppIcon :name="slot.owned ? 'check' : 'plus'" :size="13" />{{slot.owned ? 'Owned' : 'Missing'}}</span><strong>{{slot.name}}</strong><small>#{{slot.local_id}} · {{slot.label}}</small><small v-if="slot.owned">{{slot.owned_quantity}} owned in collection</small></template>
         <template v-else><AppIcon name="plus" :size="22" /><span>Add card</span></template>
       </button>
     </div>
-    </div><div v-if="spread && pageNumbers.length === 1" class="quick-page empty-book-leaf" aria-hidden="true">End of binder</div></div></BinderBook>
+    </div><div v-if="bookLayout.trailingBlank" class="quick-page empty-book-leaf" aria-hidden="true">End of binder</div></div></BinderBook>
     <p v-if="!visible.length" class="muted">No cards match this filter.</p>
 
     <UiDisclosure title="About ownership"><p class="data-note">One quick claim means you own at least one copy of the exact displayed printing. Repeated pockets or other binders do not add copies. Prices use your shared collection; an owned marker is not a physical-copy allocation.</p></UiDisclosure>

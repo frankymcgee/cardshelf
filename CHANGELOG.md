@@ -1,3 +1,12 @@
+## 0.61.0 — 2026-11-06
+
+- Grey missing cards in private Collection binder Layout view, with readable pocket labels and ownership status.
+- Add per-binder right-hand starts with a blank inside cover, plus optional stable gap closing across Collection binder pages when removing a planned card. Existing layouts keep their defaults and capacity.
+- Reconcile explicitly removed TCGdex finishes on re-import and backfill known false flags. Add admin availability corrections that survive imports; retain archived ownership, pockets and historical records.
+- Record private purchase lots by printing and condition, including postage and historic AUD conversion. Record sales with fees/postage, proportional cost basis, retry protection and atomic inventory updates. Portfolio Insights shows known/unknown costs and realised/unrealised profit estimates with pricing coverage.
+- Add in-app wishlist targets for fresh exact market prices and member listings including advertised postage and selected conditions. Pause checks when a wish, printing or access becomes unavailable; deduplicate matches and preserve private inboxes. No email or push delivery is enabled by this feature.
+- Add migrations 038–040 and regression coverage for pagination, compaction, printing corrections, financial integrity, retries, privacy and alert matching.
+
 ## 0.60.0 — 2026-11-06
 
 - Show a compact 7/30/90-day portfolio trend on the collection overview, with recorded value changes separated from card additions/removals and pricing coverage.

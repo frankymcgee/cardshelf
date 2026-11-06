@@ -17,7 +17,7 @@ const summary = {enabled: true, refresh_hours: 6, rates: [], valuation,
 const binders = ['Fire favourites', 'Water collection', 'Dragon checklist', 'Grass collection', 'Trading cards'].map((title, i) =>
   ({id: i ? binderId.slice(0, -1) + i : binderId, title, game: 'pokemon', binder_type: i === 2 ? 'tracking' : 'collection',
     color: '#5546d8', columns: 3, rows: 3, page_count: 2, filled: 3, collected: 1}));
-async function fixtures(page, theme = 'light', mode = 'collection', pageCount = 2) {
+async function fixtures(page, theme = 'light', mode = 'collection', pageCount = 2, startOnRight = false) {
   const errors = [], calls = [], writes = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.addInitScript(value => localStorage.setItem('cardshelf.theme', value), theme);
@@ -33,7 +33,7 @@ async function fixtures(page, theme = 'light', mode = 'collection', pageCount = 
       progress: [{id: 'en:fixture', name: 'Fixture set', language: 'en', imported: 20, card_count: 20, owned: 8}]};
     else if (path === '/api/prices/summary') data = summary;
     else if (path === '/api/binders') data = binders;
-    else if (path === '/api/binders/' + binderId || path === '/api/shared/' + 's'.repeat(64)) data = {...binders[0], binder_type: mode === 'tracking' ? 'tracking' : 'collection', quick_tracking: mode === 'quick', page_count: pageCount,
+    else if (path === '/api/binders/' + binderId || path === '/api/shared/' + 's'.repeat(64)) data = {...binders[0], binder_type: mode === 'tracking' ? 'tracking' : 'collection', quick_tracking: mode === 'quick', page_count: pageCount, start_on_right: startOnRight,
       revision: 1, description: 'My favourite cards in one place.',
       slots: [{...card, ...normal, card_id: card.id, printing_id: normal.id, position: 0, owned: false, is_collected: false}],
       appearance: {effects_mode: 'off'}};
@@ -268,4 +268,93 @@ for (const mode of ['tracking', 'collection']) test('shared ' + mode + ' binders
   await book.getByRole('button', {name: 'Next', exact: true}).click(); await expect(book.locator('.book-range')).toHaveText('Pages 3–4 of 4');
   await expect(page.locator('dialog[open]')).toHaveCount(0); await fits(page);
   expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
+});
+
+for (const mode of ['collection', 'tracking', 'quick']) {
+  test(mode + ' right-hand start keeps a blank left leaf and every real page reachable', async ({page}, info) => {
+    const state = await fixtures(page, 'light', mode, 4, true); await page.goto('/binders/' + binderId);
+    const book = page.locator('.binder-book'), range = book.locator('.book-range');
+    const leaves = book.locator(mode === 'tracking' ? '.tracking-page' : mode === 'quick' ? '.quick-page' : '.binder-page');
+    await expect(range).toHaveText('Page 1 of 4'); await expect(leaves).toHaveCount(2);
+    await expect(leaves.first()).toHaveAttribute('aria-hidden', 'true'); await expect(leaves.first().locator('button')).toHaveCount(0);
+    await expect(leaves.nth(1)).toContainText('PAGE 1');
+    const left = await leaves.first().boundingBox(), right = await leaves.nth(1).boundingBox();
+    expect(right.x).toBeGreaterThan(left.x + left.width); expect(Math.abs(right.y - left.y)).toBeLessThan(2);
+    const art = book.locator(mode === 'collection' ? '.pocket.filled .card-artwork' : mode === 'tracking' ? '.tracking-card.missing .card-artwork' : '.quick-card.missing .card-artwork').first();
+    await expect(art).toHaveCSS('filter', 'grayscale(1)');
+    await page.screenshot({path: info.outputPath(mode + '-right-hand-cover.png'), fullPage: true});
+    await book.getByRole('button', {name: 'Next', exact: true}).click(); await expect(range).toHaveText('Pages 2–3 of 4');
+    await expect(book).not.toHaveClass(/turning/); await book.getByRole('button', {name: 'Next', exact: true}).click(); await expect(range).toHaveText('Page 4 of 4');
+    await expect(book.getByRole('button', {name: 'Next', exact: true})).toBeDisabled(); await expect(leaves.last()).toHaveAttribute('aria-hidden', 'true');
+    await expect(book).not.toHaveClass(/turning/); await book.getByRole('button', {name: 'Previous', exact: true}).click(); await expect(range).toHaveText('Pages 2–3 of 4');
+    await expect(book).not.toHaveClass(/turning/); await book.getByRole('button', {name: 'Single page', exact: true}).click(); await expect(range).toHaveText('Page 2 of 4'); await expect(leaves).toHaveCount(1);
+    await fits(page); expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
+  });
+}
+
+test('layout settings describe the blank cover and optional gap closing', async ({page}) => {
+  await fixtures(page); await page.goto('/binders/' + binderId); await page.locator('.binder-tools > summary').click();
+  await page.getByRole('button', {name: 'Binder settings', exact: true}).click();
+  const dialog = page.getByRole('dialog', {name: 'Binder settings'});
+  await expect(dialog.getByLabel('Start the first card page on the right')).toBeVisible();
+  await expect(dialog.getByLabel('Close gaps automatically when a card is removed')).toBeVisible();
+  await dialog.getByLabel('Start the first card page on the right').check(); await dialog.getByLabel('Close gaps automatically when a card is removed').check(); await fits(page);
+});
+
+test('purchase failure retries the same transaction while keeping inventory addition explicit', async ({page}, info) => {
+  const state = await fixtures(page); const writes = []; let lot = null;
+  await page.route('**/api/portfolio/costs**', async route => {
+    if (route.request().method() === 'GET') return route.fulfill({json: {lots: lot ? [lot] : [], sales: [], entries: [{condition: 'NM', quantity: 2, revision: 1}]}});
+    const body = route.request().postDataJSON(); writes.push(body);
+    if (writes.length === 1) return route.fulfill({status: 500, json: {message: 'Synthetic lost response'}});
+    lot = {id: normal.id, acquired_on: today, condition: 'NM', quantity: 2, remaining_quantity: 2, currency: 'AUD', cost_aud_minor: 1000, revision: 1};
+    return route.fulfill({json: {lot}});
+  });
+  await page.goto('/cards?ads=off&card=' + encodeURIComponent(card.id)); const ledger = page.locator('.cost-ledger');
+  await ledger.locator(':scope > summary').click(); const form = ledger.locator('form').first();
+  await expect(form.getByLabel('Also add these copies to my collection')).not.toBeChecked();
+  expect(await form.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+  await expect(form.getByLabel('Also add these copies to my collection')).toHaveCSS('width', '17px');
+  await form.getByLabel('Copies', {exact: true}).fill('2'); await form.getByLabel('Cards total', {exact: true}).fill('10.00');
+  await form.getByRole('button', {name: 'Save purchase', exact: true}).click(); await expect(ledger.getByRole('button', {name: 'Retry transaction'})).toBeVisible();
+  await expect(form.getByLabel('Cards total', {exact: true})).toBeDisabled(); await ledger.getByRole('button', {name: 'Retry transaction'}).click();
+  await expect(ledger.locator('.cost-lot')).toHaveCount(1); expect(writes).toHaveLength(2); expect(writes[1]).toEqual(writes[0]); expect(writes[0].add_to_collection).toBe(false); expect(writes[0].goods_minor).toBe(1000);
+  await fits(page); await page.screenshot({path: info.outputPath('purchase-cost-ledger.png'), fullPage: true}); expect(state.errors).toEqual([]);
+});
+
+test('wishlist target saves selected conditions and opens a private match inbox', async ({page}, info) => {
+  const state = await fixtures(page); let saved = null; const writes = [];
+  await page.route('**/api/cards/**', async route => {
+    if (decodeURIComponent(new URL(route.request().url()).pathname) !== '/api/cards/' + card.id) return route.fallback();
+    return route.fulfill({json: {...card, entries: [{printing_id: normal.id, condition: 'UNKNOWN', quantity: 0, wishlist: true, notes: '', revision: 1}]}});
+  });
+  await page.route('**/api/wishlist-alerts**', async route => {
+    if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON(); writes.push(body);
+      saved = {...body, id: normal.id, revision: 1, name: card.name, card_id: card.id, label: normal.label, set_name: card.set_name, language: 'en', wishlisted: true, catalogue_available: true};
+      return route.fulfill({json: saved});
+    }
+    return route.fulfill({json: {rules: saved ? [saved] : [], unread: saved ? 1 : 0, events: saved ? [{id: holo.id, kind: 'listing', amount_aud_minor: 1200, target_aud_minor: 1500, created_at: today + 'T12:00:00Z', listing_id: binderId, listing_active: true, name: card.name, card_id: card.id, label: normal.label}] : []}});
+  });
+  await page.goto('/cards?ads=off&card=' + encodeURIComponent(card.id)); const alert = page.locator('.printing-alert');
+  await alert.locator(':scope > summary').click(); await alert.getByLabel('Target total (AUD)').fill('15.00');
+  await alert.getByLabel('LP', {exact: true}).check(); await alert.getByRole('button', {name: 'Create alert', exact: true}).click();
+  await expect(alert.getByText('Alert saved.', {exact: true})).toBeVisible(); expect(writes).toHaveLength(1); expect(writes[0].conditions.sort()).toEqual(['LP', 'NM']); expect(writes[0].target_aud_minor).toBe(1500);
+  await alert.getByRole('link', {name: 'Wishlist alerts', exact: true}).click(); await expect(page.getByRole('heading', {name: 'Wishlist alerts', exact: true})).toBeVisible();
+  await expect(page.getByText('Member listing total $12.00 · target $15.00')).toBeVisible(); await expect(page.getByRole('link', {name: 'View listing', exact: true})).toHaveAttribute('href', '/marketplace/' + binderId);
+  await fits(page); await page.screenshot({path: info.outputPath('wishlist-alert-inbox.png'), fullPage: true}); expect(state.errors).toEqual([]);
+});
+
+test('an existing pocket can inspect its retired printing without substituting another finish', async ({page}) => {
+  const state = await fixtures(page);
+  await page.route('**/api/cards/**', async route => {
+    if (decodeURIComponent(new URL(route.request().url()).pathname) !== '/api/cards/' + card.id) return route.fallback();
+    return route.fulfill({json: {...card, printings: [{...normal, catalogue_available: false}, {...holo, catalogue_available: true}]}});
+  });
+  await page.goto('/binders/' + binderId); await page.locator('.pocket.filled').first().click();
+  await page.getByRole('button', {name: 'View card & ownership', exact: true}).click();
+  const dialog = page.getByRole('dialog', {name: card.name, exact: true});
+  await expect(dialog.getByLabel('Visualise printing')).toHaveValue(normal.id);
+  await expect(dialog.getByText('Retired catalogue printing', {exact: true})).toBeVisible();
+  expect(state.errors).toEqual([]);
 });

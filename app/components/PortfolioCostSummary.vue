@@ -1,0 +1,8 @@
+<script setup lang="ts">
+const api = useApi(), summary = ref<any>(null), error = ref('')
+const money = (minor: number | null) => minor === null ? 'Not priced' : new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(minor / 100)
+async function load() { try { error.value = ''; summary.value = await api('/api/portfolio/costs') } catch (e) { error.value = errorMessage(e) } }
+onMounted(load)
+</script>
+<template><section class="portfolio-costs" aria-label="Purchase costs and profit"><h4>Purchase costs & profit/loss</h4><p v-if="error" class="small muted">{{ error }}</p><template v-if="summary"><dl><dt>Tracked cost basis</dt><dd>{{ money(summary.cost_aud_minor) }} · {{ summary.tracked_quantity }} copies</dd><dt>Costs still unknown</dt><dd>{{ summary.unknown_cost_quantity }} copies</dd><dt>Unrealised estimate</dt><dd>{{ money(summary.unrealized_aud_minor) }} · {{ summary.valued_quantity }} copies valued</dd><dt>Realised profit/loss</dt><dd>{{ money(summary.realized_aud_minor) }} · {{ summary.sold_quantity }} copies sold</dd></dl><p class="data-note">Unrealised profit compares only tracked copies with available market estimates. {{ summary.unpriced_quantity }} tracked copies have no usable price; {{ summary.approximate_quantity }} use guide estimates. Market prices do not adjust for condition. Record purchase costs and sales in a card’s details.</p></template></section></template>
+<style scoped>.portfolio-costs{border-top:1px solid var(--line);padding-top:12px}.portfolio-costs h4{font-size:14px}.portfolio-costs dl{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}.portfolio-costs dd{margin:0;font-weight:650;text-align:right}.portfolio-costs dt{color:var(--muted)}</style>

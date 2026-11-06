@@ -132,7 +132,7 @@ async function chooseCard(id: string) {
   const seq = ++cardSequence; cardLoading.value = true; error.value = ''; card.value = null; printingId.value = ''; position.value = null
   try {
     const data = await api('/api/cards/' + encodeURIComponent(id))
-    if (alive && seq === cardSequence) { card.value = data; condition.value = 'UNKNOWN'; quantity.value = 1; printingId.value = data.printings.length === 1 ? data.printings[0].id : '' }
+    if (alive && seq === cardSequence) { data.printings = data.printings.filter((p: any) => p.catalogue_available !== false); card.value = data; condition.value = 'UNKNOWN'; quantity.value = 1; printingId.value = data.printings.length === 1 ? data.printings[0].id : '' }
   } catch (e) { if (alive && seq === cardSequence) error.value = errorMessage(e) }
   finally { if (alive && seq === cardSequence) cardLoading.value = false }
 }

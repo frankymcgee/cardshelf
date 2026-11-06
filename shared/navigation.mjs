@@ -12,6 +12,7 @@ export const PRIMARY_NAVIGATION = Object.freeze([
 /** @type {readonly NavCard[]} */
 export const COLLECTION_LINKS = Object.freeze([
   { to:'/cards', label:'Cards & wishlist', description:'Browse cards, ownership and your wishlist.', icon:'cards' },
+  { to:'/wishlist-alerts', label:'Wishlist alerts', description:'Price targets and matching member listings.', icon:'bell' },
   { to:'/scan', label:'Scan a card', description:'Find a Pokémon card from a photo and review your addition.', icon:'search' },
   { to:'/binders', label:'Your binders', description:'Tracking, layouts and collection binders.', icon:'binder' },
   { to:'/games', label:'Card games', description:'Choose the games you collect.', icon:'grid' },
@@ -69,7 +70,7 @@ export function navigationMatches(path,root) {
 /** @param {string} path @returns {string} */
 export function activeNavigation(path) {
   if(navigationMatches(path,'/app'))return 'home';
-  if(['/cards','/scan','/binders','/games','/explore'].some(root=>navigationMatches(path,root)))return 'collection';
+  if(['/cards','/scan','/binders','/games','/explore','/wishlist-alerts'].some(root=>navigationMatches(path,root)))return 'collection';
   if(navigationMatches(path,'/marketplace'))return 'market';
   if(navigationMatches(path,'/arena')||navigationMatches(path,'/battle'))return 'arena';
   return 'more';

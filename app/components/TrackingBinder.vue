@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { binderSpread } from '../../shared/binder-book.mjs'
 import { trackingProgress } from '../../shared/binder-types.mjs'
 const props = withDefaults(defineProps<{ binder: any; readOnly?: boolean; disabled?: boolean }>(), { readOnly: false, disabled: false })
 const emit = defineEmits<{ marked: [result: any]; reload: []; add: [position: number]; saving: [value: boolean] }>()
@@ -19,7 +20,9 @@ const pages = computed(() => filtered.value ? Math.max(1, Math.ceil(matches.valu
 const visible = computed<any[]>(() => filtered.value ? matches.value.slice(page.value * size.value, (page.value + 1) * size.value) :
   Array.from({ length: size.value }, (_, i) => slots.value.find(s => s.position === page.value * size.value + i) || { position: page.value * size.value + i, empty: true }))
 const spread = ref(true)
-const pageNumbers = computed(() => Array.from({length: Math.min(spread.value ? 2 : 1, Math.max(1, pages.value - page.value))}, (_, i) => page.value + i))
+const startOnRight = computed(() => props.binder.start_on_right && !filtered.value)
+const bookLayout = computed(() => binderSpread(page.value, pages.value, spread.value, startOnRight.value))
+const pageNumbers = computed(() => bookLayout.value.pages)
 function pageItems(number: number): any[] {
   if (filtered.value) return matches.value.slice(number * size.value, (number + 1) * size.value)
   return Array.from({length: size.value}, (_, i) => slots.value.find(slot => slot.position === number * size.value + i) || {position: number * size.value + i, empty: true})
@@ -72,7 +75,7 @@ async function mark(collected: boolean) {
       <label class="tracking-search"><span class="sr-only">Search checklist</span><input v-model="search" type="search" maxlength="100" placeholder="Find a name, number or set…" /></label>
     </div>
     <p class="tracking-instructions">{{ readOnly ? 'Read-only checklist' : 'Tap a card to mark it collected or missing.' }}</p>
-    <BinderBook v-model="page" v-model:spread="spread" :pages="pages" :disabled="saving || disabled"><div class="tracking-spread" :class="{ 'one-page': !spread }"><div v-for="number in pageNumbers" :key="number" class="tracking-page">
+    <BinderBook v-model="page" v-model:spread="spread" :pages="pages" :start-on-right="startOnRight" :disabled="saving || disabled"><div class="tracking-spread" :class="{ 'one-page': !spread }"><div v-if="bookLayout.leadingBlank" class="tracking-page empty-book-leaf" aria-hidden="true" /><div v-for="number in pageNumbers" :key="number" class="tracking-page">
       <div class="tracking-page-heading"><span>{{ filtered ? 'FILTERED CHECKLIST' : 'PAGE ' + (number + 1) }}</span><small>{{ filtered ? matches.length + ' matches' : size + ' pockets' }}</small></div>
       <div class="tracking-grid" :style="{ gridTemplateColumns: 'repeat(' + binder.columns + ', minmax(0, 1fr))' }">
         <component :is="readOnly ? 'div' : 'button'" v-for="item in pageItems(number)" :key="item.position" :type="readOnly ? undefined : 'button'"
@@ -89,7 +92,7 @@ async function mark(collected: boolean) {
       </div>
       <p v-if="!visible.length" class="tracking-no-matches">No cards match. Try another search or choose All cards.</p>
     </div>
-    <div v-if="spread && pageNumbers.length === 1" class="tracking-page empty-book-leaf" aria-hidden="true">End of binder</div></div></BinderBook>
+    <div v-if="bookLayout.trailingBlank" class="tracking-page empty-book-leaf" aria-hidden="true">End of binder</div></div></BinderBook>
 
     <UiDisclosure title="About this checklist"><p class="data-note">This is an independent checklist. Marks do not add inventory quantities, set a condition, change prices or reserve physical copies. {{ designMode ? 'One mark per card design, regardless of printing.' : 'Each pocket tracks its displayed printing.' }}</p></UiDisclosure>
     <AppModal :open="!readOnly && selection !== null && !!selected" :title="selected?.name || 'Track card'" :dismissible="!saving" @close="closeSelection">
