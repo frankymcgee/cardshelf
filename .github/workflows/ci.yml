@@ -100,7 +100,15 @@ jobs:
           exit 1
       - run: npm run test:integration
       - name: Install UI browsers
-        run: npx playwright install --with-deps chromium webkit
+        timeout-minutes: 15
+        run: |
+          # The hosted Azure mirror can stall on small font packages for minutes.
+          # Keep Ubuntu's signed packages, using its main HTTPS archive instead.
+          # https://github.com/actions/runner-images/issues/14594
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
+          fi
+          npx playwright install --with-deps chromium webkit
       - run: npm run test:security-ui
       - run: npm run test:release-ui
       - run: npm run test:scan-batch-ui
