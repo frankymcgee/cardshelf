@@ -339,7 +339,7 @@ test('wishlist target saves selected conditions and opens a private match inbox'
   await page.goto('/cards?ads=off&card=' + encodeURIComponent(card.id)); const alert = page.locator('.printing-alert');
   await alert.locator(':scope > summary').click(); await alert.getByLabel('Target total (AUD)').fill('15.00');
   await alert.getByLabel('LP', {exact: true}).check(); await alert.getByRole('button', {name: 'Create alert', exact: true}).click();
-  await expect(alert.getByText('Saved alert · revision 1')).toBeVisible(); expect(writes).toHaveLength(1); expect(writes[0].conditions.sort()).toEqual(['LP', 'NM']); expect(writes[0].target_aud_minor).toBe(1500);
+  await expect(alert.getByText('Alert saved.', {exact: true})).toBeVisible(); expect(writes).toHaveLength(1); expect(writes[0].conditions.sort()).toEqual(['LP', 'NM']); expect(writes[0].target_aud_minor).toBe(1500);
   await alert.getByRole('link', {name: 'Wishlist alerts', exact: true}).click(); await expect(page.getByRole('heading', {name: 'Wishlist alerts', exact: true})).toBeVisible();
   await expect(page.getByText('Member listing total $12.00 · target $15.00')).toBeVisible(); await expect(page.getByRole('link', {name: 'View listing', exact: true})).toHaveAttribute('href', '/marketplace/' + binderId);
   await fits(page); await page.screenshot({path: info.outputPath('wishlist-alert-inbox.png'), fullPage: true}); expect(state.errors).toEqual([]);
