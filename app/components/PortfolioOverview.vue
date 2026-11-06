@@ -32,9 +32,9 @@ const date = (value: string) => new Date(value + 'T00:00:00Z').toLocaleDateStrin
       <path v-for="(line, i) in lines" :key="i" :d="line" />
       <template v-for="point in points" :key="point.date"><circle v-if="point.value != null" :cx="x(point.date)" :cy="y(point.value)" r="3"><title>{{ date(point.date) }}: {{ money(point.value) }} AUD</title></circle></template>
     </svg>
-    <p v-else class="small muted portfolio-empty">{{ points.length ? 'No priced observations in this period.' : 'No history recorded in this period yet.' }}</p>
+    <p v-else class="small muted portfolio-empty">{{ points.length ? 'No priced trend available yet.' : 'Daily tracking starts with your first observation.' }}</p>
     <div v-if="change?.total_aud != null" class="portfolio-change"><p><strong>{{ money(change.total_aud, true) }}<template v-if="change.percent != null"> ({{ change.percent > 0 ? '+' : '' }}{{ change.percent }}%)</template></strong><span>Recorded value change · {{ date(change.from) }}–{{ date(change.to) }}</span></p><small>Prices & currency {{ money(change.price_fx_aud, true) }} · +{{ change.added_quantity }} / −{{ change.removed_quantity }} copies</small></div>
-    <p v-else class="small muted">{{ priced.length === 1 ? 'First observation saved. Your trend grows as daily values are recorded.' : 'Value changes need two priced daily observations.' }}</p>
+    <p v-else class="small muted">{{ priced.length === 1 ? 'First observation saved. Your trend grows as daily values are recorded.' : 'Your trend needs two priced daily observations.' }}</p>
     <p v-if="!history.enabled" class="small muted">Recording paused. Showing saved observations.</p>
     <UiDisclosure v-if="portfolio" class="portfolio-insights" title="Portfolio insights" hint="Games & movers">
       <div class="portfolio-insight-grid">
