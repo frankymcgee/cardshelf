@@ -1,3 +1,9 @@
+## 0.64.0 — 2026-11-07
+
+- Add previewed bulk add/remove of product-exclusive binder pockets, sorted by set and card number with gaps closed and tracking marks retained. Ownership stays intact.
+- Expose Layout view and Quick tracking as a visible binder toggle outside More.
+- Run application validation on PRs; build, verify and publish native images only after changes reach main, removing duplicate post-merge application tests and PR image builds.
+
 ## 0.63.0 — 2026-11-07
 
 - Separate printing finish from distribution across all sets: regular, product exclusive, promotional or unconfirmed, with source-backed admin corrections retained on re-import.
