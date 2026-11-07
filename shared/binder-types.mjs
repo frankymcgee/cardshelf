@@ -1,3 +1,4 @@
+import { printingIncluded } from './printing-distribution.mjs';
 // Plan definitions are preparation only. Billing/enforcement remain disabled.
 export const BINDER_TYPES = ['tracking', 'collection'];
 export const TRACKING_COLOUR = '#46556d';
@@ -24,7 +25,8 @@ export function planFeatures(code) {
 }
 export function isTrackingBinder(binder) { return binder?.binder_type === 'tracking'; }
 export function binderTypeLabel(binder) { return isTrackingBinder(binder) ? 'Tracking binder' : 'Collection binder'; }
-export function trackingProgress(slots = []) {
+export function trackingProgress(slots = [], scope = 'all') {
+  slots = slots.filter(s=>printingIncluded(s,scope));
   const total = slots.length, collected = slots.filter(s => s.is_collected === true).length;
   return { total, collected, missing: total - collected, percent: total ? Math.round(collected / total * 100) : 0 };
 }

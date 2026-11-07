@@ -8,7 +8,7 @@ const search = ref('')
 const filter = ref('all'), generatorOpen = ref(false)
 const loadError = ref('')
 let sequence = 0, alive = true
-const form = reactive({ game: 'pokemon', binder_type: 'tracking', title: '', description: '', columns: 3, rows: 3, page_count: 10, color: '#5546d8' })
+const form = reactive({ game: 'pokemon', binder_type: 'tracking', printing_scope: 'regular', title: '', description: '', columns: 3, rows: 3, page_count: 10, color: '#5546d8' })
 const colors = ['#5546d8', '#237b73', '#d47544', '#3467a5', '#88456e', '#303948']
 const visible = computed(() => binders.value.filter(b => (!gameFilter.value || b.game === gameFilter.value) && (filter.value === 'all' || b.binder_type === filter.value) && String(b.title).toLocaleLowerCase().includes(search.value.trim().toLocaleLowerCase())))
 async function load() {
@@ -36,7 +36,7 @@ async function create() {
   <p v-if="loading" class="loading-panel" role="status">Loading binders…</p>
   <div v-else-if="visible.length" class="binder-list full-list"><NuxtLink v-for="binder in visible" :key="binder.id" :to="'/binders/' + binder.id" class="binder-card">
     <BinderCover :binder="binder" />
-    <div class="binder-card-info"><strong>{{ binder.title }}</strong><small>{{ gameName(binder.game || 'pokemon') }}</small><span v-if="binder.binder_type === 'tracking'">{{ binder.collected || 0 }} / {{ binder.filled }} collected · {{ binder.filled ? Math.round((binder.collected || 0) / binder.filled * 100) : 0 }}%</span><span v-else>{{ binder.page_count }} pages · {{ binder.filled }} / {{ binder.columns * binder.rows * binder.page_count }} pockets</span><small v-if="binder.share_token" class="purple-text">Read-only sharing enabled</small></div>
+    <div class="binder-card-info"><strong>{{ binder.title }}</strong><small>{{ gameName(binder.game || 'pokemon') }}</small><span v-if="binder.binder_type === 'tracking'">{{ binder.collected || 0 }} / {{ binder.completion_total ?? binder.filled }} collected · {{ (binder.completion_total ?? binder.filled) ? Math.round((binder.collected || 0) / (binder.completion_total ?? binder.filled) * 100) : 0 }}%</span><span v-else>{{ binder.page_count }} pages · {{ binder.filled }} / {{ binder.columns * binder.rows * binder.page_count }} pockets</span><small v-if="binder.share_token" class="purple-text">Read-only sharing enabled</small></div>
   </NuxtLink></div>
   <section v-else-if="!loadError" class="empty-state tall"><div class="empty-icon"><AppIcon name="binder" :size="46" /></div><h2>{{ binders.length ? 'No binders match your filters.' : 'Your first binder starts here.' }}</h2><button v-if="binders.length" class="button secondary" @click="search = ''; gameFilter = ''; filter = 'all'">Clear filters</button><template v-else><p>Create a checklist from a set or start blank.</p><div class="button-row"><button class="button primary" @click="generatorOpen = true">Create from a set</button><button class="button secondary" @click="open = true">Start blank</button></div></template></section>
   <UiDisclosure title="About binder types"><p class="data-note">Tracking binders have independent collected/missing marks. Collection binders use your detailed inventory. Neither reserves physical copies, and switching between binders never adds inventory quantities.</p></UiDisclosure>
@@ -45,6 +45,7 @@ async function create() {
     <GamePicker v-model="form.game" :disabled="busy" />
     <p class="data-note">Collector can manage the game selected under Card games; Collector Plus can manage all supported games. Existing binders in other games remain readable.</p>
     <BinderTypePicker v-model="form.binder_type" :disabled="busy" />
+    <PrintingScopePicker v-model="form.printing_scope" />
     <label>Binder name<input v-model="form.title" required maxlength="100" placeholder="e.g. My first master set" :disabled="busy" /></label>
     <label>Description<textarea v-model="form.description" maxlength="1000" :disabled="busy" /></label>
     <div class="form-columns"><label>Columns<select v-model.number="form.columns" :disabled="busy"><option :value="2">2</option><option :value="3">3</option><option :value="4">4</option></select></label><label>Rows<select v-model.number="form.rows" :disabled="busy"><option :value="2">2</option><option :value="3">3</option><option :value="4">4</option></select></label><label>Pages<input v-model.number="form.page_count" required type="number" min="1" max="60" :disabled="busy" /></label></div>

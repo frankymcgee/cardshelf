@@ -7,6 +7,7 @@ import { adminAdView, adsenseSettings } from '../../lib/adsense.mjs'
 import * as auth from '../../lib/auth.mjs'
 import { securityStatus } from '../../lib/account-security.mjs'
 import { authenticationResult, clearAuthCookies, securityTokens } from '../utils/security-api'
+import { distributionReview, correctPrintingDistribution } from '../../lib/printing-distribution.mjs'
 import { correctPrinting } from '../../lib/printing-availability.mjs'
 import * as catalogue from '../../lib/catalogue.mjs'
 import * as wishlistAlerts from '../../lib/wishlist-alerts.mjs'
@@ -86,11 +87,19 @@ export default defineEventHandler(async event => {
     }
     if (route === 'dashboard' && method === 'GET') return await catalogue.dashboard(user.id)
     if (route === 'catalogue' && method === 'GET') return await catalogue.catalogueCards(user.id, query)
+    if (route === 'catalogue/distribution-review' && method === 'GET') {
+      ensure(user.role === 'admin', 403, 'Only an administrator can review printing distribution.')
+      return await distributionReview(query)
+    }
     if (route === 'catalogue/facets' && method === 'GET') return await catalogue.catalogueFacets()
     if (parts[0] === 'cards' && parts.length === 2 && method === 'GET') return await catalogue.getCard(user.id, parts[1])
     if (parts[0] === 'cards' && parts[2] === 'printings' && parts.length === 3 && method === 'POST') {
       ensure(user.role === 'admin', 403, 'Only an administrator can edit the catalogue.')
       return await catalogue.addPrinting(user.id, parts[1], await readJSON(event))
+    }
+    if (parts[0] === 'cards' && parts[2] === 'printings' && parts[4] === 'distribution' && parts.length === 5 && method === 'PATCH') {
+      ensure(user.role === 'admin', 403, 'Only an administrator can edit the catalogue.')
+      return await correctPrintingDistribution(user.id, parts[1], parts[3], await readJSON(event))
     }
     if (parts[0] === 'cards' && parts[2] === 'printings' && parts.length === 4 && method === 'PATCH') {
       ensure(user.role === 'admin', 403, 'Only an administrator can edit the catalogue.')

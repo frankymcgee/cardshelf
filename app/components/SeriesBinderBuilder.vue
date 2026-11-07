@@ -6,7 +6,7 @@ const sets = ref<any[]>([]), loading = ref(false), busy = ref(false), preview = 
 const game = ref('pokemon')
 const language = ref('en'), series = ref(''), search = ref('')
 const form = reactive({ binder_type: 'tracking', title: '', description: '', color: '#5546d8', columns: 3, rows: 3,
-  set_ids: [] as string[], selection: 'designs', owned_only: false, new_page_per_set: true })
+  set_ids: [] as string[], selection: 'designs', printing_scope: 'regular', owned_only: false, new_page_per_set: true })
 const tracking = computed(() => form.binder_type === 'tracking')
 const seriesOptions = computed(() => [...new Set(sets.value.filter(s => (s.game || 'pokemon') === game.value && s.language === language.value && s.series).map(s => s.series as string))].sort())
 const visibleSets = computed(() => sets.value.filter(s => (s.game || 'pokemon') === game.value && s.language === language.value && (!series.value || s.series === series.value) &&
@@ -68,6 +68,7 @@ async function create() {
         <small class="muted">{{ form.set_ids.length }} selected. Only sets imported on this server are included.</small>
         <label>Binder name<input v-model="form.title" required maxlength="85" placeholder="e.g. Sword & Shield collection" /></label><label>Description<textarea v-model="form.description" maxlength="1000" /></label>
         <div class="form-columns"><label>Columns<select v-model.number="form.columns"><option :value="2">2</option><option :value="3">3</option><option :value="4">4</option></select></label><label>Rows<select v-model.number="form.rows"><option :value="2">2</option><option :value="3">3</option><option :value="4">4</option></select></label><label v-if="!tracking">Cover colour<input v-model="form.color" type="color" /></label></div>
+        <PrintingScopePicker v-model="form.printing_scope" />
         <label>Checklist layout<select v-model="form.selection"><option value="designs">One pocket per card design</option><option value="printings">One pocket per known printing</option></select></label>
         <p v-if="tracking" class="data-note">Design checklists accept any printing of the card; printing checklists track each displayed finish separately. All cards start grey and uncollected, independently of your inventory. Known printings are not a verified master checklist.</p>
         <p v-else class="data-note">One per design uses a preferred available printing. Choose known printings when finish or rarity matters. Known printings are not a verified master checklist. Owned-only layouts consider your owned printings first.</p>
@@ -78,8 +79,10 @@ async function create() {
     </form>
     <section v-if="preview" class="generation-preview"><h3>{{ preview.volume_count }} {{ tracking ? 'tracking' : 'collection' }} binder(s) · {{ preview.total_pages }} pages · {{ preview.slot_count }} cards</h3>
       <p class="muted small">{{ tracking ? 'Every checklist card will start missing.' : preview.owned_slots + ' positions match owned printings.' }} Large layouts split into volumes of at most 60 pages.</p>
+      <p v-if="preview.excluded_extras" class="data-note">{{ preview.excluded_extras }} confirmed promo or product-exclusive {{ preview.excluded_extras === 1 ? 'printing' : 'printings' }} excluded. They remain available in the catalogue.</p>
+      <p v-if="preview.unconfirmed_slots" class="alert info">{{ preview.unconfirmed_slots }} {{ preview.unconfirmed_slots === 1 ? 'pocket has' : 'pockets have' }} unconfirmed distribution and are included for review. This is not a verified master checklist.</p>
       <p v-for="b in preview.volumes" :key="b.title" class="small"><strong>{{ b.title }}</strong> — {{ b.page_count }} pages, {{ b.slot_count }} cards</p>
-      <div class="table-scroll"><table><thead><tr><th>Volume / page / pocket</th><th>Card</th><th>{{ tracking && form.selection === 'designs' ? 'Checklist' : 'Printing' }}</th></tr></thead><tbody><tr v-for="s in preview.sample" :key="s.volume + ':' + s.position"><td>{{ s.volume }} / {{ s.page }} / {{ s.pocket }}</td><td>#{{ s.local_id }} {{ s.name }}</td><td>{{ tracking && form.selection === 'designs' ? 'Any printing' : s.label }}</td></tr></tbody></table></div>
+      <div class="table-scroll"><table><thead><tr><th>Volume / page / pocket</th><th>Card</th><th>{{ tracking && form.selection === 'designs' ? 'Checklist' : 'Printing' }}</th></tr></thead><tbody><tr v-for="s in preview.sample" :key="s.volume + ':' + s.position"><td>{{ s.volume }} / {{ s.page }} / {{ s.pocket }}</td><td>#{{ s.local_id }} {{ s.name }}</td><td>{{ tracking && form.selection === 'designs' ? 'Any printing' : s.label }} <PrintingDistributionBadge :printing="s" /></td></tr></tbody></table></div>
       <p class="muted small">Sample only; creation includes all {{ preview.slot_count }} cards.</p>
       <label v-if="preview.partial" class="checkbox-label alert warning"><input v-model="acknowledge" type="checkbox" />I understand some sets are partially imported. Unimported cards will not be included.</label>
       <button class="button primary full" :disabled="busy || (preview.partial && !acknowledge)" @click="create">{{ busy ? 'Creating…' : 'Create ' + preview.volume_count + ' binder(s)' }}</button>

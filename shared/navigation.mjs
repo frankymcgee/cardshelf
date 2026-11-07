@@ -40,6 +40,7 @@ export const ADMIN_LINKS = Object.freeze([
   {to:'/admin/memberships',label:'Memberships & referrals',description:'Assign tiers and review referrals.',icon:'shield'},
   {to:'/admin/integrations/stripe',label:'Stripe',description:'Connection and billing controls.',icon:'link'},
   {to:'/admin/integrations/stripe-preview',label:'Test pricing preview',description:'Review Sandbox products without billing.',icon:'cards'},
+  {to:'/admin/printing-distribution',label:'Printing distribution',description:'Review promo and product-exclusive variants across all sets.',icon:'cards'},
   {to:'/admin/game-catalogue',label:'Game imports',description:'Import Pokémon, Yu-Gi-Oh! and Magic sets; review progress.',icon:'download'},
   {to:'/admin/free-platform',label:'Free tier & sponsors',description:'Registration and first-party ads.',icon:'grid'},
   {to:'/admin/affiliate-shops',label:'Affiliate shops',description:'External shopping links, referral codes and previews.',icon:'link'},
@@ -54,7 +55,7 @@ export const ADMIN_LINKS = Object.freeze([
 /** @type {readonly {id:string,title:string,links:readonly NavCard[]}[]} */
 export const ADMIN_GROUPS = Object.freeze([
   {id:'plans',title:'Plans & billing',paths:['/admin/pricing','/admin/integrations/stripe-preview','/admin/memberships','/admin/integrations/stripe']},
-  {id:'content',title:'Cards & community',paths:['/admin/scanning','/admin/game-catalogue','/admin/arena','/marketplace/moderation','/admin/affiliate-shops']},
+  {id:'content',title:'Cards & community',paths:['/admin/printing-distribution','/admin/scanning','/admin/game-catalogue','/admin/arena','/marketplace/moderation','/admin/affiliate-shops']},
   {id:'operations',title:'People & services',paths:['/settings','/admin/readiness','/admin/platform','/admin/free-platform','/admin/adsense','/admin/emails','/admin/passwords']}
 ].map(group=>({id:group.id,title:group.title,links:group.paths.map(path=>ADMIN_LINKS.find(link=>link.to===path)).filter(Boolean)})));
 /** @type {readonly NavCard[]} */

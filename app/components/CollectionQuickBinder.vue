@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { printingIncluded } from '../../shared/printing-distribution.mjs'
 import { binderSpread } from '../../shared/binder-book.mjs'
 const props = defineProps<{ binder: any; disabled?: boolean }>()
 const emit = defineEmits<{ saved: []; reload: []; add: [position: number]; inspect: [slot: any]; saving: [value: boolean] }>()
@@ -7,13 +8,14 @@ const search = ref(''), filter = ref('all'), page = ref(0), selection = ref<numb
 let pending: any = null, alive = true
 onBeforeUnmount(() => { alive = false })
 const slots = computed<any[]>(() => props.binder.slots || [])
-const collected = computed(() => slots.value.filter(slot => slot.owned).length)
-const percent = computed(() => slots.value.length ? Math.round(collected.value / slots.value.length * 100) : 0)
+const countedSlots = computed(() => slots.value.filter(slot => printingIncluded(slot, props.binder.printing_scope)))
+const collected = computed(() => countedSlots.value.filter(slot => slot.owned).length)
+const percent = computed(() => countedSlots.value.length ? Math.round(collected.value / countedSlots.value.length * 100) : 0)
 const size = computed(() => props.binder.columns * props.binder.rows)
 const filtered = computed(() => !!search.value.trim() || filter.value !== 'all')
 const matches = computed(() => {
   const needle = search.value.trim().toLocaleLowerCase()
-  return slots.value.filter(slot => (filter.value === 'all' || (filter.value === 'collected' ? slot.owned : !slot.owned)) &&
+  return slots.value.filter(slot => (filter.value === 'all' || (printingIncluded(slot, props.binder.printing_scope) && (filter.value === 'collected' ? slot.owned : !slot.owned))) &&
     (!needle || `${slot.name} ${slot.local_id} ${slot.set_name} ${slot.label}`.toLocaleLowerCase().includes(needle)))
 })
 const pages = computed(() => filtered.value ? Math.max(1, Math.ceil(matches.value.length / size.value)) : props.binder.page_count)
@@ -63,7 +65,8 @@ async function mark(collected: boolean) {
 </script>
 <template>
   <section class="collection-quick" data-testid="collection-quick-binder" :aria-busy="saving">
-    <div class="collection-quick-summary panel"><div><span class="eyebrow">COLLECTION-SYNCED CHECKLIST</span><h2>{{ collected }} / {{ slots.length }} pockets owned</h2><p>Tap a missing card, then “I have this card”. Its displayed printing becomes owned in your collection and every collection-backed binder.</p></div><strong>{{ percent }}%</strong></div>
+    <div class="collection-quick-summary panel"><div><span class="eyebrow">COLLECTION-SYNCED CHECKLIST</span><h2>{{ collected }} / {{ countedSlots.length }} pockets owned</h2><p>Tap a missing card, then “I have this card”. Its displayed printing becomes owned in your collection and every collection-backed binder.</p></div><strong>{{ percent }}%</strong></div>
+    <BinderPrintingScope :binder="binder" />
     <div class="quick-progress" role="progressbar" :aria-valuenow="percent" aria-valuemin="0" aria-valuemax="100" aria-label="Owned checklist progress"><span :style="{width: percent + '%'}" /></div>
     <div class="quick-tools"><div class="button-row" role="group" aria-label="Filter by ownership"><button v-for="option in ['all','missing','collected']" :key="option" class="button secondary" :aria-pressed="filter === option" @click="filter = option">{{ option === 'all' ? 'All cards' : option === 'collected' ? 'Owned' : 'Missing' }}</button></div><label><span class="sr-only">Search collection binder</span><input v-model="search" type="search" maxlength="100" placeholder="Name, number or set…"></label></div>
     <BinderBook v-model="page" v-model:spread="spread" :pages="pages" :start-on-right="startOnRight" :disabled="saving || disabled"><div class="quick-spread" :class="{ 'one-page': !spread }"><div v-if="bookLayout.leadingBlank" class="quick-page empty-book-leaf" aria-hidden="true" /><div v-for="number in pageNumbers" :key="number" class="quick-page"><div class="quick-page-heading">PAGE {{ number + 1 }}</div><div class="quick-grid" :style="{gridTemplateColumns:'repeat(' + binder.columns + ',minmax(0,1fr))'}">
@@ -78,7 +81,7 @@ async function mark(collected: boolean) {
     <UiDisclosure title="About ownership"><p class="data-note">One quick claim means you own at least one copy of the exact displayed printing. Repeated pockets or other binders do not add copies. Prices use your shared collection; an owned marker is not a physical-copy allocation.</p></UiDisclosure>
     <AppModal :open="selection !== null && !!selected" :title="selected?.name || 'Card ownership'" :dismissible="!saving" @close="close">
       <template v-if="selected">
-        <div class="quick-selection"><CardArtwork :card="selected" :printing="selected" effects-mode="off" /><div><span class="badge" :class="selected.owned ? 'green' : ''">{{selected.owned ? 'Owned' : 'Missing'}}</span><p>{{selected.set_name}} · #{{selected.local_id}}<br><strong>{{selected.label}}</strong></p><p v-if="selected.owned" class="small">{{selected.owned_quantity}} owned across your collection.</p></div></div>
+        <PrintingDistributionBadge :printing="selected" /><div class="quick-selection"><CardArtwork :card="selected" :printing="selected" effects-mode="off" /><div><span class="badge" :class="selected.owned ? 'green' : ''">{{selected.owned ? 'Owned' : 'Missing'}}</span><p>{{selected.set_name}} · #{{selected.local_id}}<br><strong>{{selected.label}}</strong></p><p v-if="selected.owned" class="small">{{selected.owned_quantity}} owned across your collection.</p></div></div>
         <p v-if="error" class="alert error" role="alert">{{error}} Retry to confirm the saved state.</p>
         <button v-if="pending || !selected.owned" class="button primary full" :disabled="saving || disabled" @click="mark(true)">{{saving ? 'Saving…' : pending ? 'Retry the same save' : '+ I have this card'}}</button>
         <button v-else-if="selected.can_quick_remove" class="button secondary full" :disabled="saving || disabled" @click="mark(false)">Remove quick-added copy / mark missing</button>
