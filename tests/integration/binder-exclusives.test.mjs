@@ -82,6 +82,11 @@ await test('bulk product-exclusive pockets stay ordered, atomic and separate fro
       await ok(endpoint(b.id),{method:'POST',body:{...options,revision:growth.revision,preview_token:growth.preview_token,request_id:randomUUID()}});
       const fresh=await ok('binders/'+b.id);assert.equal(fresh.page_count,2);assert.equal(fresh.slots.length,6);assert.deepEqual(await entries(),inventory);
     });
+    await t.test('design checklist marks are never silently reinterpreted as exact finishes',async()=>{
+      const [b]=await sql`INSERT INTO binders(user_id,title,columns,rows,page_count,binder_type,generation) VALUES(${users[0]},'Design checklist',2,2,1,'tracking','{"options":{"selection":"designs"}}') RETURNING id`;binders.push(b.id);
+      assert.equal((await request(endpoint(b.id)+'/preview',{method:'POST',body:options})).status,400);
+      assert.equal((await ok('binders/'+b.id)).generation.options.selection,'designs');
+    });
     await t.test('sets must belong to the binder game and empty binders remember a restorable set selection',async()=>{
       const b=await ok('binders',{method:'POST',body:{title:'Only extras',columns:2,rows:2,page_count:1}});binders.push(b.id);
       await sql`INSERT INTO binder_slots(binder_id,position,printing_id) VALUES(${b.id},2,${normal1})`;
