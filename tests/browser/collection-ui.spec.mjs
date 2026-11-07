@@ -458,3 +458,46 @@ test('all-set admin review exposes exact provider clues and saves sourced distri
   await fits(page); await page.screenshot({path: info.outputPath('all-set-distribution-review.png'), fullPage: true});
   expect(state.errors).toEqual([]);
 });
+
+test('binder display toggle is visible outside More and switches both ways', async ({page}, info) => {
+  const state = await fixtures(page, 'light', 'quick');
+  await page.goto('/binders/' + binderId);
+  const toggle = page.getByRole('group', {name: 'Card display', exact: true});
+  await expect(toggle).toBeVisible(); await expect(page.locator('.binder-tools')).not.toHaveAttribute('open');
+  await expect(toggle.getByRole('button', {name: 'Quick tracking', exact: true})).toHaveAttribute('aria-pressed', 'true');
+  await toggle.getByRole('button', {name: 'Layout view', exact: true}).click(); await expect(page.locator('.pocket').first()).toBeVisible();
+  await expect(toggle.getByRole('button', {name: 'Layout view', exact: true})).toHaveAttribute('aria-pressed', 'true');
+  await toggle.getByRole('button', {name: 'Quick tracking', exact: true}).click(); await expect(page.locator('.collection-quick-summary')).toBeVisible();
+  await fits(page); await page.screenshot({path: info.outputPath('visible-binder-view-toggle.png'), fullPage: true});
+  expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
+});
+
+test('bulk product-exclusive controls preview the numbered layout before applying', async ({page}, info) => {
+  const state = await fixtures(page, 'light', 'quick');
+  const b = {...binders[0], revision: 1, printing_scope: 'regular', quick_tracking: true, slots: [
+    {...card, ...holo, card_id: card.id, printing_id: holo.id, set_id: 'en:fixture', position: 3, owned: true}
+  ]};
+  const writes = [];
+  await page.route('**/api/binders/' + binderId, route => route.fulfill({json: b}));
+  await page.route('**/api/binders/' + binderId + '/exclusives/preview', route => {
+    const input = route.request().postDataJSON();
+    return route.fulfill({json: {revision: 1, preview_token: 'a'.repeat(64), ...input, added: input.action === 'add' ? 1 : 0,
+      removed: input.action === 'remove' ? 1 : 0, moved: 1, slot_count: 2, page_count: 2, printing_scope: 'regular', removed_sample: [],
+      sample: [{position: 0, previous_position: null, local_id: '001', name: 'Pikachu', label: 'Normal', set_name: 'Fixture set'},
+        {position: 1, previous_position: 3, local_id: '001', name: 'Pikachu', label: 'Holo', set_name: 'Fixture set'}]}});
+  });
+  await page.route('**/api/binders/' + binderId + '/exclusives', route => {
+    writes.push(route.request().postDataJSON()); b.revision = 2;
+    return route.fulfill({json: {added: 1, removed: 0, moved: 1, revision: 2}});
+  });
+  await page.goto('/binders/' + binderId); await page.getByRole('button', {name: 'Product exclusives', exact: true}).click();
+  const modal = page.getByRole('dialog', {name: 'Product-exclusive cards', exact: true});
+  await expect(modal.getByRole('checkbox', {name: 'Fixture set · EN', exact: true})).toBeChecked();
+  await modal.getByRole('button', {name: 'Preview pocket changes', exact: true}).click();
+  await expect(modal).toContainText('1 to add · 0 to remove · 1 to move'); await expect(modal).toContainText('New → 1');
+  expect(writes).toHaveLength(0);
+  await fits(page); await page.screenshot({path: info.outputPath('bulk-exclusives-preview.png'), fullPage: true});
+  await modal.getByRole('button', {name: 'Apply pocket changes', exact: true}).click(); await expect(modal).not.toBeVisible();
+  expect(writes).toHaveLength(1); expect(writes[0].set_ids).toEqual(['en:fixture']); expect(writes[0].revision).toBe(1);
+  expect(state.errors).toEqual([]);
+});
