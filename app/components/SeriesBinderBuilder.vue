@@ -79,8 +79,8 @@ async function create() {
     </form>
     <section v-if="preview" class="generation-preview"><h3>{{ preview.volume_count }} {{ tracking ? 'tracking' : 'collection' }} binder(s) · {{ preview.total_pages }} pages · {{ preview.slot_count }} cards</h3>
       <p class="muted small">{{ tracking ? 'Every checklist card will start missing.' : preview.owned_slots + ' positions match owned printings.' }} Large layouts split into volumes of at most 60 pages.</p>
-      <p v-if="preview.excluded_extras" class="data-note">{{ preview.excluded_extras }} confirmed promo or product-exclusive printings excluded. They remain available in the catalogue.</p>
-      <p v-if="preview.unconfirmed_slots" class="alert info">{{ preview.unconfirmed_slots }} pockets have unconfirmed distribution and are included for review. This is not a verified master checklist.</p>
+      <p v-if="preview.excluded_extras" class="data-note">{{ preview.excluded_extras }} confirmed promo or product-exclusive {{ preview.excluded_extras === 1 ? 'printing' : 'printings' }} excluded. They remain available in the catalogue.</p>
+      <p v-if="preview.unconfirmed_slots" class="alert info">{{ preview.unconfirmed_slots }} {{ preview.unconfirmed_slots === 1 ? 'pocket has' : 'pockets have' }} unconfirmed distribution and are included for review. This is not a verified master checklist.</p>
       <p v-for="b in preview.volumes" :key="b.title" class="small"><strong>{{ b.title }}</strong> — {{ b.page_count }} pages, {{ b.slot_count }} cards</p>
       <div class="table-scroll"><table><thead><tr><th>Volume / page / pocket</th><th>Card</th><th>{{ tracking && form.selection === 'designs' ? 'Checklist' : 'Printing' }}</th></tr></thead><tbody><tr v-for="s in preview.sample" :key="s.volume + ':' + s.position"><td>{{ s.volume }} / {{ s.page }} / {{ s.pocket }}</td><td>#{{ s.local_id }} {{ s.name }}</td><td>{{ tracking && form.selection === 'designs' ? 'Any printing' : s.label }} <PrintingDistributionBadge :printing="s" /></td></tr></tbody></table></div>
       <p class="muted small">Sample only; creation includes all {{ preview.slot_count }} cards.</p>

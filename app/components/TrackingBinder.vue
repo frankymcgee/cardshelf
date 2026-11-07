@@ -67,7 +67,7 @@ async function mark(collected: boolean) {
 <template>
   <section class="tracking-binder" data-testid="tracking-binder" :aria-busy="saving">
     <div class="tracking-summary">
-      <div><h2>{{ progress.collected }} <span>/ {{ progress.total }} collected</span></h2><p>{{ progress.missing ? progress.missing + ' missing' : progress.total ? 'Checklist complete' : 'Add cards to start tracking.' }}</p></div>
+      <div><h2>{{ progress.collected }} <span>/ {{ progress.total }} collected</span></h2><p>{{ progress.missing ? progress.missing + ' missing' : progress.total ? 'Checklist complete' : slots.length ? 'No printings count under this scope.' : 'Add cards to start tracking.' }}</p></div>
       <strong class="tracking-percent" aria-label="Completion percentage">{{ progress.percent }}<small>%</small></strong>
     </div>
     <BinderPrintingScope :binder="binder" />

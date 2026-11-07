@@ -394,7 +394,7 @@ for (const mode of ['tracking', 'quick']) {
     await expect(summary).toContainText('2 / 2'); await expect(summary).toContainText('100%');
     const scope = page.getByLabel('Printing scope', {exact: true}); await expect(scope).toContainText('Regular set variants');
     await scope.locator('summary').click(); await expect(scope).toContainText('Product exclusive');
-    await expect(scope).toContainText('1 extra pockets excluded from completion');
+    await expect(scope).toContainText('1 extra pocket excluded from completion');
     await page.getByRole('button', {name: /^Missing/}).click();
     await expect(page.locator(mode === 'tracking' ? '.tracking-card:not(.empty)' : '.quick-card:not(.empty)')).toHaveCount(0);
     await fits(page); await page.screenshot({path: info.outputPath(mode + '-regular-set-scope.png'), fullPage: true});
@@ -417,8 +417,8 @@ test('set builder defaults to regular variants and reports excluded extras and u
   await modal.getByRole('button', {name: 'Select displayed sets (maximum 50)'}).click();
   await modal.getByLabel('Binder name', {exact: true}).fill('Fixture binder');
   await modal.getByRole('button', {name: 'Preview layout', exact: true}).click();
-  await expect(modal).toContainText('1 confirmed promo or product-exclusive printings excluded');
-  await expect(modal).toContainText('1 pockets have unconfirmed distribution'); expect(input.printing_scope).toBe('regular');
+  await expect(modal).toContainText('1 confirmed promo or product-exclusive printing excluded');
+  await expect(modal).toContainText('1 pocket has unconfirmed distribution'); expect(input.printing_scope).toBe('regular');
   await fits(page); await page.screenshot({path: info.outputPath('printing-scope-preview.png'), fullPage: true});
   await modal.getByLabel('Printings to count').selectOption('all'); await expect(modal.locator('.generation-preview')).toHaveCount(0);
   expect(state.errors).toEqual([]);
@@ -444,12 +444,12 @@ test('all-set admin review exposes exact provider clues and saves sourced distri
   await page.goto('/admin/printing-distribution');
   await expect(page.getByRole('heading', {name: 'Printing distribution', exact: true})).toBeVisible();
   await expect(page.getByText('TCGplayer #12345', {exact: true})).toHaveAttribute('href', 'https://www.tcgplayer.com/product/12345');
-  await expect(page.getByLabel('Set', {exact: true})).toHaveValue('');
-  await page.getByLabel('Review', {exact: true}).selectOption('unknown');
+  await expect(page.getByRole('combobox', {name: 'Set', exact: true})).toHaveValue('');
+  await page.getByRole('combobox', {name: 'Review', exact: true}).selectOption('unknown');
   await expect.poll(() => requests.at(-1)?.mode).toBe('unknown');
   const section = page.locator('.distribution-review-card section').first();
   await section.locator('summary').click();
-  await section.getByLabel('Distribution', {exact: true}).selectOption('product_exclusive');
+  await section.getByRole('combobox', {name: 'Distribution', exact: true}).selectOption('product_exclusive');
   await section.getByLabel('Product or evidence note').fill('Verified deck product');
   await section.getByLabel('Evidence URL').fill('https://www.tcgplayer.com/product/12345');
   await section.getByRole('button', {name: 'Save distribution', exact: true}).click();

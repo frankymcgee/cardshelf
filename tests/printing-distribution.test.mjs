@@ -66,3 +66,11 @@ test('detailed provider signals remain clues, filter language, and never treat W
   assert.deepEqual(distributionSignals(null,{key:'normal'},'en'),[]);
   assert.deepEqual(distributionSignals(raw,{key:'wPromo'},'en'),[]);
 });
+
+test('an exclusively extra selection explains the scope instead of suggesting another catalogue import',()=>{
+  const extras=rows.map(p=>({...p,distribution:'promo'}));
+  assert.throws(()=>makeBinderPlan(options,sets,extras),/Choose Include promos and product exclusives/);
+  assert.equal(makeBinderPlan({...options,printing_scope:'all'},sets,extras).slot_count,3);
+  const empty=completionState({id:'b',binder_type:'tracking',printing_scope:'regular'},extras,[]);
+  assert.equal(empty.progress.total,0);assert.equal(empty.extras.length,3);
+});
