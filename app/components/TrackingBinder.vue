@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { binderSpread } from '../../shared/binder-book.mjs'
+import { printingIncluded } from '../../shared/printing-distribution.mjs'
 import { trackingProgress } from '../../shared/binder-types.mjs'
 const props = withDefaults(defineProps<{ binder: any; readOnly?: boolean; disabled?: boolean }>(), { readOnly: false, disabled: false })
 const emit = defineEmits<{ marked: [result: any]; reload: []; add: [position: number]; saving: [value: boolean] }>()
@@ -8,12 +9,12 @@ const search = ref(''), filter = ref('all'), page = ref(0), selection = ref<numb
 let pending: any = null, alive = true
 onBeforeUnmount(() => { alive = false })
 const slots = computed<any[]>(() => props.binder.slots || [])
-const progress = computed(() => trackingProgress(slots.value))
+const progress = computed(() => trackingProgress(slots.value, props.binder.printing_scope))
 const size = computed(() => props.binder.columns * props.binder.rows)
 const filtered = computed(() => !!search.value.trim() || filter.value !== 'all')
 const matches = computed(() => {
   const needle = search.value.trim().toLocaleLowerCase()
-  return slots.value.filter(s => (filter.value === 'all' || (filter.value === 'collected' ? s.is_collected : !s.is_collected)) &&
+  return slots.value.filter(s => (filter.value === 'all' || (printingIncluded(s, props.binder.printing_scope) && (filter.value === 'collected' ? s.is_collected : !s.is_collected))) &&
     (!needle || `${s.name} ${s.local_id} ${s.set_name} ${s.label}`.toLocaleLowerCase().includes(needle)))
 })
 const pages = computed(() => filtered.value ? Math.max(1, Math.ceil(matches.value.length / size.value)) : props.binder.page_count)
@@ -69,6 +70,7 @@ async function mark(collected: boolean) {
       <div><h2>{{ progress.collected }} <span>/ {{ progress.total }} collected</span></h2><p>{{ progress.missing ? progress.missing + ' missing' : progress.total ? 'Checklist complete' : 'Add cards to start tracking.' }}</p></div>
       <strong class="tracking-percent" aria-label="Completion percentage">{{ progress.percent }}<small>%</small></strong>
     </div>
+    <BinderPrintingScope :binder="binder" />
     <div class="tracking-progress" role="progressbar" :aria-valuenow="progress.percent" aria-valuemin="0" aria-valuemax="100" aria-label="Checklist completion"><span :style="{ width: progress.percent + '%' }" /></div>
     <div class="tracking-tools">
       <div class="tracking-filters" role="group" aria-label="Filter checklist"><button v-for="f in ['all', 'missing', 'collected']" :key="f" class="button secondary small-button" :class="{ active: filter === f }" :aria-pressed="filter === f" @click="filter = f">{{ f === 'all' ? 'All cards' : f === 'missing' ? 'Missing' : 'Collected' }}</button></div>
@@ -96,7 +98,7 @@ async function mark(collected: boolean) {
 
     <UiDisclosure title="About this checklist"><p class="data-note">This is an independent checklist. Marks do not add inventory quantities, set a condition, change prices or reserve physical copies. {{ designMode ? 'One mark per card design, regardless of printing.' : 'Each pocket tracks its displayed printing.' }}</p></UiDisclosure>
     <AppModal :open="!readOnly && selection !== null && !!selected" :title="selected?.name || 'Track card'" :dismissible="!saving" @close="closeSelection">
-      <div v-if="selected" class="tracking-selection"><div class="tracking-selected-art"><CardArtwork :card="selected" :printing="designMode ? null : selected" effects-mode="off" :badges="!designMode" /></div>
+      <PrintingDistributionBadge v-if="selected" :printing="selected" /><div v-if="selected" class="tracking-selection"><div class="tracking-selected-art"><CardArtwork :card="selected" :printing="designMode ? null : selected" effects-mode="off" :badges="!designMode" /></div>
         <div><span class="badge" :class="selected.is_collected ? 'green' : ''">{{ selected.is_collected ? 'Collected' : 'Missing' }}</span><h3>{{ selected.set_name }}</h3><p>#{{ selected.local_id }} · {{ label(selected) }}</p><p class="muted small">Page {{ Math.floor(selected.position / size) + 1 }} · Pocket {{ selected.position % size + 1 }}</p></div>
       </div>
       <p v-if="saveError" class="alert error" role="alert">{{ saveError }} Retry to confirm the saved state, or close to reload.</p>

@@ -376,3 +376,85 @@ test('TCGdex prices show partial sources, dated retained values and separate ask
   expect(await prices.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true); await fits(page);
   await page.screenshot({path: info.outputPath('tcgdex-market-details.png'), fullPage: true}); expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
 });
+
+for (const mode of ['tracking', 'quick']) {
+  test(mode + ' regular-set scope counts two finishes and lists the retained extra separately', async ({page}, info) => {
+    const state = await fixtures(page, 'light', mode);
+    await page.route('**/api/binders/' + binderId, async route => route.fulfill({json: {
+      ...binders[0], binder_type: mode === 'tracking' ? 'tracking' : 'collection', quick_tracking: mode === 'quick',
+      revision: 1, printing_scope: 'regular', generation: {options: {selection: 'printings'}},
+      slots: [
+        {...card, ...normal, card_id: card.id, printing_id: normal.id, position: 0, distribution: 'product_exclusive', owned: false, is_collected: false},
+        {...card, ...holo, card_id: card.id, printing_id: holo.id, position: 1, distribution: 'regular', owned: true, is_collected: true},
+        {...card, ...holo, label: 'Reverse Holo', key: 'reverse', card_id: card.id, printing_id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', position: 2, distribution: 'regular', owned: true, is_collected: true}
+      ]
+    }}));
+    await page.goto('/binders/' + binderId);
+    const summary = page.locator(mode === 'tracking' ? '.tracking-summary' : '.collection-quick-summary');
+    await expect(summary).toContainText('2 / 2'); await expect(summary).toContainText('100%');
+    const scope = page.getByLabel('Printing scope', {exact: true}); await expect(scope).toContainText('Regular set variants');
+    await scope.locator('summary').click(); await expect(scope).toContainText('Product exclusive');
+    await expect(scope).toContainText('1 extra pockets excluded from completion');
+    await page.getByRole('button', {name: /^Missing/}).click();
+    await expect(page.locator(mode === 'tracking' ? '.tracking-card:not(.empty)' : '.quick-card:not(.empty)')).toHaveCount(0);
+    await fits(page); await page.screenshot({path: info.outputPath(mode + '-regular-set-scope.png'), fullPage: true});
+    expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
+  });
+}
+
+test('set builder defaults to regular variants and reports excluded extras and unknown distribution', async ({page}, info) => {
+  const state = await fixtures(page);
+  let input;
+  await page.route('**/api/binders/generate/preview', async route => {
+    input = route.request().postDataJSON();
+    await route.fulfill({json: {token: 'f'.repeat(64), volume_count: 1, total_pages: 1, slot_count: 2, owned_slots: 0,
+      excluded_extras: 1, unconfirmed_slots: 1, partial: false, volumes: [{title: 'Fixture binder', page_count: 1, slot_count: 2}],
+      sample: [{volume: 1, position: 0, page: 1, pocket: 1, local_id: '001', name: 'Pikachu', label: 'Holo', distribution: 'unknown'}]}});
+  });
+  await page.goto('/binders'); await page.getByRole('button', {name: /From set/}).click();
+  const modal = page.getByRole('dialog', {name: 'Create binders from sets or a series'});
+  await expect(modal.getByLabel('Printings to count')).toHaveValue('regular');
+  await modal.getByRole('button', {name: 'Select displayed sets (maximum 50)'}).click();
+  await modal.getByLabel('Binder name', {exact: true}).fill('Fixture binder');
+  await modal.getByRole('button', {name: 'Preview layout', exact: true}).click();
+  await expect(modal).toContainText('1 confirmed promo or product-exclusive printings excluded');
+  await expect(modal).toContainText('1 pockets have unconfirmed distribution'); expect(input.printing_scope).toBe('regular');
+  await fits(page); await page.screenshot({path: info.outputPath('printing-scope-preview.png'), fullPage: true});
+  await modal.getByLabel('Printings to count').selectOption('all'); await expect(modal.locator('.generation-preview')).toHaveCount(0);
+  expect(state.errors).toEqual([]);
+});
+
+test('all-set admin review exposes exact provider clues and saves sourced distribution corrections', async ({page}, info) => {
+  const state = await fixtures(page);
+  await page.route('**/api/session', route => route.fulfill({json: {user: {id: 'ui-fixture', name: 'Sean Collector', role: 'admin'}, setup_required: false}}));
+  const printings = [normal, holo, {...holo, id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', key: 'reverse', label: 'Reverse Holo'}]
+    .map(p => ({...p, distribution: 'unknown', distribution_revision: 1, distribution_override: null,
+      distribution_signals: p.key === 'normal' ? [{finish: 'normal', stamps: ['staff'], tcgplayer: 12345}] : []}));
+  const requests = [], changes = [];
+  await page.route('**/api/catalogue/distribution-review?**', route => {
+    requests.push(Object.fromEntries(new URL(route.request().url()).searchParams));
+    return route.fulfill({json: {page: 1, total: 1, limit: 12, items: [{...card, printings}]}});
+  });
+  await page.route('**/api/cards/**/distribution', route => {
+    const body = route.request().postDataJSON(); changes.push(body);
+    Object.assign(printings[0], {distribution: body.distribution, distribution_note: body.note, distribution_url: body.evidence_url,
+      distribution_override: body.distribution, distribution_revision: 2});
+    return route.fulfill({json: printings[0]});
+  });
+  await page.goto('/admin/printing-distribution');
+  await expect(page.getByRole('heading', {name: 'Printing distribution', exact: true})).toBeVisible();
+  await expect(page.getByText('TCGplayer #12345', {exact: true})).toHaveAttribute('href', 'https://www.tcgplayer.com/product/12345');
+  await expect(page.getByLabel('Set', {exact: true})).toHaveValue('');
+  await page.getByLabel('Review', {exact: true}).selectOption('unknown');
+  await expect.poll(() => requests.at(-1)?.mode).toBe('unknown');
+  const section = page.locator('.distribution-review-card section').first();
+  await section.locator('summary').click();
+  await section.getByLabel('Distribution', {exact: true}).selectOption('product_exclusive');
+  await section.getByLabel('Product or evidence note').fill('Verified deck product');
+  await section.getByLabel('Evidence URL').fill('https://www.tcgplayer.com/product/12345');
+  await section.getByRole('button', {name: 'Save distribution', exact: true}).click();
+  await expect(section.locator('.badge').first()).toHaveText('Product exclusive');
+  expect(changes).toHaveLength(1); expect(changes[0].revision).toBe(1);
+  await fits(page); await page.screenshot({path: info.outputPath('all-set-distribution-review.png'), fullPage: true});
+  expect(state.errors).toEqual([]);
+});

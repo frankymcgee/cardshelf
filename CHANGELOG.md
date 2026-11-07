@@ -1,3 +1,10 @@
+## 0.63.0 — 2026-11-07
+
+- Separate printing finish from distribution across all sets: regular, product exclusive, promotional or unconfirmed, with source-backed admin corrections retained on re-import.
+- Add regular-set and all-printings binder scopes. Generation, checklist progress, missing cards, wishlist targets and completion costs use the selected scope; existing pockets and ownership remain intact.
+- Add an all-set distribution review queue with exact provider finish, stamp and marketplace ID clues. Seed the five confirmed English Pitch Black non-holo Build & Battle exclusives and corresponding regular finishes.
+- Keep unconfirmed variants visible and included for review. Existing binders retain their all-printings scope until changed.
+
 ## 0.62.0 — 2026-11-06
 
 - Extend the existing TCGdex pricing feed with detailed per-variant TCGplayer matching, product IDs and separate low/mid/high/direct asking-price comparisons. Special foils, stamped cards, jumbo cards, ambiguous variants and conflicting product IDs are not silently mapped to ordinary finishes.
