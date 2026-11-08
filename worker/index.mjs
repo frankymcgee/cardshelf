@@ -1,3 +1,4 @@
+import { distributionProducts,saveAutomaticDistribution } from '../lib/automatic-distribution.mjs';
 import { writeFile } from 'node:fs/promises';
 import { db,closeDatabase } from '../lib/db.mjs';
 import { configuration } from '../lib/config.mjs';
@@ -42,7 +43,7 @@ async function progress(job,done,total,message,errors=[]) {
     WHERE id=${job.id} AND lease_token=${job.lease_token} AND status='running' RETURNING id`;
   ensure(rows.length,409,'Import lease was lost.');
 }
-async function importCard(raw,lang,setId,requestedId) {
+async function importCard(raw,lang,setId,requestedId,products) {
   ensure(raw?.id===requestedId && raw?.set?.id===setId,502,'Provider card identity does not match the requested set.');
   const id=`${lang}:${v.providerId(raw.id)}`;
   const name=v.text(raw.name,'Card name',1,200),localId=v.text(String(raw.localId),'Card number',1,50);
@@ -53,6 +54,7 @@ async function importCard(raw,lang,setId,requestedId) {
         ${String(raw.category??'')},${safeImageUrl(raw.image)},${dexIds},${tx.json(raw)})
       ON CONFLICT(id) DO UPDATE SET name=excluded.name,illustrator=excluded.illustrator,rarity=excluded.rarity,
         category=excluded.category,image_url=excluded.image_url,dex_ids=excluded.dex_ids,raw_data=excluded.raw_data,updated_at=now()`;
+    await saveAutomaticDistribution(tx,raw,lang,products);
     await reconcileProviderPrintings(tx,id,raw.variants,raw);
   });
   if(pricingConfiguration().enabled) await storePricing(id,raw.pricing,raw.variants_detailed);
@@ -69,6 +71,7 @@ async function run(job) {
     ON CONFLICT(id) DO UPDATE SET name=excluded.name,series=excluded.series,release_date=excluded.release_date,
       card_count=excluded.card_count,printed_total=coalesce(excluded.printed_total,card_sets.printed_total),
       printed_codes=CASE WHEN cardinality(excluded.printed_codes)>0 THEN excluded.printed_codes ELSE card_sets.printed_codes END,updated_at=now()`;
+  const products=lang==='en'?await distributionProducts(name):[];
   const errors=[];let done=0;
   await progress(job,done,set.cards.length,'Importing '+name);
   for(const brief of set.cards) {
@@ -78,7 +81,7 @@ async function run(job) {
     }
     try {
       const id=v.providerId(brief.id),raw=await fetchProvider(lang,'cards/'+id);
-      await importCard(raw,lang,setId,id);
+      await importCard(raw,lang,setId,id,products);
     } catch(error) {
       errors.push({card_id:String(brief?.id??'unknown'),message:String(error.message).slice(0,300)});
     }

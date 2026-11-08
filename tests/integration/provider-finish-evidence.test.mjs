@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { db,closeDatabase } from '../../lib/db.mjs';
 import { reconcileProviderPrintings } from '../../lib/printing-availability.mjs';
+import { saveAutomaticDistribution } from '../../lib/automatic-distribution.mjs';
 import { migrate } from '../../migrations/044_provider_finish_evidence.mjs';
 if(process.env.ALLOW_TEST_DATABASE!=='yes'||!new URL(process.env.DATABASE_URL||'http://invalid').pathname.endsWith('_test'))throw Error('Use a disposable _test database.');
 const sql=db(),user=randomUUID(),provider='finish-'+randomUUID(),set='en:'+provider,card=set+'-001';
@@ -25,6 +26,15 @@ await test('stored-data backfill and refreshes preserve printing IDs, inventory,
     assert.equal(first.length,3);const holo=first.find(p=>p.key==='holo');
     assert.equal(holo.catalogue_available,true);assert.equal(holo.metadata.basis,'tcgplayer_finish');
     assert.deepEqual(first.find(p=>p.id===manual.id).metadata,{custom:true});
+    const observed={...raw,name:'Fixture',id:provider+'-001',localId:'001',set:{name:'Fixture Set'},pricing:{tcgplayer:{unit:'USD',holofoil:{productId:123,marketPrice:1}}}};
+    const products=[{group:{name:'Fixture Set',groupId:456},product:{name:'Fixture',productId:123,categoryId:3,groupId:456,extendedData:[{name:'Number',value:'001/100'}]}}];
+    await sql.begin(tx=>saveAutomaticDistribution(tx,observed,'en',products));
+    const [rule]=await sql`SELECT * FROM printing_distribution_rules WHERE provider_card_id=${observed.id}`;
+    assert.equal(rule.automatic,true);assert.equal(rule.distribution,'regular');
+    await sql`UPDATE printing_distribution_rules SET automatic=false,distribution='promo' WHERE provider_card_id=${observed.id}`;
+    await sql.begin(tx=>saveAutomaticDistribution(tx,observed,'en',products));
+    assert.equal((await sql`SELECT distribution FROM printing_distribution_rules WHERE provider_card_id=${observed.id}`)[0].distribution,'promo');
+    await sql`DELETE FROM printing_distribution_rules WHERE provider_card_id=${observed.id}`;
     await sql`UPDATE printings SET availability_override=false,distribution_override='product_exclusive',distribution_override_note='Fixture' WHERE id=${holo.id}`;
     await sql.begin(tx=>migrate(tx));
     // A partial later feed must not suppress a previously sourced finish.
@@ -36,6 +46,7 @@ await test('stored-data backfill and refreshes preserve printing IDs, inventory,
     const slots=await sql`SELECT * FROM binder_slots WHERE binder_id=${binder.id}`;assert.equal(slots.length,1);assert.equal(slots[0].printing_id,normal.id);
     assert.equal(fresh.find(p=>p.id===manual.id).source,'manual');
   } finally {
+    await sql`DELETE FROM printing_distribution_rules WHERE provider_card_id=${provider+'-001'}`;
     await sql`DELETE FROM app_users WHERE id=${user}`;
     await sql`DELETE FROM printings WHERE card_id=${card}`;
     await sql`DELETE FROM cards WHERE id=${card}`;

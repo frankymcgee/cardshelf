@@ -1,3 +1,9 @@
+## 0.66.0 — 2026-11-08
+
+- Automatically confirm English Pokémon distribution using exact finish-specific TCGplayer product IDs, collector numbers and matching regular-set, promo or Deck Exclusives groups from TCGCSV.
+- Refresh confirmations during set imports and routine price refreshes; retain curated rules and all administrator overrides. Ambiguous matches, special printings and unavailable source data remain unconfirmed.
+- Cache public product metadata daily with bounded downloads and failure backoff. Existing inventory and binder layouts remain intact. Apply migration 045 before restarting app/worker.
+
 ## 0.65.0 — 2026-11-08
 
 - Supplement Pokémon printing flags with plain detailed variants and card-specific English TCGplayer finish data. Holo and Reverse Holo options can be discovered even when the catalogue flags are incomplete. Keep uncertain existing choices, manual availability/distribution corrections, inventory and binder pockets.
