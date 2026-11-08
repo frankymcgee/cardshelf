@@ -1,3 +1,8 @@
+## 0.66.1 — 2026-11-08
+
+- Retire generated Normal placeholders when card-specific Holo evidence exists without Normal evidence, fixing extra EX printing choices. Preserve genuine sourced Normal versions and administrator overrides.
+- Repair existing imports during upgrade and prevent a later incomplete feed from reactivating the same placeholder. Keep printing IDs, owned quantities and existing binder slots intact.
+
 ## 0.66.0 — 2026-11-08
 
 - Automatically confirm English Pokémon distribution using exact finish-specific TCGplayer product IDs, collector numbers and matching regular-set, promo or Deck Exclusives groups from TCGCSV.

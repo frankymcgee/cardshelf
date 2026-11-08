@@ -41,6 +41,7 @@ await test('stored-data backfill and refreshes preserve printing IDs, inventory,
     await sql.begin(tx=>reconcileProviderPrintings(tx,card,raw.variants,{}));
     const fresh=await sql`SELECT * FROM printings WHERE card_id=${card} ORDER BY key`;
     assert.deepEqual(fresh.map(p=>p.id),first.map(p=>p.id));
+    assert.equal(fresh.find(p=>p.id===normal.id).provider_active,false,'Generated Normal stays retired when later data is incomplete');
     const h=fresh.find(p=>p.id===holo.id);assert.equal(h.provider_active,true);assert.equal(h.catalogue_available,false);assert.equal(h.distribution,'product_exclusive');
     const [entry]=await sql`SELECT * FROM collection_entries WHERE user_id=${user}`;assert.equal(entry.quantity,3);assert.equal(entry.printing_id,normal.id);
     const slots=await sql`SELECT * FROM binder_slots WHERE binder_id=${binder.id}`;assert.equal(slots.length,1);assert.equal(slots[0].printing_id,normal.id);
