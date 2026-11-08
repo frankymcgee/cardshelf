@@ -10,12 +10,12 @@ cards.push({ ...cards[0], id: 'en:me01-001', name: 'Bulbasaur', set_name: 'Mega 
   image_url: 'https://assets.tcgdex.net/en/me/me01/001/high.webp' });
 const binderId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
-async function fixture(page, cacheArtwork = false) {
+async function fixture(page, cacheArtwork = false, dataset = cards) {
   const requests = [], errors = [], writes = [];
   page.on('pageerror', error => errors.push(error.message));
   await (cacheArtwork ? page.context() : page).route(/^https:\/\/(?:www\.pokemon\.com\/static-assets\/|limitlesstcg\.nyc3\.cdn\.digitaloceanspaces\.com\/tpci\/|assets\.tcgdex\.net\/)/, route => {
     const url = route.request().url(); requests.push(url);
-    const failed = url.includes('MEE_EN_2.png') || url.includes('MEE_EN_3.png') || url.includes('MEE_003_') || url.endsWith('/low.webp');
+    const failed = url.includes('MEE_EN_2.png') || url.includes('MEE_EN_3.png') || url.includes('MEE_003_') || url.endsWith('/low.webp') || url.includes('/DLR/DLR_EN_');
     return route.fulfill(failed ? { status: 404, body: '', headers: {'Access-Control-Allow-Origin': '*'} } : { contentType: 'image/svg+xml', body: artwork, headers: {'Access-Control-Allow-Origin': '*'} });
   });
   await page.route('**/api/**', route => {
@@ -25,15 +25,15 @@ async function fixture(page, cacheArtwork = false) {
     if (path === '/api/session') data = { user: { id: 'image-fixture', name: 'Collector', role: 'user' }, setup_required: false };
     else if (path === '/api/account/games') data = { tier: 'complimentary', games: [{ code: 'pokemon', manageable: true }] };
     else if (path === '/api/account/membership') data = { access: { tier: 'complimentary', features: [], allowed: true } };
-    else if (path === '/api/catalogue') data = { items: cards, total: cards.length, page: 1, limit: 30 };
+    else if (path === '/api/catalogue') data = { items: dataset, total: dataset.length, page: 1, limit: 30 };
     else if (path === '/api/catalogue/facets') data = { sets: [], rarities: [] };
-    else if (path === '/api/public/catalogue') data = { items: cards, total: cards.length, page: 1, limit: 30 };
+    else if (path === '/api/public/catalogue') data = { items: dataset, total: dataset.length, page: 1, limit: 30 };
     else if (path === '/api/public/catalogue/sets') data = [];
     else if (path === '/api/binders/' + binderId) data = { id: binderId, title: 'Image fallbacks', binder_type: 'collection', game: 'pokemon',
       color: '#282f49', columns: 3, rows: 3, page_count: 1, revision: 1, appearance: { effects_mode: 'subtle' },
-      slots: cards.map((card, position) => ({ ...card, ...printing, card_id: card.id, printing_id: printing.id, position, owned: false })) };
+      slots: dataset.map((card, position) => ({ ...card, ...printing, card_id: card.id, printing_id: printing.id, position, owned: false })) };
     else if (path.startsWith('/api/cards/') && path.endsWith('/prices')) data = { enabled: false, game: 'pokemon', printings: [], references: [], history: [] };
-    else if (path.startsWith('/api/cards/')) data = cards.find(card => path === '/api/cards/' + card.id);
+    else if (path.startsWith('/api/cards/')) data = dataset.find(card => path === '/api/cards/' + card.id);
     else if (path === '/api/public/affiliate-shops') data = { shops: [] };
     else if (path.startsWith('/api/ads/')) data = { eligible: false };
     else if (path === '/api/public/platform') data = {};
@@ -99,6 +99,22 @@ test('production catalogue recovers missing images, falls through errors and res
   expect(state.requests.some(url => /MEE_EN_4\.png|MEE_004_/.test(url))).toBe(false);
   expect(state.requests.some(url => /MEG|high\.png/.test(url))).toBe(false);
   expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
+});
+
+test('Delta Reign secrets recover in catalogue, details and existing binder pockets', async ({ page }) => {
+  const holo={...printing,key:'holo',label:'Holo'};
+  const delta={...cards[0],id:'en:me06-141',local_id:'141',set_id:'en:me06',name:'Mega Rayquaza ex',set_name:'Delta Reign',visual_printings:[holo],printings:[holo]};
+  const state=await fixture(page,false,[delta]);
+  await page.goto('/cards');
+  await loaded(page.locator('.card-tile').first().locator('img'),'Limitless TCG');
+  await page.getByRole('button',{name:'List view',exact:true}).click();
+  await page.locator('.table-card-button').first().click();
+  await loaded(page.locator('.detail-art > .card-artwork img'),'Limitless TCG');
+  await expect(page.locator('.detail-art > .card-artwork img')).toHaveAttribute('src',/DLR_141_R_EN\.png$/);
+  await page.goto('/binders/'+binderId);
+  await loaded(page.locator('.binder-stage button[data-position="0"] > .card-artwork img'),'Limitless TCG');
+  expect(state.requests.some(url=>url.includes('DLR_EN_141.png'))).toBe(true);
+  expect(state.errors).toEqual([]);expect(state.writes).toEqual([]);
 });
 
 test('list thumbnails and card details use the same fallback chain', async ({ page }) => {

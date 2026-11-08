@@ -87,3 +87,19 @@ test('image state exhausts once, resets for recycled cards and ignores stale err
     });
   } finally { scope.stop(); }
 });
+
+test('recent Mega Evolution sets use exact reviewed fallback identities including Delta Reign secrets', () => {
+  const mappings=[['me02','PFL',130],['me02.5','ASC',295],['me03','POR',124],['me04','CRI',122],['me05','PBL',120],['me06','DLR',141]];
+  for(const [set,code,total] of mappings) {
+    for(const number of [1,total]) {
+      const sources=cardImageSources(card(`en:${set}-${String(number).padStart(3,'0')}`));
+      assert.deepEqual(sources,[
+        {url:`https://www.pokemon.com/static-assets/content-assets/cms2/img/cards/web/${code}/${code}_EN_${number}.png`,source:'Pokémon'},
+        {url:`https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/${code}/${code}_${String(number).padStart(3,'0')}_R_EN.png`,source:'Limitless TCG'}
+      ]);
+    }
+    assert.deepEqual(cardImageSources(card(`en:${set}-${total+1}`)),[]);
+    assert.deepEqual(cardImageSources(card(`ja:${set}-001`,{language:'ja'})),[]);
+  }
+  assert.deepEqual(cardImageSources(card('en:me06-001',{local_id:'002'})),[]);
+});

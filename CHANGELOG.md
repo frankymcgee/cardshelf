@@ -1,3 +1,9 @@
+## 0.65.0 — 2026-11-08
+
+- Supplement Pokémon printing flags with plain detailed variants and card-specific English TCGplayer finish data. Holo and Reverse Holo options can be discovered even when the catalogue flags are incomplete. Keep uncertain existing choices, manual availability/distribution corrections, inventory and binder pockets.
+- Backfill existing Pokémon cards from stored evidence during upgrade; imports and routine price refreshes also reconcile finishes. Special foils, stamps, jumbo cards, other-language details and aggregate Cardmarket prices are not treated as plain finishes.
+- Extend exact English artwork fallbacks through the Mega Evolution sets, including all 141 Delta Reign cards. Existing cards with missing TCGdex artwork can use Pokémon/Limitless images without a re-import; normal device artwork caching still applies.
+
 ## 0.64.0 — 2026-11-07
 
 - Add previewed bulk add/remove of product-exclusive binder pockets, sorted by set and card number with gaps closed and tracking marks retained. Ownership stays intact.

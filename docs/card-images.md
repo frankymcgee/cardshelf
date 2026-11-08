@@ -5,13 +5,19 @@ CardShelf tries a saved catalogue image first. For TCGdex it tries the thumbnail
 official card image and Limitless TCG when an exact English set mapping exists.
 The chain stops after the last candidate; it does not loop or search by name.
 
-Initial reviewed mappings in `shared/card-images.mjs`:
+Reviewed mappings in `shared/card-images.mjs`:
 
 | TCGdex set | Source code | Collector numbers | Set |
 | --- | --- | --- | --- |
 | `mee` | `MEE` | 001–008 | Mega Evolution Energy |
 | `sve` | `SVE` | 001–024 | Scarlet & Violet Energy |
 | `me01` | `MEG` | 001–188 | Mega Evolution |
+| `me02` | `PFL` | 001–130 | Phantasmal Flames |
+| `me02.5` | `ASC` | 001–295 | Ascended Heroes |
+| `me03` | `POR` | 001–124 | Perfect Order |
+| `me04` | `CRI` | 001–122 | Chaos Rising |
+| `me05` | `PBL` | 001–120 | Pitch Black |
+| `me06` | `DLR` | 001–141 | Delta Reign |
 
 Unmapped sets retain their existing image and TCGdex format retries. Japanese
 cards never fall back to English artwork. A source image identifies the card
@@ -118,3 +124,40 @@ with app/database logs and host CPU, memory and disk pressure. Re-importing sets
 is not required to repair an image-only loading delay. A future persistent image
 cache would need bounded downloads, validated exact source identities, safe
 storage and provider-terms review; it is outside this loading fix.
+
+## Delta Reign and finish coverage — 0.65.0
+
+Verified on 2026-11-08: TCGdex lists Delta Reign as `me06` (141 cards),
+but its card records can omit artwork and report incomplete finish flags.
+Limitless identifies Heracross as DLR #1 and Mega Rayquaza ex as DLR #141;
+their full-size English PNG URLs are available. The official artwork endpoint
+can be region-blocked (HTTP 403); the existing bounded fallback then tries
+Limitless. Other Mega Evolution mappings were cross-checked against TCGdex
+set identities and Limitless's numbered English card pages. This is reviewed
+set coverage, not automatic artwork coverage for every Pokémon set.
+
+- <https://api.tcgdex.net/v2/en/sets/me06>
+- <https://limitlesstcg.com/cards/DLR/1>
+- <https://limitlesstcg.com/cards/DLR/141>
+- <https://limitlesstcg.com/cards/PFL/1>
+- <https://limitlesstcg.com/cards/ASC/1>
+- <https://limitlesstcg.com/cards/POR/1>
+- <https://limitlesstcg.com/cards/CRI/1>
+- <https://limitlesstcg.com/cards/PBL/1>
+
+Printing discovery applies to all imported Pokémon sets. In addition to explicit
+flags, non-generated plain detailed variants and valid English TCGplayer finish
+quotes/asking metrics can add Normal, Holo or Reverse Holo choices. The price
+parser rejects ambiguous scoped product mappings. Stamped, named-foil, jumbo,
+and incompatible-language detailed variants are not flattened into plain finishes;
+Cardmarket aggregate prices do not establish a finish. All discovered choices
+remain unverified, and distribution stays separately reviewed. Missing prices do
+not remove an existing Normal or product-exclusive printing: a partial market
+feed is not proof of absence. Admin corrections resolve any remaining false flags.
+
+Migration 044 fills missing printing choices from already stored card responses,
+without provider requests or changing owned copies or existing binder pockets.
+Set re-imports and enabled price refreshes also reconcile choices against fresh
+source data. Artwork updates apply immediately after upgrading/reloading; no
+set re-import is required. Existing binders keep their layout; use their normal
+add/generation tools to plan pockets for newly discovered finishes.
