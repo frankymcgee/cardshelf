@@ -179,3 +179,13 @@ re-import a set to request a check sooner. Japanese cards remain unconfirmed
 without their own sourced rules. No API key is required.
 
 Source schema: https://tcgcsv.com/ and https://tcgcsv.com/docs
+
+## Generated Normal placeholders — 0.66.1
+
+When every detailed variant is a generated Normal placeholder and valid plain
+Holo evidence exists without Normal evidence, that placeholder is retired.
+Migration 046 repairs existing imports. Later missing data cannot reactivate
+the placeholder, but explicit Normal market/detail evidence can restore it.
+Manual corrections, sourced Normal versions, owned quantities and existing
+binder slots remain intact. This is not a blanket rule for card names ending
+in EX/ex, and genuine non-holo product exclusives remain supported.

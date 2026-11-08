@@ -40,3 +40,12 @@ test('a missing price is not evidence to remove a known normal or product-exclus
   assert.deepEqual(keys(market({holofoil:{marketPrice:1}})),['normal','holo']);
   assert.deepEqual(providerPrintings({normal:true,holo:true,reverse:true},{}).map(p=>p.key),['normal','holo','reverse']);
 });
+
+test('generated Normal placeholder does not create an extra EX printing beside sourced Holo',()=>{
+ const raw={...market({holofoil:{marketPrice:1}}),variants_detailed:[{type:'normal',variantId:'generated'}]};
+ assert.deepEqual(keys(raw),['holo']);
+ assert.deepEqual(providerPrintingEvidence(flags,raw).retired,['normal']);
+ assert.deepEqual(keys({...raw,pricing:market({normal:{marketPrice:1},holofoil:{marketPrice:2}}).pricing}),['normal','holo']);
+ assert.deepEqual(keys({...raw,variants_detailed:[{type:'normal',variantId:'real'}]}),['normal','holo']);
+ assert.deepEqual(keys({...raw,pricing:{}}),['normal']);
+});
