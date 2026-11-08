@@ -3,7 +3,13 @@
 const ENGLISH_SETS = Object.freeze({
   mee: { code: 'MEE', total: 8 },
   sve: { code: 'SVE', total: 24 },
-  me01: { code: 'MEG', total: 188 }
+  me01: { code: 'MEG', total: 188 },
+  me02: { code: 'PFL', total: 130 },
+  'me02.5': { code: 'ASC', total: 295 },
+  me03: { code: 'POR', total: 124 },
+  me04: { code: 'CRI', total: 122 },
+  me05: { code: 'PBL', total: 120 },
+  me06: { code: 'DLR', total: 141 }
 });
 const OFFICIAL = 'https://www.pokemon.com/static-assets/content-assets/cms2/img/cards/web/';
 const LIMITLESS = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci/';
@@ -24,7 +30,7 @@ function primaryUrl(value) {
 function englishIdentity(card) {
   if (!card || (card.game && card.game !== 'pokemon')) return null;
   const id = card.card_id || card.id;
-  const match = typeof id === 'string' && /^en:([a-z0-9]+)-(\d{1,3})$/.exec(id);
+  const match = typeof id === 'string' && /^en:([a-z0-9]+(?:\.[0-9]+)?)-(\d{1,3})$/.exec(id);
   if (!match || (card.language && card.language !== 'en')) return null;
   const [, set, local] = match, mapping = Object.hasOwn(ENGLISH_SETS, set) ? ENGLISH_SETS[set] : null, number = Number(local);
   if (!mapping || number < 1 || number > mapping.total) return null;

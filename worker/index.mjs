@@ -53,7 +53,7 @@ async function importCard(raw,lang,setId,requestedId) {
         ${String(raw.category??'')},${safeImageUrl(raw.image)},${dexIds},${tx.json(raw)})
       ON CONFLICT(id) DO UPDATE SET name=excluded.name,illustrator=excluded.illustrator,rarity=excluded.rarity,
         category=excluded.category,image_url=excluded.image_url,dex_ids=excluded.dex_ids,raw_data=excluded.raw_data,updated_at=now()`;
-    await reconcileProviderPrintings(tx,id,raw.variants);
+    await reconcileProviderPrintings(tx,id,raw.variants,raw);
   });
   if(pricingConfiguration().enabled) await storePricing(id,raw.pricing,raw.variants_detailed);
 }
