@@ -161,3 +161,21 @@ Set re-imports and enabled price refreshes also reconcile choices against fresh
 source data. Artwork updates apply immediately after upgrading/reloading; no
 set re-import is required. Existing binders keep their layout; use their normal
 add/generation tools to plan pockets for newly discovered finishes.
+
+## Automatic distribution — 0.66.0
+
+Imports and enabled routine price refreshes consult TCGCSV's public TCGplayer
+Pokémon group/product metadata. An automatic rule requires one finish-specific
+marketplace ID, a unique product match, the same collector number and an exact
+set-group identity (ignoring TCGplayer's series prefix), or Deck Exclusives.
+Matching promo groups are promotional. Special, stamped and jumbo details are
+not flattened to plain finishes. This is marketplace-backed distribution evidence,
+not a promise of full checklist coverage. Missing or conflicting matches stay
+unconfirmed; existing confirmations survive source outages. Manual overrides
+and curated rules always win. Product metadata is cached for 24 hours; failed
+requests back off for one hour. No source requests occur during migrations or
+page views. Existing cards are checked as their enabled price refresh comes due;
+re-import a set to request a check sooner. Japanese cards remain unconfirmed
+without their own sourced rules. No API key is required.
+
+Source schema: https://tcgcsv.com/ and https://tcgcsv.com/docs
