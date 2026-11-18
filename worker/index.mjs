@@ -1,4 +1,4 @@
-import { distributionProducts,saveAutomaticDistribution } from '../lib/automatic-distribution.mjs';
+import { distributionProducts,saveAutomaticDistribution,tcgcsvPrintingFinishes } from '../lib/automatic-distribution.mjs';
 import { writeFile } from 'node:fs/promises';
 import { db,closeDatabase } from '../lib/db.mjs';
 import { configuration } from '../lib/config.mjs';
@@ -55,7 +55,7 @@ async function importCard(raw,lang,setId,requestedId,products) {
       ON CONFLICT(id) DO UPDATE SET name=excluded.name,illustrator=excluded.illustrator,rarity=excluded.rarity,
         category=excluded.category,image_url=excluded.image_url,dex_ids=excluded.dex_ids,raw_data=excluded.raw_data,updated_at=now()`;
     await saveAutomaticDistribution(tx,raw,lang,products);
-    await reconcileProviderPrintings(tx,id,raw.variants,raw);
+    await reconcileProviderPrintings(tx,id,raw.variants,raw,tcgcsvPrintingFinishes(raw,lang,products));
   });
   if(pricingConfiguration().enabled) await storePricing(id,raw.pricing,raw.variants_detailed);
 }

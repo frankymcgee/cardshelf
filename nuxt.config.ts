@@ -22,7 +22,14 @@ export default defineNuxtConfig({
   vite: { $server: { build: { rolldownOptions: { makeAbsoluteExternalsRelative: false } } } },
   devtools: { enabled: false },
   css: ['~/assets/css/main.css', '~/assets/css/features.css', '~/assets/css/appearance.css', '~/assets/css/marketing.css', '~/assets/css/themes.css', '~/assets/css/marketing-arena.css', '~/assets/css/games.css'],
-  nitro: { preset: 'node-server', externals: { external: ['postgres', 'sharp', 'nodemailer', 'web-push'] } },
+  nitro: {
+    preset: 'node-server',
+    externals: {
+      external: ['postgres', 'sharp', 'nodemailer', 'web-push'],
+      // Bundle the head runtime so its unused build plugin stays out of the server.
+      inline: ['unhead'],
+    },
+  },
   typescript: { strict: true, tsConfig: { compilerOptions: { allowJs: true, checkJs: false } } },
   app: { head: {
     title: 'CardShelf', htmlAttrs: { lang: 'en' },
