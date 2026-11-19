@@ -197,15 +197,41 @@ test('public searches reuse the loaded set choices', async ({ page }) => {
   expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
 });
 
-for (const binderType of ['collection', 'tracking']) {
-  test(`expanded artwork returns to the same ${binderType} card popup`, async ({ page }) => {
+for (const view of ['collection', 'tracking', 'quick tracking']) {
+  test(`artwork appears above the details and expands in the ${view} card popup`, async ({ page }) => {
     const card = cards[4];
-    const state = await fixture(page, false, [card], binderType);
+    const state = await fixture(page, false, [card], view === 'tracking' ? 'tracking' : 'collection');
+    if (view === 'quick tracking') {
+      await page.route('**/api/account/membership', route => route.fulfill({
+        json: { access: { tier: 'complimentary', allowed: true, features: ['collection', 'binders', 'prices'].map(code => ({ code })) } }
+      }));
+    }
     await page.goto('/binders/' + binderId);
-    await page.locator('button[data-position="0"]').click();
-    if (binderType === 'collection') await page.getByRole('button', { name: 'View card & ownership' }).click();
+    if (view === 'quick tracking') {
+      await page.getByRole('button', { name: 'Quick tracking', exact: true }).click();
+      await page.getByRole('button', { name: card.name + ', ' + printing.label + ', missing', exact: true }).click();
+    } else {
+      await page.locator('button[data-position="0"]').click();
+      if (view === 'collection') await page.getByRole('button', { name: 'View card & ownership' }).click();
+    }
+
     const popup = page.getByRole('dialog', { name: card.name, exact: true });
     const expand = popup.getByRole('button', { name: 'Expand ' + card.name + ' artwork' });
+    const details = view === 'collection'
+      ? popup.getByRole('combobox', { name: 'Visualise printing' })
+      : popup.getByText('Missing', { exact: true });
+    const actionName = view === 'collection' ? /^Add to wishlist:/ : view === 'tracking' ? 'Mark collected' : '+ I have this card';
+    const action = popup.getByRole('button', { name: actionName, exact: true });
+    await loaded(expand.getByRole('img', { name: card.name }), 'TCGdex');
+    await expect(details).toBeVisible();
+    await expect(action).toBeVisible();
+    const artworkBox = await expand.boundingBox();
+    const detailsBox = await details.boundingBox();
+    const actionBox = await action.boundingBox();
+    expect(artworkBox.width).toBeGreaterThan(250);
+    expect(artworkBox.y + artworkBox.height).toBeLessThan(detailsBox.y);
+    expect(detailsBox.y + detailsBox.height).toBeLessThan(actionBox.y);
+
     await expand.click();
     const preview = page.getByRole('dialog', { name: card.name + ' expanded artwork' });
     await expect(preview).toBeVisible();
@@ -226,6 +252,13 @@ for (const binderType of ['collection', 'tracking']) {
     await page.keyboard.press('Escape');
     await expect(preview).toBeHidden();
     await expect(popup).toBeVisible();
+    if (view === 'quick tracking') {
+      await popup.getByText('Market prices & history', { exact: true }).click();
+      const market = popup.getByRole('heading', { name: 'Market prices', exact: true });
+      await market.scrollIntoViewIfNeeded();
+      await expect(market).toBeInViewport();
+      await expect(popup.getByRole('button', { name: 'Close dialog' })).toBeInViewport();
+    }
     expect(state.writes).toEqual([]);
     expect(state.errors).toEqual([]);
   });
