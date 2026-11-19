@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generationInput,makeBinderPlan,previewResult} from '../lib/binder-generation-logic.mjs';
-const sets=[{id:'en:one',name:'First set',language:'en',series:'Example series',release_date:'2020-01-01',card_count:3,imported_count:3}];
+import { resolveBinderLogo } from '../lib/binder-logos.mjs';
+const sets=[{id:'en:one',game:'pokemon',provider_id:'one',name:'First set',language:'en',series:'Example series',release_date:'2020-01-01',card_count:3,imported_count:3}];
 const input={title:'My series',set_ids:['en:one'],columns:3,rows:3,color:'#5546d8'};
 const row=(n,key='normal',quantity=0)=>({printing_id:`p${n}-${key}`,key,source:'tcgdex',label:key,card_id:'en:one-'+n,name:'Card '+n,local_id:String(n),set_id:'en:one',quantity});
 const plan=(options={},rows=[row(10),row(2),row(1)])=>makeBinderPlan(generationInput({...input,...options}),sets,rows);
@@ -23,3 +24,28 @@ test('compact multi-set layout does not reserve inter-set gaps',()=>{const secon
 test('preview tokens change when a selected printing or ownership status changes',()=>{const first=plan({},[row(1)]);assert.notEqual(first.token,plan({},[row(2)]).token);assert.notEqual(first.token,plan({},[row(1,'normal',1)]).token);assert.equal(first.token,plan({},[row(1)]).token);});
 test('over-limit series selections fail without partial binder creation',()=>assert.throws(()=>plan({columns:2,rows:2},Array.from({length:2401},(_,i)=>row(i+1))),/more than 10 binders/));
 test('preview samples report human-readable page and pocket positions',()=>{const p=previewResult(plan());assert.equal(p.sample[0].volume,1);assert.equal(p.sample[0].page,1);assert.equal(p.sample[0].pocket,1);});
+
+test('collection binder logos can supply the fallback name', async () => {
+  const p = plan({ binder_type: 'collection', title: '', use_logo: true });
+  assert.equal(p.volumes[0].title, 'First set');
+  assert.equal(await resolveBinderLogo(p.logoSource, async (language, endpoint) => {
+    assert.equal(language, 'en');
+    assert.equal(endpoint, 'sets/one');
+    return { logo: 'https://assets.tcgdex.net/en/swsh/swsh12.5/logo' };
+  }), 'https://assets.tcgdex.net/en/swsh/swsh12.5/logo.webp');
+});
+
+test('multi-set binders use the series logo and require a common series', async () => {
+  const second = { ...sets[0], id: 'en:two', provider_id: 'two', name: 'Second set' };
+  const options = generationInput({ ...input, title: '', use_logo: true, set_ids: ['en:one', 'en:two'] });
+  const p = makeBinderPlan(options, [...sets, second], [row(1), { ...row(2), set_id: second.id }]);
+  const endpoints = [];
+  assert.equal(p.volumes[0].title, 'Example series');
+  assert.equal(await resolveBinderLogo(p.logoSource, async (_, endpoint) => {
+    endpoints.push(endpoint);
+    return endpoint === 'sets/one' ? { serie: { id: 'swsh' } } : { logo: 'https://assets.tcgdex.net/en/swsh/swsh1/logo' };
+  }), 'https://assets.tcgdex.net/en/swsh/swsh1/logo.webp');
+  assert.deepEqual(endpoints, ['sets/one', 'series/swsh']);
+  assert.throws(() => makeBinderPlan(options, [...sets, { ...second, series: 'Other' }], [row(1)]), /same Pokémon series/);
+  await assert.rejects(resolveBinderLogo(p.logoSource, async () => ({})), /has no logo/);
+});

@@ -111,7 +111,7 @@ test('unsafe provider paths fail before any network request', async t => {
   const request = mockJson(t, {});
   for (const path of ['sets/../cards', 'sets/SM1+/001', 'sets/SM1+\\001', 'sets/SM1+?x=1',
     'sets/SM1+#fragment', 'sets/SM1%2B', 'sets/SM1%252B', 'sets/%2e%2e',
-    'https://example.com/sets/SM1+', '//example.com', 'sets//SM1+', 'series/SM1+',
+    'https://example.com/sets/SM1+', '//example.com', 'sets//SM1+', 'collections/SM1+',
     'sets/', 'sets/+SM1', 'sets/SM1+\n001', null, 42, {}]) {
     await assert.rejects(fetchProvider('ja', path), badRequest, String(path));
   }
