@@ -64,3 +64,14 @@ test('set feed joins only recognised finish rows to their product IDs',async t=>
  const listings=await distributionProducts('Delta Reign');
  assert.deepEqual(tcgcsvPrintingFinishes(raw,'en',listings),['normal','reverse']);
 });
+
+test('Delta Reign Nidoran♀ matches Nidoran F without matching Nidoran M',()=>{
+ const card={...raw,id:'me06-055',name:'Nidoran♀',localId:'055',variants:{normal:true,reverse:false}};
+ const listing={...entry,product:{...entry.product,name:'Nidoran F',extendedData:[{name:'Number',value:'055/103'}]},
+  finishes:new Set(['normal','reverse'])};
+ const finishes=tcgcsvPrintingFinishes(card,'en',[listing]);
+ assert.deepEqual(providerPrintings(card.variants,card,'en',finishes).map(p=>p.key),['normal','reverse']);
+ assert.equal(rules(card,'en',[listing])[0].distribution,'regular');
+ assert.deepEqual(tcgcsvPrintingFinishes({...card,name:'Nidoran♂'},'en',[listing]),[]);
+ assert.deepEqual(tcgcsvPrintingFinishes({...card,name:'Nidoran'},'en',[listing]),[]);
+});
