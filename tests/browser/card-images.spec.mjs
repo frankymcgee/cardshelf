@@ -197,8 +197,8 @@ test('public searches reuse the loaded set choices', async ({ page }) => {
   expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
 });
 
-for (const view of ['collection', 'tracking', 'quick tracking']) {
-  test(`artwork appears above the details and expands in the ${view} card popup`, async ({ page }) => {
+for (const view of ['layout', 'collection', 'tracking', 'quick tracking']) {
+  test(`artwork appears first and expands in the ${view} card popup`, async ({ page }) => {
     const card = cards[4];
     const state = await fixture(page, false, [card], view === 'tracking' ? 'tracking' : 'collection');
     if (view === 'quick tracking') {
@@ -217,20 +217,29 @@ for (const view of ['collection', 'tracking', 'quick tracking']) {
 
     const popup = page.getByRole('dialog', { name: card.name, exact: true });
     const expand = popup.getByRole('button', { name: 'Expand ' + card.name + ' artwork' });
-    const details = view === 'collection'
-      ? popup.getByRole('combobox', { name: 'Visualise printing' })
-      : popup.getByText('Missing', { exact: true });
-    const actionName = view === 'collection' ? /^Add to wishlist:/ : view === 'tracking' ? 'Mark collected' : '+ I have this card';
-    const action = popup.getByRole('button', { name: actionName, exact: true });
     await loaded(expand.getByRole('img', { name: card.name }), 'TCGdex');
-    await expect(details).toBeVisible();
-    await expect(action).toBeVisible();
     const artworkBox = await expand.boundingBox();
-    const detailsBox = await details.boundingBox();
-    const actionBox = await action.boundingBox();
     expect(artworkBox.width).toBeGreaterThan(250);
-    expect(artworkBox.y + artworkBox.height).toBeLessThan(detailsBox.y);
-    expect(detailsBox.y + detailsBox.height).toBeLessThan(actionBox.y);
+    if (view === 'layout') {
+      const pocketActions = popup.locator('.action-menu');
+      await expect(pocketActions.getByRole('button')).toHaveText([
+        'View card & ownership', 'Move or swap this card', 'Choose a different card', 'Clear this pocket only'
+      ]);
+      const pocketActionsBox = await pocketActions.boundingBox();
+      expect(artworkBox.y + artworkBox.height).toBeLessThan(pocketActionsBox.y);
+    } else {
+      const details = view === 'collection'
+        ? popup.getByRole('combobox', { name: 'Visualise printing' })
+        : popup.getByText('Missing', { exact: true });
+      const actionName = view === 'collection' ? /^Add to wishlist:/ : view === 'tracking' ? 'Mark collected' : '+ I have this card';
+      const action = popup.getByRole('button', { name: actionName, exact: true });
+      await expect(details).toBeVisible();
+      await expect(action).toBeVisible();
+      const detailsBox = await details.boundingBox();
+      const actionBox = await action.boundingBox();
+      expect(artworkBox.y + artworkBox.height).toBeLessThan(detailsBox.y);
+      expect(detailsBox.y + detailsBox.height).toBeLessThan(actionBox.y);
+    }
 
     await expand.click();
     const preview = page.getByRole('dialog', { name: card.name + ' expanded artwork' });
@@ -252,6 +261,10 @@ for (const view of ['collection', 'tracking', 'quick tracking']) {
     await page.keyboard.press('Escape');
     await expect(preview).toBeHidden();
     await expect(popup).toBeVisible();
+    if (view === 'layout') {
+      await popup.getByRole('button', { name: 'View card & ownership', exact: true }).click();
+      await expect(popup.getByRole('combobox', { name: 'Visualise printing' })).toHaveValue(printing.id);
+    }
     if (view === 'quick tracking') {
       await popup.getByText('Market prices & history', { exact: true }).click();
       const market = popup.getByRole('heading', { name: 'Market prices', exact: true });
