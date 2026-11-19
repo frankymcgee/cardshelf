@@ -41,6 +41,21 @@
 .available-variants>small{width:100%;font-weight:400}.card-meta>.variant-badges{display:flex!important}
 .picker-card>.card-artwork{max-width:100%;margin-bottom:8px}.printing-choice>.card-artwork{width:54px;flex:0 0 54px}.printing-choice{gap:12px}
 .detail-art>.card-artwork{align-self:start}.printing-visual-selector{display:block;margin-bottom:12px}.printing-visual-selector select{width:100%}
+.binder-card-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.binder-card-summary p {
+  margin: 8px 0 0;
+  overflow-wrap: anywhere;
+}
+.binder-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 .binder-stage.themed-stage{position:relative;isolation:isolate;overflow:hidden}
 .binder-wallpaper-layer{position:absolute;inset:0;border-radius:inherit;pointer-events:none;overflow:hidden;z-index:0}
 .binder-wallpaper-image,.binder-wallpaper-dimmer{position:absolute;inset:0}.binder-wallpaper-image{inset:-12px}.binder-wallpaper-dimmer{background:#000}

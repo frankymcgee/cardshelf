@@ -45,7 +45,8 @@ onBeforeUnmount(() => preview.value?.close())
 .artwork-trigger {
   display: block;
   min-width: 0;
-  width: 100%;
+  width: min(100%, 280px, 40dvh);
+  margin-inline: auto;
   padding: 0;
   border: 0;
   background: transparent;
