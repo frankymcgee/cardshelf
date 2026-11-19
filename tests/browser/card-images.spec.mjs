@@ -196,7 +196,6 @@ test('public searches reuse the loaded set choices', async ({ page }) => {
   expect(setRequests).toBe(1);
   expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
 });
-});
 
 for (const binderType of ['collection', 'tracking']) {
   test(`expanded artwork returns to the same ${binderType} card popup`, async ({ page }) => {
@@ -231,3 +230,4 @@ for (const binderType of ['collection', 'tracking']) {
     expect(state.errors).toEqual([]);
   });
 }
+});
