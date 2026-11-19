@@ -10,7 +10,7 @@ cards.push({ ...cards[0], id: 'en:me01-001', name: 'Bulbasaur', set_name: 'Mega 
   image_url: 'https://assets.tcgdex.net/en/me/me01/001/high.webp' });
 const binderId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
-async function fixture(page, cacheArtwork = false, dataset = cards) {
+async function fixture(page, cacheArtwork = false, dataset = cards, binderType = 'collection') {
   const requests = [], errors = [], writes = [];
   page.on('pageerror', error => errors.push(error.message));
   await (cacheArtwork ? page.context() : page).route(/^https:\/\/(?:www\.pokemon\.com\/static-assets\/|limitlesstcg\.nyc3\.cdn\.digitaloceanspaces\.com\/tpci\/|assets\.tcgdex\.net\/)/, route => {
@@ -29,7 +29,7 @@ async function fixture(page, cacheArtwork = false, dataset = cards) {
     else if (path === '/api/catalogue/facets') data = { sets: [], rarities: [] };
     else if (path === '/api/public/catalogue') data = { items: dataset, total: dataset.length, page: 1, limit: 30 };
     else if (path === '/api/public/catalogue/sets') data = [];
-    else if (path === '/api/binders/' + binderId) data = { id: binderId, title: 'Image fallbacks', binder_type: 'collection', game: 'pokemon',
+    else if (path === '/api/binders/' + binderId) data = { id: binderId, title: 'Image fallbacks', binder_type: binderType, game: 'pokemon',
       color: '#282f49', columns: 3, rows: 3, page_count: 1, revision: 1, appearance: { effects_mode: 'subtle' },
       slots: dataset.map((card, position) => ({ ...card, ...printing, card_id: card.id, printing_id: printing.id, position, owned: false })) };
     else if (path.startsWith('/api/cards/') && path.endsWith('/prices')) data = { enabled: false, game: 'pokemon', printings: [], references: [], history: [] };
@@ -197,3 +197,37 @@ test('public searches reuse the loaded set choices', async ({ page }) => {
   expect(state.errors).toEqual([]); expect(state.writes).toEqual([]);
 });
 });
+
+for (const binderType of ['collection', 'tracking']) {
+  test(`expanded artwork returns to the same ${binderType} card popup`, async ({ page }) => {
+    const card = cards[4];
+    const state = await fixture(page, false, [card], binderType);
+    await page.goto('/binders/' + binderId);
+    await page.locator('button[data-position="0"]').click();
+    if (binderType === 'collection') await page.getByRole('button', { name: 'View card & ownership' }).click();
+    const popup = page.getByRole('dialog', { name: card.name, exact: true });
+    const expand = popup.getByRole('button', { name: 'Expand ' + card.name + ' artwork' });
+    await expand.click();
+    const preview = page.getByRole('dialog', { name: card.name + ' expanded artwork' });
+    await expect(preview).toBeVisible();
+    const close = preview.getByRole('button', { name: 'Close expanded artwork' });
+    await expect(close).toBeFocused();
+    const image = preview.getByRole('img', { name: card.name });
+    await loaded(image, 'TCGdex');
+    await expect(image).toHaveAttribute('src', /\/high\.webp$/);
+    const viewport = page.viewportSize();
+    const bounds = await preview.boundingBox();
+    expect(bounds).toEqual({ x: 0, y: 0, ...viewport });
+    await close.click();
+    await expect(preview).toBeHidden();
+    await expect(popup).toBeVisible();
+    await expect(expand).toBeFocused();
+    await expand.press('Enter');
+    await expect(preview).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(preview).toBeHidden();
+    await expect(popup).toBeVisible();
+    expect(state.writes).toEqual([]);
+    expect(state.errors).toEqual([]);
+  });
+}

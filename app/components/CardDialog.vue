@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { printingWishlisted, wishlistRevisions, wishlistDraft } from '../../shared/wishlist.mjs'
-const props = defineProps<{ cardId: string | null; printingId?: string; effectsMode?: string }>(), emit = defineEmits(['close', 'saved'])
+const props = defineProps<{ cardId: string | null; printingId?: string; effectsMode?: string; expandableArtwork?: boolean }>(), emit = defineEmits(['close', 'saved'])
 const api = useApi(), auth = useAuth(), notice = useNotice()
 const card = ref<any>(null), loading = ref(false), busy = ref(false), loadError = ref('')
 const drafts = reactive<Record<string, any>>({}), manual = reactive({ label: '', verified: false })
@@ -115,7 +115,7 @@ async function correct(p: any, available: boolean | null) {
 }
 function owned(p: any) { return card.value?.entries.filter((e: any) => e.printing_id === p.id && e.quantity > 0).map((e: any) => `${e.condition} × ${e.quantity}`).join(' · ') }
 </script>
-<template><AppModal :open="!!cardId" :title="card?.name || 'Card details'" wide @close="emit('close')"><div v-if="loading" class="loading-panel">Loading card…</div><p v-else-if="loadError" class="alert error">{{ loadError }}</p><div v-else-if="card" class="card-detail"><div class="detail-art"><label class="printing-visual-selector">Visualise printing<select v-model="visualPrintingId" :disabled="busy"><option v-for="p in visiblePrintings" :key="p.id" :value="p.id">{{ p.label }}</option></select></label><CardArtwork :card="card" :printing="visualPrinting" :effects-mode="effectsMode || 'subtle'" :low="false" /><p class="data-note">Decorative finish preview only. Selecting a preview does not change ownership or prices.</p>
+<template><AppModal :open="!!cardId" :title="card?.name || 'Card details'" wide @close="emit('close')"><div v-if="loading" class="loading-panel">Loading card…</div><p v-else-if="loadError" class="alert error">{{ loadError }}</p><div v-else-if="card" class="card-detail"><div class="detail-art"><label class="printing-visual-selector">Visualise printing<select v-model="visualPrintingId" :disabled="busy"><option v-for="p in visiblePrintings" :key="p.id" :value="p.id">{{ p.label }}</option></select></label><ExpandableCardArtwork v-if="expandableArtwork" :card="card" :printing="visualPrinting" :effects-mode="effectsMode || 'subtle'" :low="false" /><CardArtwork v-else :card="card" :printing="visualPrinting" :effects-mode="effectsMode || 'subtle'" :low="false" /><p class="data-note">Decorative finish preview only. Selecting a preview does not change ownership or prices.</p>
 <section v-if="visualPrinting" class="preview-wishlist" aria-label="Selected printing wishlist">
   <button type="button" class="button secondary wishlist-toggle" :class="{ 'is-wishlisted': visualWishlisted }"
     :disabled="busy || loading" :aria-pressed="visualWishlisted" :aria-busy="wishlistBusy"

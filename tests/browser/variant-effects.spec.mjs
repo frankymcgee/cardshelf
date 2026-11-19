@@ -156,7 +156,7 @@ test('changing the selected printing updates foil without writing collection dat
   const fixture = await openBinder(page);
   await page.locator('button[data-position="2"]').click();
   await page.getByRole('button', { name: 'View card & ownership' }).click();
-  const art = page.locator('.detail-art > .card-artwork');
+  const art = page.getByRole('button', { name: /^Expand .+ artwork$/ }).locator('.card-artwork');
   await expect(art).toHaveAttribute('data-foil', 'ex');
   await page.getByLabel('Visualise printing').selectOption(printings[0].id);
   await expect(art.locator('.foil-layer')).toHaveCount(0);
