@@ -98,7 +98,7 @@ async function mark(collected: boolean) {
 
     <UiDisclosure title="About this checklist"><p class="data-note">This is an independent checklist. Marks do not add inventory quantities, set a condition, change prices or reserve physical copies. {{ designMode ? 'One mark per card design, regardless of printing.' : 'Each pocket tracks its displayed printing.' }}</p></UiDisclosure>
     <AppModal :open="!readOnly && selection !== null && !!selected" :title="selected?.name || 'Track card'" :dismissible="!saving" @close="closeSelection">
-      <PrintingDistributionBadge v-if="selected" :printing="selected" /><div v-if="selected" class="tracking-selection"><div class="tracking-selected-art"><CardArtwork :card="selected" :printing="designMode ? null : selected" effects-mode="off" :badges="!designMode" /></div>
+      <PrintingDistributionBadge v-if="selected" :printing="selected" /><div v-if="selected" class="tracking-selection"><div class="tracking-selected-art"><ExpandableCardArtwork v-if="!readOnly" :card="selected" :printing="designMode ? null : selected" effects-mode="off" :badges="!designMode" /></div>
         <div><span class="badge" :class="selected.is_collected ? 'green' : ''">{{ selected.is_collected ? 'Collected' : 'Missing' }}</span><h3>{{ selected.set_name }}</h3><p>#{{ selected.local_id }} · {{ label(selected) }}</p><p class="muted small">Page {{ Math.floor(selected.position / size) + 1 }} · Pocket {{ selected.position % size + 1 }}</p></div>
       </div>
       <p v-if="saveError" class="alert error" role="alert">{{ saveError }} Retry to confirm the saved state, or close to reload.</p>
