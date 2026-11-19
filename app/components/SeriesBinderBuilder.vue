@@ -5,8 +5,15 @@ const api = useApi(), notice = useNotice()
 const sets = ref<any[]>([]), loading = ref(false), busy = ref(false), preview = ref<any>(null), acknowledge = ref(false)
 const game = ref('pokemon')
 const language = ref('en'), series = ref(''), search = ref('')
-const form = reactive({ binder_type: 'tracking', title: '', description: '', color: '#5546d8', columns: 3, rows: 3,
+const form = reactive({ binder_type: 'tracking', use_logo: false, title: '', description: '', color: '#5546d8', columns: 3, rows: 3,
   set_ids: [] as string[], selection: 'designs', printing_scope: 'regular', owned_only: false, new_page_per_set: true })
+const selectedSets = computed(() => sets.value.filter(set => form.set_ids.includes(set.id)))
+const logoAvailable = computed(() => {
+  const [first] = selectedSets.value
+  return game.value === 'pokemon' && !!first && (selectedSets.value.length === 1 ||
+    (!!first.series && selectedSets.value.every(set => set.series === first.series)))
+})
+watch(logoAvailable, available => { if (!available) form.use_logo = false })
 const tracking = computed(() => form.binder_type === 'tracking')
 const seriesOptions = computed(() => [...new Set(sets.value.filter(s => (s.game || 'pokemon') === game.value && s.language === language.value && s.series).map(s => s.series as string))].sort())
 const visibleSets = computed(() => sets.value.filter(s => (s.game || 'pokemon') === game.value && s.language === language.value && (!series.value || s.series === series.value) &&
@@ -66,7 +73,8 @@ async function create() {
         <div class="button-row"><button type="button" class="text-button" @click="selectVisible">Select displayed sets (maximum 50)</button><button type="button" class="text-button" @click="form.set_ids = []">Clear selection</button></div>
         <div class="generator-set-list"><label v-for="s in visibleSets" :key="s.id" class="checkbox-label"><input v-model="form.set_ids" type="checkbox" :value="s.id" /><span>{{ s.name }} <small class="muted">{{ s.imported_count }}/{{ s.card_count }} cards imported</small><span v-if="s.imported_count < s.card_count" class="badge amber">Partial</span></span></label><p v-if="!visibleSets.length" class="muted small">No imported sets match this filter.</p></div>
         <small class="muted">{{ form.set_ids.length }} selected. Only sets imported on this server are included.</small>
-        <label>Binder name<input v-model="form.title" required maxlength="85" placeholder="e.g. Sword & Shield collection" /></label><label>Description<textarea v-model="form.description" maxlength="1000" /></label>
+        <label v-if="logoAvailable" class="checkbox-label"><input v-model="form.use_logo" type="checkbox" />Use the {{ selectedSets.length === 1 ? 'set' : 'series' }} logo</label>
+        <label>{{ form.use_logo ? 'Fallback name (optional)' : 'Binder name' }}<input v-model="form.title" :required="!form.use_logo" maxlength="85" placeholder="e.g. Sword & Shield collection" /></label><label>Description<textarea v-model="form.description" maxlength="1000" /></label>
         <div class="form-columns"><label>Columns<select v-model.number="form.columns"><option :value="2">2</option><option :value="3">3</option><option :value="4">4</option></select></label><label>Rows<select v-model.number="form.rows"><option :value="2">2</option><option :value="3">3</option><option :value="4">4</option></select></label><label v-if="!tracking">Cover colour<input v-model="form.color" type="color" /></label></div>
         <PrintingScopePicker v-model="form.printing_scope" />
         <label>Checklist layout<select v-model="form.selection"><option value="designs">One pocket per card design</option><option value="printings">One pocket per known printing</option></select></label>

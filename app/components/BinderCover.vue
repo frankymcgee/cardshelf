@@ -14,7 +14,7 @@ const styles = computed(() => ({ '--binder-color': cover.value.background_color,
     <div class="binder-rings" aria-hidden="true"><i /><i /><i /></div>
     <div class="binder-cover-caption">
       <AppIcon :name="binder.binder_type === 'tracking' ? 'check' : 'binder'" :size="28" />
-      <span>{{ binder.title }}</span>
+      <BinderTitle :binder="binder" compact />
       <small>{{ binderTypeLabel(binder).toUpperCase() }}</small>
     </div>
   </div>
